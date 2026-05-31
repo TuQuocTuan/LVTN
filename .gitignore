@@ -1,0 +1,10 @@
+# Chặn thư mục node_modules ở cả BE và FE
+**/node_modules/
+
+# Chặn file cấu hình bảo mật
+**/.env
+**/.env.local
+
+# Chặn các file rác của hệ thống
+.DS_Store
+Thumbs.db
