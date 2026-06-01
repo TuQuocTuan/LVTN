@@ -1,12 +1,9 @@
-//Khởi tạo và cấu hình kết nối Supabase Client
-//===========================================
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import path from 'path';
 
-
-const { createClient } = require('@supabase/supabase-js');
-const path = require('path');
-
-// Đọc file .env bằng đường dẫn tuyệt đối tính từ thư mục chạy lệnh (C:\Hoc\LVTN\BE)
-require('dotenv').config({ path: path.join(process.cwd(), '.env') });
+// Nạp biến môi trường bằng đường dẫn tuyệt đối ngay khi file khởi chạy
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -16,6 +13,5 @@ if (!supabaseUrl || !supabaseServiceKey) {
     process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-module.exports = supabase;
+// Khởi tạo và export instance dùng chung cho toàn bộ Backend
+export const supabase = createClient(supabaseUrl, supabaseServiceKey);
