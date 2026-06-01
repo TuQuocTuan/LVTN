@@ -3,6 +3,7 @@
 
 import { supabase } from '../config/supabase.js';
 
+//Hàm lấy công thức theo món
 export const getRecipeByDish = async (req, res) => {
     try {
         const { dish_id } = req.params;

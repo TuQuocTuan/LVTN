@@ -3,6 +3,7 @@
 
 import { supabase } from '../config/supabase.js';
 
+//Hàm lấy các nguyên liệu
 export const getIngredients = async (req, res) => {
     try {
         const { data, error } = await supabase
