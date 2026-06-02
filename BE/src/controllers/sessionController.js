@@ -3,7 +3,7 @@
 
 import { supabase } from '../config/supabase.js';
 
-//Mở bàn
+//Mở bàn (cashier)
 export const openTable = async (req, res) => {
     try {
         const { table_id } = req.body;
@@ -46,30 +46,36 @@ export const openTable = async (req, res) => {
     }
 }
 
-//Đóng bàn
-export const closeTable = async (req, res) => {
+//Mở menu(customer)
+export const openMenuCustomer = async (req, res) => {
     try {
-        const { session_id, close_user } = req.body;
+        const { table_id } = req.query;
         const { data: session, error } = await supabase
             .from('dining_sessions')
-            .update({
-                status: 'closed',
-                closed_by_user_id: close_user,
-                closed_at: new Date().toISOString()
-            })
-            .eq('id', session_id)
-            .select(`
-                *,
-                users (
-                    fullname
-                )
-            `)
-            .single()
+            .select('id')
+            .eq('table_id', table_id)
+            .eq('status', 'active')
+            .maybeSingle();
         if (error) throw error;
-        res.status(200).json({ success: true, message: 'Đóng bàn thành công', session })
+
+        if (!session) {
+            return res.json({
+                success: false,
+                session_id: session.id,
+                table_id: table_id,
+                message: 'Bàn chưa được mở!!!!!'
+            })
+        }
+
+        return res.json({
+            success: true,
+            session_id: session.id,
+            table_id: table_id,
+            message: 'Bàn đã được mở!!!!'
+        })
+
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message })
+        res.status(500).json({ success: false, error: error.message });
     }
 }
 
-// 

@@ -2,11 +2,11 @@
 //=====================================================
 
 import express from 'express';
-import { createOrder, getCheckoutBill } from '../controllers/orderController.js';
+import { createOrder, getCheckoutBillandCloseSession } from '../controllers/orderController.js';
 
 const router = express.Router();
 
 // Định nghĩa đường dẫn POST để hứng dữ liệu đặt món
 router.post('/', createOrder);
-router.get('/checkout/:session_id', getCheckoutBill);
+router.post('/checkout', getCheckoutBillandCloseSession);
 export default router;
