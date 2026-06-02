@@ -32,7 +32,7 @@ export const createOrder = async (req, res) => {
 //Hàm tính tiền và đóng bàn
 export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
-        const { session_id, close_user, is_preview } = req.body;
+        const { session_id, close_user, is_preview, payment_method } = req.body;
 
         const { data: orders, error: orderErr } = await supabase
             .from('orders')
@@ -88,12 +88,17 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
         if (is_preview === true) {
             closedByName = 'Khách xem tạm tính';
         } else {
+            if (!payment_method) {
+                return res.status(400).json({ success: false, message: 'Vui lòng chọn phương thức thanh toán!' });
+            }
+
             const { data: session, error } = await supabase
                 .from('dining_sessions')
                 .update({
                     status: 'closed',
                     closed_by_user_id: close_user,
-                    closed_at: new Date().toISOString()
+                    closed_at: new Date().toISOString(),
+                    payment_method: payment_method
                 })
                 .eq('id', session_id)
                 .select(`
@@ -113,6 +118,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             message: is_preview ? 'Lấy hóa đơn tạm tính thành công!' : 'Thanh toán và giải phóng bàn thành công!',
             session_id,
             closed_by: closedByName,
+            payment_method: is_preview ? null : payment_method,
             items: billDetails,
             sub_total,
             vat_amount,
