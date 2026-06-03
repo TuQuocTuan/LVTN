@@ -8,6 +8,7 @@ import recipeRoutes from './src/routes/recipeRoutes.js';
 import tableRoutes from './src/routes/tableRoutes.js';
 import sessionRoutes from './src/routes/sessionRoutes.js';
 import paymentRoutes from './src/routes/paymentRoutes.js';
+import promotionRoutes from './src/routes/promotionRoutes.js';
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.use('/api/recipes', recipeRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/promotions', promotionRoutes);
 const PORT = 5000;
 app.listen(PORT, () => console.log(`BBQ Server chuẩn kiến trúc đang chạy tại cổng ${PORT}`));

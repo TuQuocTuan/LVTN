@@ -23,6 +23,33 @@ export const getDishes = async (req, res) => {
 }
 
 
+//Hàm thêm món ăn
+export const addDish = async (req, res) => {
+    try {
+        const { category_id, name, description, price, image_url, instructions } = req.body;
+        const { data, error } = await supabase
+            .from('dishes')
+            .insert([
+                {
+                    category_id: Number(category_id),
+                    name: name,
+                    description: description,
+                    status: 'available',
+                    price: Number(price),
+                    image_url: image_url,
+                    instructions: instructions || []
+                }
+            ])
+            .select()
+            .single();
+        if (error) throw error;
+        res.status(201).json({ success: true, data, message: 'Thêm món ăn thành công' });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message })
+    }
+}
+
 //Hàm tìm kiếm món ăn
 export const searchDishesByName = async (req, res) => {
     const { name } = req.query;
