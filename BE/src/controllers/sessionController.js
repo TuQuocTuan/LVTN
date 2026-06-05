@@ -14,12 +14,11 @@ export const openTable = async (req, res) => {
             })
         }
 
-        //Kiểm tra xem bàn đã mở chưa
         const { data: existingSession, error: checkErr } = await supabase
             .from('dining_sessions')
             .select('id')
             .eq('table_id', table_id)
-            .eq('status', 'active')
+            .eq('status', 'open')
             .maybeSingle();
 
         if (checkErr) throw checkErr;
@@ -34,7 +33,7 @@ export const openTable = async (req, res) => {
 
         const { data: newSession, error: sessionErr } = await supabase
             .from('dining_sessions')
-            .insert([{ table_id, status: 'active' }])
+            .insert([{ table_id, status: 'open' }])
             .select()
             .single()
         if (sessionErr) throw sessionErr;
