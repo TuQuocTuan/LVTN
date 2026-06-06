@@ -7,7 +7,7 @@ import { supabase } from '../config/supabase.js';
 //Hàm tạo Order
 export const createOrder = async (req, res) => {
     try {
-        const { session_id, items } = req.body;
+        const { session_id, items, created_by, creator_id } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Danh sách món ăn không hợp lệ!' });
@@ -18,17 +18,20 @@ export const createOrder = async (req, res) => {
             calculatedSubTotal += Number(item.quantity) * Number(item.price);
         });
 
+
         const { data: order, error: orderErr } = await supabase
             .from('orders')
-            .insert([{ 
-                session_id, 
-                sub_total: calculatedSubTotal,       
-                total_amount: calculatedSubTotal,   
-                status: 'pending', 
-                created_by: 'customer' 
+            .insert([{
+                session_id,
+                sub_total: calculatedSubTotal,
+                total_amount: calculatedSubTotal,
+                status: 'pending',
+                created_by: created_by,
+                creator_id: creator_id
             }])
             .select()
             .single();
+
 
         if (orderErr) throw orderErr;
 
@@ -79,7 +82,7 @@ export const calculateSubtotal = (orders) => {
 }
 
 //Hàm tính giảm giá  
-export const calculateDiscount =  async (sub_total, client_voucher_id, customerId) => {
+export const calculateDiscount = async (sub_total, client_voucher_id, customerId) => {
     let appliedPromotionId = null;
     let appliedBillPromoId = null;
     let discount_amount = 0;
@@ -116,7 +119,7 @@ export const calculateDiscount =  async (sub_total, client_voucher_id, customerI
             discount_amount += billConditionPromo.discount_type === "PERCENTAGE" ? sub_total * Number(billConditionPromo.discount_value) / 100 : Number(billConditionPromo.discount_value);
         }
     }
-    
+
     return { discount_amount, appliedPromotionId, appliedBillPromoId };
 }
 
@@ -227,6 +230,18 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             closedByName = await handleFinalPayment(session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId);
         }
 
+        let detailed_orders = orders.map(order => ({
+            id: order.id,
+            created_by: order.created_by,
+            created_at: order.created_at,
+            sub_total: order.sub_total,
+            order_details: order.order_details.map(details => ({
+                quantity: details.quantity,
+                price: details.price,
+                dishes: details.dishes.name
+            }))
+        }))
+
         return res.json({
             success: true,
             message: is_preview ? 'Lấy hóa đơn tạm tính thành công!' : 'Thanh toán và giải phóng bàn thành công!',
@@ -234,6 +249,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             closed_by: closedByName,
             payment_method: is_preview ? null : payment_method,
             items: billDetails,
+            detailed_orders,
             sub_total,
             discount_amount,
             vat_amount,
@@ -251,13 +267,13 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
 //Hàm lấy các order đang chờ chế biến của phiên ăn
 export const getPendingOrders = async (req, res) => {
     try {
-        const {data: orders, error:orderErr} = await supabase
+        const { data: orders, error: orderErr } = await supabase
             .from('orders')
             .select(`status,id,order_details(quantity, dishes(name)),dining_sessions (tables(name))`)
             .eq('status', 'pending')
 
         if (orderErr) throw orderErr;
-        return res.json({ success: true, orders});
+        return res.json({ success: true, orders });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
@@ -266,14 +282,14 @@ export const getPendingOrders = async (req, res) => {
 //Hàm cập nhật trạng thái đơn
 export const updateOrderStatus = async (req, res) => {
     try {
-        const {order_id} = req.body;
-        const {data: order, error: orderErr} = await supabase
+        const { order_id } = req.body;
+        const { data: order, error: orderErr } = await supabase
             .from('orders')
-            .update({status: 'completed'})
+            .update({ status: 'completed' })
             .select(`status,id,session_id,order_details(quantity, dishes(name)),dining_sessions (tables(name))`)
             .eq('id', order_id)
         if (orderErr) throw orderErr;
-        return res.json({ success: true, order});
+        return res.json({ success: true, order });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
