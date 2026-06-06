@@ -6,19 +6,31 @@ import { supabase } from '../config/supabase.js';
 
 export const getDanhSachBan = async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data: tables, error } = await supabase
             .from('tables')
-            .select('name,type')
+            .select(`
+                id,
+                name,
+                type,
+                dining_sessions(
+                    id,
+                    status
+                )
+            `)
+            .neq('dining_sessions.status', 'closed');
+
         if (error) throw error;
-        res.status(200).json({
+
+        return res.status(200).json({
             success: true,
-            data,
-            message: "Lấy danh sách bàn thành công"
-        })
+            tables,
+            message: "Lấy danh sách bàn kèm trạng thái chi tiết thành công"
+        });
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: "Không lấy được danh sách bàn"
-        })
+            message: "Không lấy được danh sách bàn",
+            error: error.message
+        });
     }
-}
+};

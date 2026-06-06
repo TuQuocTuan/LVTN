@@ -7,7 +7,11 @@ import { supabase } from '../config/supabase.js';
 //Hàm tạo Order
 export const createOrder = async (req, res) => {
     try {
-        const { session_id, items, created_by, creator_id } = req.body;
+        const { session_id, items, customer_id } = req.body;
+
+        if (!session_id) {
+            return res.status(400).json({ success: false, message: 'Thiếu mã phiên ăn (session_id)!' });
+        }
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Danh sách món ăn không hợp lệ!' });
@@ -18,7 +22,6 @@ export const createOrder = async (req, res) => {
             calculatedSubTotal += Number(item.quantity) * Number(item.price);
         });
 
-
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .insert([{
@@ -26,12 +29,9 @@ export const createOrder = async (req, res) => {
                 sub_total: calculatedSubTotal,
                 total_amount: calculatedSubTotal,
                 status: 'pending',
-                created_by: created_by,
-                creator_id: creator_id
             }])
-            .select()
+            .select('id, session_id, sub_total, total_amount, status')
             .single();
-
 
         if (orderErr) throw orderErr;
 
@@ -82,49 +82,88 @@ export const calculateSubtotal = (orders) => {
 }
 
 //Hàm tính giảm giá  
-export const calculateDiscount = async (sub_total, client_voucher_id, customerId) => {
+export const calculateDiscount = async (sub_total, voucher_code, customerId) => {
     let appliedPromotionId = null;
-    let appliedBillPromoId = null;
+    let appliedVoucherName = "Không áp dụng";
     let discount_amount = 0;
-    const now = new Date().toISOString();
+    const now = new Date();
 
+    if (voucher_code && customerId) {
+        const { data: promo } = await supabase
+            .from('promotions')
+            .select('*')
+            .eq('code', voucher_code.trim().toUpperCase())
+            .eq('is_active', true)
+            .maybeSingle();
+
+        if (promo) {
+            const { data: userVouchers } = await supabase
+                .from('customer_vouchers')
+                .select('*')
+                .eq('customer_id', customerId)
+                .eq('promotion_id', promo.id)
+                .eq('is_used', false)
+                .limit(1);
+
+            const userVoucher = userVouchers && userVouchers.length > 0 ? userVouchers[0] : null;
+
+            if (userVoucher) {
+                const startDate = new Date(promo.start_date);
+                const endDate = new Date(promo.end_date);
+
+                if (now >= startDate && now <= endDate) {
+                    const discountValue = Number(promo.discount_value);
+                    const minBillValue = Number(promo.min_bill_value || 0);
+
+                    if (sub_total >= minBillValue) {
+                        appliedPromotionId = userVoucher.id;
+                        appliedVoucherName = `Áp dụng Voucher: ${promo.code}`;
+
+                        if (promo.discount_type === "PERCENTAGE") {
+                            discount_amount += (sub_total * discountValue) / 100;
+                        } else {
+                            discount_amount += discountValue;
+                        }
+                    } else {
+                        appliedVoucherName = `Voucher ${promo.code} ko đủ điều kiện đơn tối thiểu ${minBillValue.toLocaleString()}đ`;
+                    }
+                }
+            }
+        }
+    }
+
+    const isoNow = now.toISOString();
     const { data: activePromotions } = await supabase
         .from('promotions')
         .select()
         .eq('is_active', true)
-        .lte('start_date', now)
-        .gte('end_date', now);
-
-    if (client_voucher_id && customerId) {
-        const { data: chosenVoucher } = await supabase
-            .from('customer_vouchers')
-            .select('id, is_used, promotions(*)')
-            .eq('id', client_voucher_id)
-            .eq('customer_id', customerId)
-            .eq('is_used', false)
-            .maybeSingle();
-
-        if (chosenVoucher && chosenVoucher.promotions && chosenVoucher.promotions.is_active) {
-            const promo = chosenVoucher.promotions;
-            appliedPromotionId = promo.id;
-            discount_amount += promo.discount_type === "PERCENTAGE" ? sub_total * Number(promo.discount_value) / 100 : Number(promo.discount_value);
-        }
-    }
+        .lte('start_date', isoNow)
+        .gte('end_date', isoNow);
 
     if (activePromotions && activePromotions.length > 0) {
-        const billConditionPromo = activePromotions.find(promo => promo.type === 'BILL_CONDITION' && sub_total >= Number(promo.min_bill_value));
-        //KM theo điều kiện được cấp
+        const billConditionPromo = activePromotions.find(
+            promo => promo.type === 'BILL_CONDITION' && sub_total >= Number(promo.min_bill_value || 0)
+        );
+
         if (billConditionPromo) {
-            appliedBillPromoId = billConditionPromo.id;
-            discount_amount += billConditionPromo.discount_type === "PERCENTAGE" ? sub_total * Number(billConditionPromo.discount_value) / 100 : Number(billConditionPromo.discount_value);
+            const promoValue = Number(billConditionPromo.discount_value);
+            if (appliedPromotionId) {
+                appliedVoucherName += ` + KM hệ thống: ${billConditionPromo.name}`;
+            } else {
+                appliedVoucherName = `Khuyến mãi hệ thống: ${billConditionPromo.name}`;
+            }
+
+            if (billConditionPromo.discount_type === "PERCENTAGE") {
+                discount_amount += (sub_total * promoValue) / 100;
+            } else {
+                discount_amount += promoValue;
+            }
         }
     }
-
-    return { discount_amount, appliedPromotionId, appliedBillPromoId };
-}
-
+    return { discount_amount, appliedPromotionId, appliedVoucherName };
+};
 //Hàm xử lý thanh toán cuối cùng: cập nhật thông tin khách hàng, đổi trạng thái voucher, đóng phiên ăn
-const handleFinalPayment = async (session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId) => {
+const handleFinalPayment = async (session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId, financialData) => {
     let customerId = null;
 
     if (phone_number) {
@@ -170,19 +209,48 @@ const handleFinalPayment = async (session_id, close_user, payment_method, custom
         .single();
 
     if (error) throw error;
+
+    const { sub_total, discount_amount, vat_rate, vat_amount, tongtien } = financialData;
+
+    const { error: billErr } = await supabase
+        .from('bills')
+        .insert([{
+            session_id,
+            sub_total,
+            discount_amount,
+            vat_rate,
+            vat_amount,
+            total_amount: tongtien, // Lưu số tiền thực tế thu cuối cùng
+            payment_method,
+            created_by: session.users?.fullname || 'Nhân viên POS' // Tên nhân viên thực hiện chốt đơn
+        }]);
+
+    if (billErr) throw billErr;
+
     return session.users?.fullname || 'N/A';
 };
 
 //Hàm tính tiền và đóng bàn
 export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
-        const { session_id, close_user, is_preview, payment_method, customer_name, phone_number, client_voucher_id } = req.body;
+        const {
+            session_id,
+            close_user,
+            is_preview,
+            payment_method,
+            customer_name,
+            phone_number,
+            email,
+            voucher_code
+        } = req.body;
 
         const { data: orders, error: orderErr } = await supabase
             .from('orders')
             .select(`
                 id, 
+                sub_total,
                 total_amount, 
+                created_at,
                 order_details(
                     quantity, 
                     price,
@@ -196,22 +264,51 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn cho phiên ăn này!' });
         }
 
-        // Gọi hàm con tính sub_total và billDetails
         const { sub_total, billDetails } = calculateSubtotal(orders);
 
-        // Lấy nhanh customerId từ DB để kiểm tra hạn mức voucher (Chỉ đọc, không ghi đè dữ liệu ở đây)
         let customerId = null;
+        let isNewCustomerOrMissingEmail = false;
+
         if (phone_number) {
-            const { data: customer } = await supabase
+            const formattedPhone = phone_number.trim();
+
+            const { data: existingCustomer } = await supabase
                 .from('customers')
-                .select('id')
-                .eq('phone_number', phone_number)
+                .select('*')
+                .eq('phone_number', formattedPhone)
                 .maybeSingle();
-            customerId = customer?.id;
+
+            if (existingCustomer) {
+                customerId = existingCustomer.id;
+                if (!existingCustomer.email) {
+                    isNewCustomerOrMissingEmail = true;
+                }
+            } else {
+                isNewCustomerOrMissingEmail = true;
+            }
+
+            if (!is_preview && isNewCustomerOrMissingEmail && email) {
+                const { data: savedCustomer } = await supabase
+                    .from('customers')
+                    .upsert(
+                        {
+                            phone_number: formattedPhone,
+                            email: email.trim(),
+                            name: customer_name || 'Khách hàng mới'
+                        },
+                        { onConflict: 'phone_number' }
+                    )
+                    .select()
+                    .maybeSingle();
+
+                if (savedCustomer) {
+                    customerId = savedCustomer.id;
+                    isNewCustomerOrMissingEmail = false;
+                }
+            }
         }
 
-        // Gọi hàm con tính toán giảm giá (Nhớ thêm await)
-        const { discount_amount, appliedPromotionId } = await calculateDiscount(sub_total, client_voucher_id, customerId);
+        const { discount_amount, appliedPromotionId, appliedVoucherName } = await calculateDiscount(sub_total, voucher_code, customerId);
 
         const final_sub_total = Math.max(0, sub_total - discount_amount);
         const vat_rate = 0.1;
@@ -226,34 +323,43 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             if (!payment_method) {
                 return res.status(400).json({ success: false, message: 'Vui lòng chọn phương thức thanh toán!' });
             }
-            // Toàn bộ logic cập nhật khách hàng, voucher và đóng bàn nằm trọn ở đây
-            closedByName = await handleFinalPayment(session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId);
+            closedByName = await handleFinalPayment(
+                session_id,
+                close_user,
+                payment_method,
+                customer_name,
+                phone_number ? phone_number.trim() : null,
+                null,
+                appliedPromotionId,
+                { sub_total, discount_amount, vat_rate, vat_amount, tongtien }
+            );
         }
 
         let detailed_orders = orders.map(order => ({
             id: order.id,
-            created_by: order.created_by,
             created_at: order.created_at,
             sub_total: order.sub_total,
             order_details: order.order_details.map(details => ({
                 quantity: details.quantity,
                 price: details.price,
-                dishes: details.dishes.name
+                dishes: details.dishes?.name
             }))
-        }))
+        }));
 
         return res.json({
             success: true,
             message: is_preview ? 'Lấy hóa đơn tạm tính thành công!' : 'Thanh toán và giải phóng bàn thành công!',
+            is_missing_email: isNewCustomerOrMissingEmail,
             session_id,
             closed_by: closedByName,
             payment_method: is_preview ? null : payment_method,
             items: billDetails,
-            detailed_orders,
             sub_total,
+            detailed_orders,
             discount_amount,
             vat_amount,
             tongtien,
+            voucher_name: appliedVoucherName || "Không áp dụng",
             is_closed: !is_preview
         });
 
@@ -261,8 +367,6 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
-
-
 
 //Hàm lấy các order đang chờ chế biến của phiên ăn
 export const getPendingOrders = async (req, res) => {

@@ -18,7 +18,7 @@ export const openTable = async (req, res) => {
             .from('dining_sessions')
             .select('id')
             .eq('table_id', table_id)
-            .eq('status', 'open')
+            .eq('status', 'serving')
             .maybeSingle();
 
         if (checkErr) throw checkErr;
@@ -33,7 +33,7 @@ export const openTable = async (req, res) => {
 
         const { data: newSession, error: sessionErr } = await supabase
             .from('dining_sessions')
-            .insert([{ table_id, status: 'open' }])
+            .insert([{ table_id, status: 'serving' }])
             .select()
             .single()
         if (sessionErr) throw sessionErr;
@@ -48,7 +48,7 @@ export const openTable = async (req, res) => {
 //Mở menu(customer)
 export const openMenuCustomer = async (req, res) => {
     try {
-        const { table_id, phone_number, name } = req.query;
+        const { table_id, phone_number, name } = req.body;
 
         if (!table_id) {
             return res.status(400).json({ success: false, message: 'Thiếu mã bàn!' });
@@ -57,7 +57,7 @@ export const openMenuCustomer = async (req, res) => {
             .from('dining_sessions')
             .select('id')
             .eq('table_id', table_id)
-            .eq('status', 'active')
+            .eq('status', 'serving')
             .maybeSingle();
 
         if (error) throw error;
@@ -115,3 +115,37 @@ export const openMenuCustomer = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 };
+
+//Hàm đóng bàn
+export const closeTable = async (req, res) => {
+    try {
+        const { table_id } = req.body;
+        if (!table_id) {
+            res.json({
+                success: false,
+                message: "Thiếu mã bàn"
+            })
+        }
+        const { data: session, error } = await supabase
+            .from('dining_sessions')
+            .update({
+                status: 'closed',
+                closed_at: new Date().toISOString()
+            })
+            .eq('table_id', table_id)
+            .eq('status', 'open')
+            .select()
+            .maybeSingle();
+        if (error) throw error;
+        if (!session) {
+            return res.json({
+                success: false,
+                table_id: table_id,
+                message: 'Bàn chưa được mở!!!!'
+            })
+        }
+
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+}
