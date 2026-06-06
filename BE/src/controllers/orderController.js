@@ -162,6 +162,8 @@ export const calculateDiscount = async (sub_total, voucher_code, customerId) => 
     }
     return { discount_amount, appliedPromotionId, appliedVoucherName };
 };
+
+
 //Hàm xử lý thanh toán cuối cùng: cập nhật thông tin khách hàng, đổi trạng thái voucher, đóng phiên ăn
 const handleFinalPayment = async (session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId, financialData) => {
     let customerId = null;
@@ -220,14 +222,14 @@ const handleFinalPayment = async (session_id, close_user, payment_method, custom
             discount_amount,
             vat_rate,
             vat_amount,
-            total_amount: tongtien, // Lưu số tiền thực tế thu cuối cùng
+            total_amount: tongtien,
             payment_method,
-            created_by: session.users?.fullname || 'Nhân viên POS' // Tên nhân viên thực hiện chốt đơn
+            created_by: session.users?.fullname
         }]);
 
     if (billErr) throw billErr;
 
-    return session.users?.fullname || 'N/A';
+    return session.users?.fullname;
 };
 
 //Hàm tính tiền và đóng bàn
