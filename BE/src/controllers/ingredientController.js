@@ -22,20 +22,75 @@ export const addIngredients = async (req, res) => {
         if (!name || !quantity || !unit || !min_stock) {
             return res.status(400).json({ success: false, message: 'Thieu thong tin nguyen lieu!' })
         }
-        const { data, error } = await supabase
+
+
+        const { data: existingIngredient, error: existingError } = await supabase
+            .from('ingredients')
+            .select('id')
+            .ilike('name', name.trim())
+            .maybeSingle();
+
+        if (existingIngredient) {
+            return res.status(400).json({ success: false, message: 'Nguyên liệu đã tồn tại!' })
+        }
+
+        const { data: newIngredient, error: insertError } = await supabase
             .from('ingredients')
             .insert({
                 name,
-                quantity,
+                quantity: Number(quantity),
                 unit,
-                min_stock
+                min_stock: Number(min_stock)
             })
             .select()
             .single();
 
-        if (error) throw error;
-        return res.status(201).json({ success: true, message: 'Thêm nguyên liệu thành công', data })
+        if (insertError) throw insertError;
+        return res.status(201).json({ success: true, message: 'Thêm nguyên liệu thành công', newIngredient })
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message })
     }
 }
+
+export const updateIngredient = async (req, res) => {
+    try {
+        const { id, name, quantity, unit, min_stock } = req.body;
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập ID để cập nhật!' });
+        }
+
+        const updateData = {};
+        if (name !== undefined) updateData.name = name.trim();
+        if (quantity !== undefined) updateData.quantity = Number(quantity);
+        if (unit !== undefined) updateData.unit = unit.trim();
+        if (min_stock !== undefined) updateData.min_stock = Number(min_stock);
+
+        if (updateData.name) {
+            const { data: existingName, error: nameErr } = await supabase
+                .from('ingredients')
+                .select('id')
+                .ilike('name', updateData.name)
+                .neq('id', id)
+                .maybeSingle();
+
+            if (nameErr) throw nameErr;
+            if (existingName) {
+                return res.status(400).json({ success: false, message: 'Tên nguyên liệu đã tồn tại!' });
+            }
+        }
+
+
+        const { data: updateIngredient, error: updateErr } = await supabase
+            .from('ingredients')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+        if (updateErr) throw updateErr;
+        return res.status(200).json({ success: true, message: 'Cập nhật nguyên liệu thành công', updateIngredient })
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, error: error.message })
+    }
+}
+
