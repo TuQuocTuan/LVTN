@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import CustomerLayout from '../../components/layout/CustomerLayout';
-import CartItem from '../../components/layout/CartItem';
+import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
+import CartItem from '../../components/layout/Customer/CartItem';
 
 // Mock data: Danh sách các món đang nằm trong giỏ hàng
 const initialCart = [
