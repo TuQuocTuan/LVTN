@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import CustomerLayout from '../../components/layout/CustomerLayout';
-import MenuItemCard from '../../components/layout/MenuItemCard';
+import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
+import MenuItemCard from '../../components/layout/Customer/MenuItemCard';
 
 // DATA MỚI: Đã bổ sung thuộc tính "category" và thêm các món cho đủ danh mục
 const initialMenuItems = [

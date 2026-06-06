@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import CustomerLayout from '../../components/layout/CustomerLayout';
+import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 
 // Mock data: Danh sách các đơn hàng ĐÃ GỬI
 const mockOrders = [

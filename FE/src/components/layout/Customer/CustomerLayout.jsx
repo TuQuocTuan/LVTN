@@ -1,4 +1,5 @@
 import React from 'react';
+import CallService from './CallService';
 // Import thêm useLocation từ react-router-dom
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 
@@ -27,7 +28,9 @@ const CustomerLayout = ({ children }) => {
               </span>
             </div>
           </div>
+          <CallService />
         </div>
+
         
         {/* Nút Giỏ hàng: Đổi màu và in đậm khi đang ở trang /cart */}
         <button 
