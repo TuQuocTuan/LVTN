@@ -12,6 +12,7 @@ const WelcomePage = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Thêm state loading khi gọi API
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
@@ -24,30 +25,61 @@ const WelcomePage = () => {
     setError('');
   };
 
- // Hàm xử lý khi khách bấm "Xác nhận" trong Popup
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Ngăn chặn load lại trang
+  // Hàm xử lý khi khách bấm "Xác nhận" trong Popup
+  const handleSubmit = async (e) => {
+    e.preventDefault(); 
     
-    // 1. Kiểm tra Tên
+    // 1. Kiểm tra dữ liệu đầu vào
     if (!name.trim() || !phone.trim()) {
       setError('Vui lòng nhập đầy đủ Tên và Số điện thoại!');
       return;
     }
 
-    // 2. Chốt chặn cuối cùng bằng Regex (Bắt buộc bắt đầu bằng 0 và theo sau là 9 chữ số)
     const phoneRegex = /^0\d{9}$/;
     if (!phoneRegex.test(phone)) {
-      setError('Số điện thoại không hợp lệ!');
+      setError('Số điện thoại không hợp lệ (Phải đủ 10 số và bắt đầu bằng 0)!');
       return;
     }
     
-    // Lưu vào localStorage
-    localStorage.setItem('customerName', name);
-    localStorage.setItem('customerPhone', phone);
-
-    // Chuyển hướng sang trang Menu
+    // 2. GỌI API XUỐNG BACKEND
+    setIsLoading(true);
     setError('');
-    navigate('/menu');
+
+    try {
+      // Gọi API open-menu (Nhớ đảm bảo server Node.js đang chạy ở port 5000)
+      const response = await fetch('http://localhost:5000/api/sessions/open-menu', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          table_id: 12, // Tạm gán cứng bàn 12. Thực tế sau này sẽ lấy từ QR Code URL.
+          name: name,
+          phone_number: phone
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // NẾU THÀNH CÔNG: Lưu dữ liệu Backend trả về vào két sắt
+        localStorage.setItem('customerName', name);
+        localStorage.setItem('customerPhone', phone);
+        localStorage.setItem('sessionId', data.session_id); // Dùng để gọi món sau này
+        localStorage.setItem('creatorId', data.creator_id); // Dùng để biết ai là người gọi
+
+        // Chuyển hướng sang trang Menu
+        navigate('/menu');
+      } else {
+        // NẾU THẤT BẠI (VD: Bàn chưa được thu ngân mở) -> Hiện lỗi từ Backend
+        setError(data.message);
+      }
+    } catch (err) {
+      console.error("Lỗi gọi API:", err);
+      setError('Không thể kết nối đến máy chủ. Vui lòng gọi phục vụ!');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePhoneChange = (e) => {
@@ -57,7 +89,7 @@ const WelcomePage = () => {
     // Chỉ cho phép cập nhật vào state nếu độ dài <= 10
     if (onlyNumbers.length <= 10) {
       setPhone(onlyNumbers);
-      setError(''); // Khách đang sửa lại cho đúng thì tự động tắt dòng lỗi đỏ đi cho đẹp
+      setError(''); 
     }
   };
 
@@ -104,7 +136,6 @@ const WelcomePage = () => {
             <div className="w-12 h-1 bg-primary mx-auto rounded-full mt-4"></div>
           </div>
 
-          {/* Đổi sự kiện onClick ở đây thành mở Popup thay vì chuyển trang luôn */}
           <button 
             onClick={handleOpenPopup}
             className="w-full bg-primary text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-primary/30 transition-all duration-300 hover:bg-orange-700 active:scale-95 flex items-center justify-center gap-3"
@@ -120,20 +151,16 @@ const WelcomePage = () => {
       ========================================== */}
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          
-          {/* Lớp nền đen mờ (Bấm vào đây để đóng popup) */}
           <div 
             className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowPopup(false)}
+            onClick={() => !isLoading && setShowPopup(false)}
           ></div>
           
-          {/* Khối Popup chính */}
           <div className="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-[pulse_0.2s_ease-out]">
-            
-            {/* Nút X đóng popup */}
             <button 
+              disabled={isLoading}
               onClick={() => setShowPopup(false)}
-              className="absolute top-4 right-4 text-neutralCustom hover:text-gray-900 bg-gray-100 rounded-full p-1"
+              className="absolute top-4 right-4 text-neutralCustom hover:text-gray-900 bg-gray-100 rounded-full p-1 disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
@@ -152,34 +179,42 @@ const WelcomePage = () => {
                     type="text" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block px-4 py-3 outline-none transition-colors"
+                    disabled={isLoading}
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block px-4 py-3 outline-none transition-colors disabled:opacity-60"
                   />
                 </div>
               </div>
 
-              {/* Field: Số điện thoại */}
+              {/* Field: Số điện thoại (Đã gọi đúng hàm handlePhoneChange) */}
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1 ml-1">Số điện thoại</label>
                 <div className="relative">
                   <input 
                     type="tel" 
-
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block px-4 py-3 outline-none transition-colors"
+                    onChange={handlePhoneChange}
+                    disabled={isLoading}
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block px-4 py-3 outline-none transition-colors disabled:opacity-60"
                   />
                 </div>
               </div>
 
-              {/* Dòng cảnh báo lỗi */}
               {error && <p className="text-red-500 text-xs font-semibold text-center animate-bounce">{error}</p>}
 
               {/* Nút Xác nhận */}
               <button 
                 type="submit"
-                className="w-full bg-primary text-white font-bold text-base py-3.5 rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-all mt-2"
+                disabled={isLoading}
+                className="w-full bg-primary text-white font-bold text-base py-3.5 rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-all mt-2 flex justify-center items-center gap-2 disabled:bg-gray-400 disabled:shadow-none"
               >
-                Xác nhận & Vào bàn
+                {isLoading ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                    Đang xử lý...
+                  </>
+                ) : (
+                  'Xác nhận & Vào bàn'
+                )}
               </button>
             </form>
 

@@ -1,7 +1,9 @@
 import React from 'react';
 import CallService from './CallService';
+import { useCart } from '../../../context/CartContext';
 // Import thêm useLocation từ react-router-dom
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+
 
 const CustomerLayout = ({ children }) => {
   const navigate = useNavigate(); // Hàm dùng để điều hướng bằng code
@@ -9,6 +11,7 @@ const CustomerLayout = ({ children }) => {
 
   // Kiểm tra xem trình duyệt có đang ở trang /cart không
   const isCartActive = location.pathname === '/cart';
+  const { totalItems } = useCart(); // Lấy tổng số lượng món từ kho
 
   return (
     <div className="bg-culinaryBg text-gray-900 min-h-screen pb-24 font-sans">
@@ -47,9 +50,11 @@ const CustomerLayout = ({ children }) => {
           >
             shopping_cart
           </span>
-          <span className="absolute top-1 right-1 bg-primary text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
-            3
-          </span>
+          {totalItems > 0 && (
+            <span className="absolute top-1 right-1 bg-primary text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-fade-in">
+              {totalItems}
+            </span>
+          )}
         </button>
       </header>
 

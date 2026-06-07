@@ -16,7 +16,6 @@ const CartItem = ({ item, onIncrease, onDecrease, onRemove, onNoteChange }) => {
           <div className="flex justify-between items-start">
             <h3 className="text-base font-semibold text-gray-900">{item.name}</h3>
             <span className="text-base font-semibold text-primary">
-              {item.price.toLocaleString('vi-VN')}đ
             </span>
           </div>
           

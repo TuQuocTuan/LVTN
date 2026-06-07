@@ -1,56 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 
-// Mock data: Danh sách các đơn hàng ĐÃ GỬI
-const mockOrders = [
-  {
-    orderId: '#DH-0812',
-    time: '19:45',
-    status: 'cooking', // Trạng thái: 'pending' (Chờ nhận), 'cooking' (Đang nấu), 'served' (Đã lên món)
-    total: 253000,
-    items: [
-      { id: 1, name: 'Phở Bò Đặc Biệt', quantity: 1, note: 'Không hành' },
-      { id: 2, name: 'Bánh Mì Kẹp Thịt', quantity: 2, note: '' },
-      { id: 3, name: 'Trà Sữa Trân Châu', quantity: 1, note: 'Ít đường, nhiều đá' },
-    ]
-  },
-  {
-    orderId: '#DH-0811',
-    time: '19:00',
-    status: 'served',
-    total: 45000,
-    items: [
-      { id: 4, name: 'Gỏi Cuốn', quantity: 1, note: '' },
-    ]
-  }
-];
-
 const OrdersPage = () => {
-  // Thực tế sau này bạn sẽ dùng useEffect để call API lấy danh sách đơn hàng về
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Hàm helper để render màu sắc và text trạng thái cho đẹp
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) return;
+
+      try {
+        //const response = await fetch(`http://localhost:5000/api/orders?session_id=${sessionId}`);
+        const response = await fetch('http://localhost:5000/api/orders/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                is_preview: true // Backend vẫn trả về object chứa toàn bộ chi tiết đơn hàng
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success && data.detailed_orders) {
+          setOrders(data.detailed_orders);
+        }
+      } catch (error) {
+        console.error("Lỗi tải đơn hàng:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // LOGIC 3 TRẠNG THÁI MỚI
   const getStatusBadge = (status) => {
     switch (status) {
       case 'pending':
         return (
           <span className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-[10px] font-bold uppercase">
-            <span className="material-symbols-outlined text-[14px]">schedule</span>
-            Chờ bếp nhận
+            <span className="material-symbols-outlined text-[14px] animate-pulse">schedule</span>
+            Đang chế biến
           </span>
         );
-      case 'cooking':
-        return (
-          <span className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase">
-            <span className="material-symbols-outlined text-[14px] animate-spin">soup_kitchen</span>
-            Đang nấu
-          </span>
-        );
-      case 'served':
+      case 'completed':
         return (
           <span className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold uppercase">
-            <span className="material-symbols-outlined text-[14px]">done_all</span>
-            Đã lên món
+            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+            Đã xuất món
+          </span>
+        );
+      case 'cancelled':
+        return (
+          <span className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase">
+            <span className="material-symbols-outlined text-[14px]">cancel</span>
+            Món bị hủy
           </span>
         );
       default:
@@ -62,44 +70,43 @@ const OrdersPage = () => {
     <CustomerLayout>
       <div className="px-4 pt-4 pb-2">
         <h2 className="text-xl font-bold text-gray-900">Đơn hàng của bạn</h2>
-        <p className="text-sm text-neutralCustom mt-1">Theo dõi các món đã đặt tại đây</p>
+        <p className="text-sm text-neutralCustom mt-1">Theo dõi tiến độ các món đã đặt</p>
       </div>
 
       <div className="px-4 pb-24 space-y-4">
-        {orders.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center py-10 animate-pulse text-sm text-neutralCustom">Đang tải đơn hàng...</div>
+        ) : orders.length > 0 ? (
           orders.map((order) => (
-            <div key={order.orderId} className="bg-white border border-neutralCustom/20 rounded-xl p-4 shadow-sm">
-              
-              {/* Header của Bill */}
+            <div key={order.id} className={`bg-white border rounded-xl p-4 shadow-sm ${order.status === 'cancelled' ? 'border-red-200' : 'border-neutralCustom/20'}`}>
               <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-3 mb-3">
                 <div>
-                  <h3 className="font-bold text-gray-900">{order.orderId}</h3>
-                  <span className="text-xs text-neutralCustom">Đặt lúc {order.time}</span>
+                  <h3 className="font-bold text-gray-900">Đơn #{String(order.id).slice(-4)}</h3>
+                  <span className="text-xs text-neutralCustom">
+                    {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
                 {getStatusBadge(order.status)}
               </div>
 
-              {/* Danh sách món trong Bill */}
               <div className="space-y-2 mb-4">
-                {order.items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
+                {order.order_details.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
                     <div className="flex gap-2">
-                      <span className="font-semibold text-primary">{item.quantity}x</span>
-                      <div>
-                        <p className="text-gray-900">{item.name}</p>
-                        {item.note && <p className="text-[11px] text-neutralCustom italic">- {item.note}</p>}
-                      </div>
+                      <span className={`font-semibold ${order.status === 'cancelled' ? 'text-gray-400' : 'text-primary'}`}>{item.quantity}x</span>
+                      <p className={order.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}>{item.dishes}</p>
                     </div>
+                    <span className="text-neutralCustom">{item.price.toLocaleString('vi-VN')}đ</span>
                   </div>
                 ))}
               </div>
 
-              {/* Footer của Bill (Tổng tiền) */}
               <div className="flex justify-between items-center bg-culinaryBg rounded-lg px-3 py-2">
                 <span className="text-sm font-semibold text-gray-900">Tổng cộng:</span>
-                <span className="font-bold text-primary">{order.total.toLocaleString('vi-VN')}đ</span>
+                <span className={`font-bold ${order.status === 'cancelled' ? 'text-gray-400' : 'text-primary'}`}>
+                  {order.sub_total.toLocaleString('vi-VN')}đ
+                </span>
               </div>
-
             </div>
           ))
         ) : (
