@@ -30,9 +30,6 @@ export const getDishes = async (req, res) => {
 //Hàm thêm món ăn
 export const addDish = async (req, res) => {
     try {
-        console.log("==> Đã vào đến Controller thành công!");
-        console.log("Body thực tế nhận được:", req.body);
-
         if (!req.body || Object.keys(req.body).length === 0) {
             return res.status(400).json({
                 success: false,
