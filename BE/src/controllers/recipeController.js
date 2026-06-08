@@ -220,3 +220,46 @@ export const deleteRecipe = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+export const getAllVersionByDish = async (req, res) => {
+    try {
+        const { dish_id } = req.query;
+        if (!dish_id) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập món ăn!' })
+        }
+        const { data: history_recipe, error: recipeErr } = await supabase
+            .from('recipe_histories')
+            .select('version')
+            .eq('dish_id', dish_id)
+            .order('version', { ascending: false });
+        if (recipeErr) throw recipeErr;
+
+        const versions = [...new Set(history_recipe.map(item => item.version))];
+        return res.status(200).json({ success: true, data: versions });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+
+}
+
+export const getRecipeByVersion = async (req, res) => {
+    try {
+        const { dish_id, version } = req.query;
+
+        if (!dish_id || !version) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập món ăn và phiên bản!' });
+        }
+
+        const { data: history_recipe, error: recipeErr } = await supabase
+            .from('recipe_histories')
+            .select('id, amount_required, dishes(name), ingredients(name, unit)')
+            .eq('dish_id', Number(dish_id))
+            .eq('version', Number(version));
+
+        if (recipeErr) throw recipeErr;
+
+        return res.status(200).json({ success: true, data: history_recipe });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}

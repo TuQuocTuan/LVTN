@@ -70,7 +70,7 @@ export const getOrderBySession = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 }
-//a
+
 //Hàm tính subtotal khi khách thêm món
 export const calculateSubtotal = (orders) => {
     let sub_total = 0;
