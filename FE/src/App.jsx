@@ -8,8 +8,12 @@ import CartPage from './features/customer/CartPage';
 import OrdersPage from './features/customer/OrdersPage';
 import PaymentPage from './features/customer/PaymentPage';
 
+import TableManager from './features/cashier/TableManager';
+
 import AdminDashboard from './features/admin/AdminDashboard';
+
 import KitchenOrders from './features/kitchen/KitchenOrders';
+
 
 function App() {
   return (
@@ -24,6 +28,9 @@ function App() {
           <Route path="/cart" element={<CartPage />} />     
           <Route path="/orders" element={<OrdersPage />} /> 
           <Route path="/payment" element={<PaymentPage />} />
+
+          {/* LƯỒNG THU NGÂN (PC) */}
+          <Route path="/cashier" element={<TableManager />} />
 
           {/* LƯỒNG NHÀ BẾP (PC) */}
           <Route path="/kitchen" element={<KitchenOrders />} />

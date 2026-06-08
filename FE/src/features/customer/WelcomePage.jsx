@@ -53,7 +53,7 @@ const WelcomePage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          table_id: 12, // Tạm gán cứng bàn 12. Thực tế sau này sẽ lấy từ QR Code URL.
+          table_id: 2,
           name: name,
           phone_number: phone
         })

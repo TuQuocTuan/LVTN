@@ -11,19 +11,18 @@ const OrdersPage = () => {
       if (!sessionId) return;
 
       try {
-        //const response = await fetch(`http://localhost:5000/api/orders?session_id=${sessionId}`);
-        const response = await fetch('http://localhost:5000/api/orders/checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                session_id: sessionId,
-                is_preview: true // Backend vẫn trả về object chứa toàn bộ chi tiết đơn hàng
-            })
+        // GỌI ĐÚNG API GET LẤY LỊCH SỬ ĐƠN HÀNG TỪ CONTROLLER getOrderBySession
+        const response = await fetch(`http://localhost:5000/api/orders/${sessionId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
         });
+        
         const data = await response.json();
         
-        if (data.success && data.detailed_orders) {
-          setOrders(data.detailed_orders);
+        if (data.success) {
+          // Xử lý linh hoạt: backend có thể trả về 'detailed_orders' hoặc 'data'
+          const orderList = data.detailed_orders || data.data || [];
+          setOrders(orderList);
         }
       } catch (error) {
         console.error("Lỗi tải đơn hàng:", error);
@@ -33,30 +32,31 @@ const OrdersPage = () => {
     };
 
     fetchOrders();
+    // Tự động làm mới dữ liệu mỗi 5 giây
     const interval = setInterval(fetchOrders, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // LOGIC 3 TRẠNG THÁI MỚI
+  // LOGIC 3 TRẠNG THÁI (Sử dụng đúng bảng màu của bạn)
   const getStatusBadge = (status) => {
     switch (status) {
       case 'pending':
         return (
-          <span className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-[10px] font-bold uppercase">
+          <span className="flex items-center gap-1 bg-tertiary/20 text-tertiary px-2 py-1 rounded text-[10px] font-bold uppercase">
             <span className="material-symbols-outlined text-[14px] animate-pulse">schedule</span>
             Đang chế biến
           </span>
         );
       case 'completed':
         return (
-          <span className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold uppercase">
+          <span className="flex items-center gap-1 bg-primary/20 text-primary px-2 py-1 rounded text-[10px] font-bold uppercase">
             <span className="material-symbols-outlined text-[14px]">check_circle</span>
             Đã xuất món
           </span>
         );
       case 'cancelled':
         return (
-          <span className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase">
+          <span className="flex items-center gap-1 bg-neutralCustom/20 text-neutralCustom px-2 py-1 rounded text-[10px] font-bold uppercase">
             <span className="material-symbols-outlined text-[14px]">cancel</span>
             Món bị hủy
           </span>
@@ -77,11 +77,11 @@ const OrdersPage = () => {
         {isLoading ? (
           <div className="text-center py-10 animate-pulse text-sm text-neutralCustom">Đang tải đơn hàng...</div>
         ) : orders.length > 0 ? (
-          orders.map((order) => (
-            <div key={order.id} className={`bg-white border rounded-xl p-4 shadow-sm ${order.status === 'cancelled' ? 'border-red-200' : 'border-neutralCustom/20'}`}>
+          orders.map((order, index) => (
+            <div key={order.id} className="bg-white border border-neutralCustom/20 rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-3 mb-3">
                 <div>
-                  <h3 className="font-bold text-gray-900">Đơn #{String(order.id).slice(-4)}</h3>
+                  <h3 className="font-bold text-gray-900">Đơn #{index + 1}</h3>  
                   <span className="text-xs text-neutralCustom">
                     {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -89,14 +89,29 @@ const OrdersPage = () => {
                 {getStatusBadge(order.status)}
               </div>
 
-              <div className="space-y-2 mb-4">
-                {order.order_details.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-sm">
-                    <div className="flex gap-2">
-                      <span className={`font-semibold ${order.status === 'cancelled' ? 'text-gray-400' : 'text-primary'}`}>{item.quantity}x</span>
-                      <p className={order.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}>{item.dishes}</p>
+              <div className="space-y-3 mb-4">
+                {/* Đảm bảo vòng lặp kiểm tra order_details có tồn tại */}
+                {order.order_details && order.order_details.map((item, idx) => (
+                  <div key={idx} className="flex flex-col">
+                    <div className="flex justify-between text-sm">
+                      <div className="flex gap-2">
+                        <span className={`font-semibold ${order.status === 'cancelled' ? 'text-gray-400' : 'text-primary'}`}>
+                          {item.quantity}x
+                        </span>
+                        <p className={order.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}>
+                          {/* Hỗ trợ trường hợp tên món nằm trong dishes hoặc trả thẳng tên */}
+                          {item.dishes?.name || item.dishes || 'Món ăn'}
+                        </p>
+                      </div>
+                      <span className="text-neutralCustom">{Number(item.price).toLocaleString('vi-VN')}đ</span>
                     </div>
-                    <span className="text-neutralCustom">{item.price.toLocaleString('vi-VN')}đ</span>
+                    
+                    {/* KIỂM TRA VÀ HIỂN THỊ GHI CHÚ (NOTE) TẠI ĐÂY */}
+                    {item.note && (
+                      <p className="text-xs text-neutralCustom/80 italic pl-6 mt-0.5">
+                        * Ghi chú: {item.note}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -104,7 +119,7 @@ const OrdersPage = () => {
               <div className="flex justify-between items-center bg-culinaryBg rounded-lg px-3 py-2">
                 <span className="text-sm font-semibold text-gray-900">Tổng cộng:</span>
                 <span className={`font-bold ${order.status === 'cancelled' ? 'text-gray-400' : 'text-primary'}`}>
-                  {order.sub_total.toLocaleString('vi-VN')}đ
+                  {Number(order.sub_total).toLocaleString('vi-VN')}đ
                 </span>
               </div>
             </div>

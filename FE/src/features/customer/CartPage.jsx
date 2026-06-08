@@ -44,7 +44,8 @@ const CartPage = () => {
       const itemsToOrder = cartItems.map(item => ({
         dish_id: item.id,
         quantity: item.quantity,
-        price: item.rawPrice
+        price: item.rawPrice,
+        note: item.note || null
       }));
 
       const response = await fetch('http://localhost:5000/api/orders', {
