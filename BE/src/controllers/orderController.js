@@ -40,6 +40,7 @@ export const createOrder = async (req, res) => {
             order_id: order.id,
             dish_id: item.dish_id,
             quantity: item.quantity,
+            note: item.note,
             price: item.price
         }));
 
@@ -60,7 +61,7 @@ export const getOrderBySession = async (req, res) => {
             .from('orders')
             .select(`*,
                 created_at,
-                order_details(*,dishes(name))`)
+                order_details(*,dishes(name),note)`)
             .eq('session_id', session_id);
 
         if (sessionErr) throw sessionErr;
