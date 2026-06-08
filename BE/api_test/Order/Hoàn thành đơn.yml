@@ -8,7 +8,10 @@ http:
   url: http://localhost:5000/api/orders/completeOrder
   body:
     type: json
-    data: "{\r\n    \"order_id\" : 17\r\n}"
+    data: |-
+      {
+          "order_id" : 45
+      }
   auth: inherit
 
 settings:

@@ -8,13 +8,11 @@ http:
   url: http://localhost:5000/api/orders/checkout
   body:
     type: json
-    data: "{\r
-
-      \  \"session_id\": \"8015fa24-3852-4f1b-baaf-ed9a67f47eb2\",\r
-
-      \  \"close_user\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\"\r
-
-      }"
+    data: |-
+      {
+        "session_id": "f6503c13-c73a-4989-89e8-f9649944b4e0",
+        "close_user": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+      }
   auth: inherit
 
 settings:

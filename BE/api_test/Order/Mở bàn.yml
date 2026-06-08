@@ -8,7 +8,10 @@ http:
   url: http://localhost:5000/api/sessions/serving
   body:
     type: json
-    data: "{\r\n  \"table_id\": 2\r\n}"
+    data: |-
+      {
+        "table_id": 12
+      }
   auth: inherit
 
 settings:

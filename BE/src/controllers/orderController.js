@@ -3,6 +3,7 @@
 
 
 import { supabase } from '../config/supabase.js';
+import moment from 'moment-timezone';
 
 //Hàm tạo Order
 export const createOrder = async (req, res) => {
@@ -57,7 +58,9 @@ export const getOrderBySession = async (req, res) => {
         const { session_id } = req.params;
         const { data: session, error: sessionErr } = await supabase
             .from('orders')
-            .select('*,order_details(*,dishes(name))')
+            .select(`*,
+                created_at,
+                order_details(*,dishes(name))`)
             .eq('session_id', session_id);
 
         if (sessionErr) throw sessionErr;
@@ -65,7 +68,12 @@ export const getOrderBySession = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Không tìm thấy phiên ăn!' });
         }
 
-        return res.status(200).json({ success: true, data: session });
+        const formattedSession = session.map(order => ({
+            ...order,
+            created_at: moment(order.created_at).tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss")
+        }));
+
+        return res.status(200).json({ success: true, data: formattedSession });
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });
     }
@@ -368,10 +376,13 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             }))
         }));
 
+        const thoigianthanhtoan = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss");
+
         return res.json({
             success: true,
             message: is_preview ? 'Lấy hóa đơn tạm tính thành công!' : 'Thanh toán và giải phóng bàn thành công!',
             is_missing_email: isNewCustomerOrMissingEmail,
+            created_at: thoigianthanhtoan,
             session_id,
             closed_by: closedByName,
             payment_method: is_preview ? null : payment_method,
