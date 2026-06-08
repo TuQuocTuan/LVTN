@@ -8,27 +8,18 @@ http:
   url: http://localhost:5000/api/orders/checkout
   body:
     type: json
-    data: "{\r
+    data: |-
+      {
+        "session_id": "1586ae32-83cf-418e-9d00-a35dfd752975",
+        "is_preview": false,
+        "close_user": "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e",
+        "payment_method": "cash", 
+        "phone_number": "0896415447",
+        "customer_name": "Quốc Tuấn",
+        "voucher_code": "TRIAN20K",
+        "email": "tuan@test.com"
 
-      \  \"session_id\": \"be36cc68-61eb-476a-861f-0bb8862323bf\",\r
-
-      \  \"is_preview\": false,\r
-
-      \  \"close_user\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\r
-
-      \  \"payment_method\": \"cash\", \r
-
-      \  \"phone_number\": \"0896415447\",\r
-
-      \  \"customer_name\": \"Quốc Tuấn\",\r
-
-      \  \"voucher_code\": \"TRIAN20K\",\r
-
-      \  \"email\": \"tuan@test.com\"\r
-
-      \r
-
-      }"
+      }
   auth: inherit
 
 settings:

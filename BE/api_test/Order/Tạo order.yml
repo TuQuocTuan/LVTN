@@ -16,7 +16,8 @@ http:
           {
             "dish_id": 1, 
             "quantity": 1,
-            "price": 169000
+            "price": 169000,
+            "note": "Không hành"
           },
           {
             "dish_id": 2,

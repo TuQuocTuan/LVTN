@@ -407,7 +407,7 @@ export const getPendingOrders = async (req, res) => {
     try {
         const { data: orders, error: orderErr } = await supabase
             .from('orders')
-            .select(`status,id,order_details(quantity, dishes(name)),dining_sessions (tables(name))`)
+            .select(`status,id,order_details(quantity, dishes(name),note),dining_sessions (tables(name))`)
             .eq('status', 'pending')
 
         if (orderErr) throw orderErr;
@@ -424,7 +424,7 @@ export const updateOrderStatus = async (req, res) => {
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .update({ status: 'completed' })
-            .select(`status,id,session_id,order_details(quantity, dishes(name)),dining_sessions (tables(name))`)
+            .select(`status,id,session_id,order_details(quantity, dishes(name),note),dining_sessions (tables(name))`)
             .eq('id', order_id)
         if (orderErr) throw orderErr;
         return res.json({ success: true, order });
