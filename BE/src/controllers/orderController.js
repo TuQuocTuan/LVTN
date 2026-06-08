@@ -57,7 +57,7 @@ export const getOrderBySession = async (req, res) => {
         const { session_id } = req.params;
         const { data: session, error: sessionErr } = await supabase
             .from('orders')
-            .select()
+            .select('*,order_details(*,dishes(name))')
             .eq('session_id', session_id);
 
         if (sessionErr) throw sessionErr;
