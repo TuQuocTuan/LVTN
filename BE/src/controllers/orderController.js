@@ -421,9 +421,67 @@ export const getPendingOrders = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
     try {
         const { order_id } = req.body;
+
+        // 1. SỬA: Thêm cột dish_id vào select của order_details
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .update({ status: 'completed' })
+            .select(`status, id, session_id, order_details(dish_id, quantity, dishes(name), note), dining_sessions(tables(name))`)
+            .eq('id', order_id);
+
+        if (orderErr) throw orderErr;
+        if (!order || order.length === 0) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng!' });
+        }
+
+        const currentOrder = order[0];
+
+        // 2. Vòng lặp duyệt qua từng chi tiết món ăn
+        for (const orderDetail of currentOrder.order_details) {
+            const { data: recipeItems, error: recipeErr } = await supabase
+                .from('recipes')
+                .select('ingredient_id, amount_required')
+                .eq('dish_id', orderDetail.dish_id);
+
+            if (recipeErr) throw recipeErr;
+
+            if (recipeItems && recipeItems.length > 0) {
+                for (const recipe of recipeItems) {
+                    const totalDeduct = Number(recipe.amount_required) * Number(orderDetail.quantity);
+
+                    const { data: ingredientData, error: ingGetErr } = await supabase
+                        .from('ingredients')
+                        .select('id, name, quantity')
+                        .eq('id', recipe.ingredient_id)
+                        .single();
+
+                    if (ingGetErr) throw ingGetErr;
+
+                    if (ingredientData) {
+                        const newQuantity = Number(ingredientData.quantity) - totalDeduct;
+
+                        const { error: updateIngErr } = await supabase
+                            .from('ingredients')
+                            .update({ quantity: newQuantity })
+                            .eq('id', recipe.ingredient_id);
+
+                        if (updateIngErr) throw updateIngErr;
+                    }
+                }
+            }
+        }
+        return res.json({ success: true, order: currentOrder });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const cancelOrderStatus = async (req, res) => {
+    try {
+        const { order_id } = req.body;
+        const { data: order, error: orderErr } = await supabase
+            .from('orders')
+            .update({ status: 'cancelled' })
             .select(`status,id,session_id,order_details(quantity, dishes(name),note),dining_sessions (tables(name))`)
             .eq('id', order_id)
         if (orderErr) throw orderErr;

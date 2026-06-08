@@ -1,16 +1,16 @@
 info:
-  name: Hoàn thành đơn
+  name: Huỷ đơn
   type: http
-  seq: 9
+  seq: 8
 
 http:
   method: POST
-  url: http://localhost:5000/api/orders/completeOrder
+  url: http://localhost:5000/api/orders/cancelOrder
   body:
     type: json
     data: |-
       {
-          "order_id" : 55
+        "order_id":53
       }
   auth: inherit
 
