@@ -51,6 +51,26 @@ export const createOrder = async (req, res) => {
     }
 };
 
+//Hàm lấy đơn hàng theo session
+export const getOrderBySession = async (req, res) => {
+    try {
+        const { session_id } = req.params;
+        const { data: session, error: sessionErr } = await supabase
+            .from('orders')
+            .select()
+            .eq('session_id', session_id);
+
+        if (sessionErr) throw sessionErr;
+        if (!session || session.length == 0) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy phiên ăn!' });
+        }
+
+        return res.status(200).json({ success: true, data: session });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+}
+//a
 //Hàm tính subtotal khi khách thêm món
 export const calculateSubtotal = (orders) => {
     let sub_total = 0;

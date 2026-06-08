@@ -1,0 +1,25 @@
+info:
+  name: Sửa công thức
+  type: http
+  seq: 12
+
+http:
+  method: PUT
+  url: http://localhost:5000/api/recipes/update
+  body:
+    type: json
+    data: |-
+      {
+        "dish_id": 1,
+        "ingredients": [
+          { "ingredient_id": 1, "amount_required": 200.00 },
+          { "ingredient_id": 3, "amount_required": 549 }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -8,19 +8,14 @@ http:
   url: http://localhost:5000/api/sessions/open-menu
   body:
     type: json
-    data: "{\r
-
-      \  \"table_id\" : 2,\r
-
-      \  \"session_id\": \"be36cc68-61eb-476a-861f-0bb8862323bf\",\r
-
-      \  \"phone_number\": \"0896415447\",\r
-
-      \  \"name\": \"Quốc Tuấn\",\r
-
-      \  \"is_preview\": true\r
-
-      }"
+    data: |-
+      {
+        "table_id" : 2,
+        "session_id": "97d593b1-7ab7-4187-b63d-68a271d6944a",
+        "phone_number": "0896415447",
+        "name": "Quốc Tuấn",
+        "is_preview": true
+      }
   auth: inherit
 
 settings:

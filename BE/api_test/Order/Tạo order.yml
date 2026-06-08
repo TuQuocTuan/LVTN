@@ -8,37 +8,23 @@ http:
   url: http://localhost:5000/api/orders
   body:
     type: json
-    data: "{\r
-
-      \  \"session_id\": \"be36cc68-61eb-476a-861f-0bb8862323bf\",\r
-
-      \  \"total_amount\": 299000,\r
-
-      \  \"items\": [\r
-
-      \    {\r
-
-      \      \"dish_id\": 1, \r
-
-      \      \"quantity\": 1,\r
-
-      \      \"price\": 169000\r
-
-      \    },\r
-
-      \    {\r
-
-      \      \"dish_id\": 2,\r
-
-      \      \"quantity\": 2,\r
-
-      \      \"price\": 65000\r
-
-      \    }\r
-
-      \  ]\r
-
-      }"
+    data: |-
+      {
+        "session_id": "97d593b1-7ab7-4187-b63d-68a271d6944a",
+        "total_amount": 299000,
+        "items": [
+          {
+            "dish_id": 1, 
+            "quantity": 1,
+            "price": 169000
+          },
+          {
+            "dish_id": 2,
+            "quantity": 2,
+            "price": 65000
+          }
+        ]
+      }
   auth: inherit
 
 runtime:

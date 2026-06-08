@@ -187,3 +187,42 @@ export const updateDish = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 }
+
+export const deleteDish = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Thiếu ID món ăn cần xóa!' });
+        }
+        const { data: dish, error: disherror } = await supabase
+            .from('dishes')
+            .select('image_url')
+            .eq('id', id)
+            .maybeSingle();
+        if (disherror) throw disherror;
+
+        if (!dish) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy món ăn' });
+        }
+        const { data: deletedDish, error: deleteError } = await supabase
+            .from('dishes')
+            .delete()
+            .eq('id', id)
+        if (deleteError) throw deleteError;
+
+        if (dish.image_url) {
+            const fileName = dish.image_url.split('/').pop();
+            const { error: deleteStorageErr } = await supabase
+                .storage
+                .from('dish_img')
+                .remove([fileName]);
+            if (deleteStorageErr) {
+                console.error(`Lỗi xóa ảnh ${fileName} trên Storage:`, deleteStorageErr.message);
+            }
+        }
+        return res.status(200).json({ success: true, message: 'Xóa món ăn và ảnh thành công' });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}

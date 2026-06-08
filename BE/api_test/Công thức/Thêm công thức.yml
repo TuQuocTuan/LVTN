@@ -1,0 +1,25 @@
+info:
+  name: Thêm công thức
+  type: http
+  seq: 11
+
+http:
+  method: POST
+  url: http://localhost:5000/api/recipes/add
+  body:
+    type: json
+    data: |-
+      {
+        "dish_id": 1,
+        "ingredients": [
+          { "ingredient_id": 1, "amount_required": 200.00 },
+          { "ingredient_id": 3, "amount_required": 50.00 }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

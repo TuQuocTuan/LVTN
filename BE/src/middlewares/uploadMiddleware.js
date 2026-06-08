@@ -11,6 +11,13 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-const upload = multer({ storage, limits, fileFilter });
+const upload = multer({ storage, limits, fileFilter }).single('image');
 
-export const uploadDishImage = upload.single('image');
+export const uploadDishImage = (req, res, next) => {
+    upload(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, message: `Lỗi Multer: ${err.message}` });
+        }
+        next();
+    });
+};

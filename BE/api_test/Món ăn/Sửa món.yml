@@ -4,10 +4,23 @@ info:
   seq: 6
 
 http:
-  method: POST
-  url: ""
+  method: PUT
+  url: http://localhost:5000/api/dishes/update
   body:
     type: multipart-form
+    data:
+      - name: id
+        type: text
+        value: "15"
+      - name: name
+        type: text
+        value: Rượu gạo hương đào
+      - name: price
+        type: text
+        value: "100000"
+      - name: category_id
+        type: text
+        value: "11"
   auth: inherit
 
 settings:

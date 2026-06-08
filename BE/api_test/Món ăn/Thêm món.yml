@@ -9,26 +9,25 @@ http:
   body:
     type: multipart-form
     data:
-      - name: |
-          category_id
+      - name: category_id
         type: text
-        value: "8"
+        value: "11"
       - name: name
         type: text
-        value: Ba Chỉ Heo Nướng Hàn Quốc
+        value: khô gà
       - name: price
         type: text
-        value: "150000"
+        value: "100000"
       - name: description
         type: text
-        value: Thịt ba chỉ heo tươi ngon kèm sốt độc quyền
+        value: Rượu gạo hương đào thơm ngon
       - name: instructions
         type: text
-        value: Nướng chín đều 2 mặt trong 3 phút
+        value: ""
       - name: image
         type: file
         value:
-          - cach-lam-thit-ba-chi-nuong-han-quoc-2.jpg
+          - C:\Users\ADMIN\Desktop\do-mixi-tiet-lo-bi-chan-thuong-vi-nhieu-nam-livestream-tri-lieu-cung-khong-the-hoi-phuc-100-phai-mang-1-thu-xuyet-suot-2-184501.jpg
   auth: inherit
 
 settings:

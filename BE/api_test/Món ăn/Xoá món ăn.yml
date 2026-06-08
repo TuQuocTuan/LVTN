@@ -1,0 +1,19 @@
+info:
+  name: Xoá món ăn
+  type: http
+  seq: 8
+
+http:
+  method: DELETE
+  url: http://localhost:5000/api/dishes/delete/:id
+  params:
+    - name: id
+      value: "16"
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
