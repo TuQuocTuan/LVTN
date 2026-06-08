@@ -1,0 +1,24 @@
+info:
+  name: New Request
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: http://localhost:5000/api/payments/momo
+  body:
+    type: json
+    data: "{\r
+
+      \  \"session_id\": \"c23236b3-23d2-4737-92d7-a28d4666970a\",\r
+
+      \  \"tongtien\": 50000\r
+
+      }"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

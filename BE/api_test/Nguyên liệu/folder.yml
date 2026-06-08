@@ -1,0 +1,7 @@
+info:
+  name: Nguyên liệu
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit

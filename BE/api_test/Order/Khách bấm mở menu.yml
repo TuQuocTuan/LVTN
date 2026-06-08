@@ -1,0 +1,30 @@
+info:
+  name: Khách bấm mở menu
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:5000/api/sessions/open-menu
+  body:
+    type: json
+    data: "{\r
+
+      \  \"table_id\" : 2,\r
+
+      \  \"session_id\": \"be36cc68-61eb-476a-861f-0bb8862323bf\",\r
+
+      \  \"phone_number\": \"0896415447\",\r
+
+      \  \"name\": \"Quốc Tuấn\",\r
+
+      \  \"is_preview\": true\r
+
+      }"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

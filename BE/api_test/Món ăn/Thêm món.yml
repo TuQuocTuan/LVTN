@@ -1,0 +1,38 @@
+info:
+  name: Thêm món
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://localhost:5000/api/dishes
+  body:
+    type: multipart-form
+    data:
+      - name: |
+          category_id
+        type: text
+        value: "8"
+      - name: name
+        type: text
+        value: Ba Chỉ Heo Nướng Hàn Quốc
+      - name: price
+        type: text
+        value: "150000"
+      - name: description
+        type: text
+        value: Thịt ba chỉ heo tươi ngon kèm sốt độc quyền
+      - name: instructions
+        type: text
+        value: Nướng chín đều 2 mặt trong 3 phút
+      - name: image
+        type: file
+        value:
+          - cach-lam-thit-ba-chi-nuong-han-quoc-2.jpg
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

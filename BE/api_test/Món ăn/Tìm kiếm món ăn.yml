@@ -1,0 +1,19 @@
+info:
+  name: Tìm kiếm món ăn
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: http://localhost:5000/api/dishes/search?name=Bò
+  params:
+    - name: name
+      value: Bò
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,83 @@
+info:
+  name: Tạo order
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:5000/api/orders
+  body:
+    type: json
+    data: "{\r
+
+      \  \"session_id\": \"be36cc68-61eb-476a-861f-0bb8862323bf\",\r
+
+      \  \"total_amount\": 299000,\r
+
+      \  \"items\": [\r
+
+      \    {\r
+
+      \      \"dish_id\": 1, \r
+
+      \      \"quantity\": 1,\r
+
+      \      \"price\": 169000\r
+
+      \    },\r
+
+      \    {\r
+
+      \      \"dish_id\": 2,\r
+
+      \      \"quantity\": 2,\r
+
+      \      \"price\": 65000\r
+
+      \    }\r
+
+      \  ]\r
+
+      }"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: "{\r
+
+        \  \"session_id\": \"dán_cái_mã_uuid_bạn_vừa_copy_ở_bước_1_vào_đây\",\r
+
+        \  \"total_amount\": 299000,\r
+
+        \  \"items\": [\r
+
+        \    {\r
+
+        \      \"dish_id\": 11, \r
+
+        \      \"quantity\": 1,\r
+
+        \      \"price\": 169000\r
+
+        \    },\r
+
+        \    {\r
+
+        \      \"dish_id\": 12,\r
+
+        \      \"quantity\": 2,\r
+
+        \      \"price\": 65000\r
+
+        \    }\r
+
+        \  ]\r
+
+        }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

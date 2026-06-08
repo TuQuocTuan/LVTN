@@ -123,3 +123,67 @@ export const searchDishesByName = async (req, res) => {
         res.status(500).json({ success: false, message: 'Lỗi tìm kiếm' });
     }
 }
+
+export const updateDish = async (req, res) => {
+    try {
+        const { id, category_id, name, description, price, instructions, status } = req.body;
+        const file = req.file;
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Thiếu ID món ăn cần cập nhật!' });
+        }
+        if (!category_id || !name || !price) {
+            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp tên, giá và danh mục món ăn!' });
+        }
+        const formattedName = name.trim();
+        const { data: existingDish, error: checkErr } = await supabase
+            .from('dishes')
+            .select('id, name')
+            .ilike('name', formattedName)
+            .neq('id', id)
+            .maybeSingle();
+        if (existingDish) {
+            return res.status(400).json({ success: false, message: 'Món ăn đã tồn tại' });
+        }
+
+        const updateData = {
+            category_id,
+            name: formattedName,
+            description,
+            price: Number(price),
+            instructions: [instructions],
+            status,
+        };
+
+        if (file) {
+            const fileExtension = file.originalname.split('.').pop();
+            const fileName = `dish-${Date.now()}.${fileExtension}`;
+
+            const { data: uploadData, error: uploadErr } = await supabase
+                .storage
+                .from('dish_img')
+                .upload(fileName, file.buffer, {
+                    contentType: file.mimetype,
+                    upsert: false
+                });
+            if (uploadErr) throw uploadErr;
+
+            const { data: publicUrlData } = supabase
+                .storage
+                .from('dish_img')
+                .getPublicUrl(fileName);
+            updateData.image_url = publicUrlData.publicUrl;
+        }
+        const { data: updatedDish, error: updateErr } = await supabase
+            .from('dishes')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (updateErr) throw updateErr;
+        return res.status(200).json({ success: true, data: updatedDish });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}

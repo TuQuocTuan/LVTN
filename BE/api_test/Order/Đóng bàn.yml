@@ -1,0 +1,24 @@
+info:
+  name: Đóng bàn
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: http://localhost:5000/api/orders/checkout
+  body:
+    type: json
+    data: "{\r
+
+      \  \"session_id\": \"8015fa24-3852-4f1b-baaf-ed9a67f47eb2\",\r
+
+      \  \"close_user\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\"\r
+
+      }"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

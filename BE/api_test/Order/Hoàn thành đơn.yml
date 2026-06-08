@@ -1,0 +1,18 @@
+info:
+  name: Hoàn thành đơn
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: http://localhost:5000/api/orders/completeOrder
+  body:
+    type: json
+    data: "{\r\n    \"order_id\" : 17\r\n}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

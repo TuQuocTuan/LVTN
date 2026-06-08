@@ -1,0 +1,7 @@
+info:
+  name: Khuyến mãi
+  type: folder
+  seq: 6
+
+request:
+  auth: inherit

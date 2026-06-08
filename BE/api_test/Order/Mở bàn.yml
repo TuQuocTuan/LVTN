@@ -1,0 +1,18 @@
+info:
+  name: Mở bàn
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5000/api/sessions/serving
+  body:
+    type: json
+    data: "{\r\n  \"table_id\": 2\r\n}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { addDish, getDishes, searchDishesByName } from '../controllers/dishController.js';
+import { addDish, getDishes, searchDishesByName, updateDish } from '../controllers/dishController.js';
 
 const router = express.Router();
 
@@ -13,10 +13,16 @@ router.post('/', (req, res, next) => {
         if (err) {
             return res.status(400).json({ success: false, message: `Lỗi Multer: ${err.message}` });
         }
-        console.log("==> Log tại ROUTE - req.body:", req.body);
-        console.log("==> Log tại ROUTE - req.file:", req.file);
         next();
     });
 }, addDish);
+router.put('/update', (req, res, next) => {
+    upload(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, message: `Lỗi Multer: ${err.message}` });
+        }
+        next();
+    });
+}, updateDish);
 export default router;
 
