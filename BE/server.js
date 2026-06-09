@@ -15,12 +15,9 @@ const app = express();
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use((req, res, next) => {
-    res.setHeader('ngrok-skip-browser-warning', 'true');
-    next();
-});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

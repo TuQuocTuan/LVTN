@@ -116,7 +116,7 @@ export const openMenuCustomer = async (req, res) => {
     }
 };
 
-//Hàm đóng bàn
+//Hàm đóng bàn (không tính tiền)
 export const closeTable = async (req, res) => {
     try {
         const { table_id } = req.body;
