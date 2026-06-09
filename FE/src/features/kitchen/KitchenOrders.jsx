@@ -9,7 +9,7 @@ const KitchenDashboard = () => {
   const [isRecipeOpen, setIsRecipeOpen] = useState(false);
   const [currentRecipe, setCurrentRecipe] = useState({ dishName: '', details: [] });
   const [loading, setLoading] = useState(false);
-  const audio = new Audio('/ringtone.mp3');
+  const audio = new Audio('/Chinese Meme Ringtone Download.mp3');
 
   // 1. Hàm lấy danh sách order đang chờ
   const fetchPendingOrders = async () => {
