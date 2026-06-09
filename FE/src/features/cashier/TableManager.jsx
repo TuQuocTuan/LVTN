@@ -49,19 +49,28 @@ const TableManager = () => {
         {/* Top Navbar */}
         <header className="flex justify-between items-center h-16 px-8 sticky top-0 z-40 bg-white border-b border-neutralCustom/20">
           <div className="">
-            <h1 className="text-2xl font-bold text-primary">Bếp & Bàn</h1>
+            <h1 className="text-2xl font-bold text-primary">Bàn & Thanh Toán</h1>
             <p className="text-sm text-neutralCustom opacity-70">Hệ thống quản lý</p>
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-primary animate-pulse"></span>
-              <span className="text-base text-primary font-bold">Live</span>
+          <div className="flex items-center gap-4">
+            <button className="text-neutralCustom hover:text-primary transition-colors relative">
+              <span className="material-symbols-outlined">notifications</span>
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+          </div>
+          <div className="flex items-center gap-3 pl-6 border-l border-neutralCustom/20">
+            <div className="text-right">
+              <p className="text-sm font-bold text-gray-900 leading-none">Thu Ngân Nguyễn</p>
+              <p className="text-[10px] text-neutralCustom uppercase tracking-wider mt-1">Nhân viên thu ngân</p>
             </div>
-            <div className="flex items-center gap-4 text-neutralCustom">
-              <button className="material-symbols-outlined hover:text-primary transition-colors">notifications</button>
-              <button className="material-symbols-outlined hover:text-primary transition-colors">account_circle</button>
+            <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 text-neutralCustom">
+                    <button className="material-symbols-outlined hover:text-primary transition-colors">account_circle</button>
+                </div>
             </div>
           </div>
+        </div>
         </header>
 
         {/* Dashboard Content */}
@@ -70,7 +79,7 @@ const TableManager = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
             <div>
               <h2 className="text-3xl font-bold text-gray-900">Quản lý Sơ đồ bàn</h2>
-              <p className="text-base text-neutralCustom mt-1">Tổng cộng: 32 bàn | Hiện tại: 12 bàn đang phục vụ</p>
+              <p className="text-base text-neutralCustom mt-1">Tổng cộng: 13 bàn | Hiện tại: 8 bàn đang phục vụ</p>
             </div>
           </div>
 
@@ -178,139 +187,138 @@ const TableManager = () => {
       </main>
 
       {/* MODAL & BACKDROP */}
-      {isModalOpen && (
-        <>
-          {/* Lớp nền mờ khi mở modal */}
-          <div 
-            className="fixed inset-0 bg-gray-900/40 z-[60] backdrop-blur-sm transition-opacity duration-300"
-            onClick={handleCloseModal}
-          ></div>
+      <div className={`fixed inset-0 z-[60] transition-all duration-300 ${isModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        
+        {/* Lớp nền mờ khi mở modal */}
+        <div 
+          className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+          onClick={handleCloseModal}
+        ></div>
+        
+        {/* Panel chi tiết bàn di trượt ra */}
+        <div className={`fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-[70] flex flex-col transform transition-transform duration-300 border-l border-neutralCustom/20 ${isModalOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           
-          {/* Panel chi tiết bàn di trượt ra */}
-          <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-[70] flex flex-col transform transition-transform duration-300 translate-x-0 border-l border-neutralCustom/20">
+          {/* Header chung cho mọi trạng thái bàn */}
+          <div className="p-6 border-b border-neutralCustom/20 flex justify-between items-center bg-culinaryBg">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Chi tiết {selectedTable?.name}
+              </h3>
+              <p className="text-xs text-neutralCustom/80 mt-0.5">
+                Trạng thái: {
+                  selectedTable?.status === 'empty' ? 'Bàn trống' : 
+                  selectedTable?.status === 'occupied' ? 'Đang phục vụ' : 'Chờ thanh toán'
+                }
+              </p>
+            </div>
+            <button 
+              className="material-symbols-outlined text-neutralCustom hover:bg-neutralCustom/10 p-2 rounded-full transition-colors" 
+              onClick={handleCloseModal}
+            >
+              close
+            </button>
+          </div>
+          
+          {/* BODY MODAL: Phân chia theo trạng thái bàn */}
+          <div className="flex-1 p-6 overflow-y-auto">
             
-            {/* Header chung cho mọi trạng thái bàn */}
-            <div className="p-6 border-b border-neutralCustom/20 flex justify-between items-center bg-culinaryBg">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  Chi tiết {selectedTable?.name}
-                </h3>
-                <p className="text-xs text-neutralCustom/80 mt-0.5">
-                  Trạng thái: {
-                    selectedTable?.status === 'empty' ? 'Bàn trống' : 
-                    selectedTable?.status === 'occupied' ? 'Đang phục vụ' : 'Chờ thanh toán'
-                  }
+            {/* TRƯỜNG HỢP 1: BÀN TRỐNG */}
+            {selectedTable?.status === 'empty' && (
+              <div className="flex flex-col items-center justify-center h-full text-center py-10">
+                <span className="material-symbols-outlined text-6xl text-neutralCustom/30 mb-3">
+                  grid_view
+                </span>
+                <p className="text-base font-bold text-gray-900">Bàn hiện đang trống</p>
+                <p className="text-sm text-neutralCustom/70 mt-1">
+                  Chưa có phiên ăn nào được mở tại bàn này.
                 </p>
               </div>
-              <button 
-                className="material-symbols-outlined text-neutralCustom hover:bg-neutralCustom/10 p-2 rounded-full transition-colors" 
-                onClick={handleCloseModal}
-              >
-                close
-              </button>
-            </div>
-            
-            {/* BODY MODAL: Phân chia theo trạng thái bàn */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              
-              {/* TRƯỜNG HỢP 1: BÀN TRỐNG */}
-              {selectedTable?.status === 'empty' && (
-                <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                  <span className="material-symbols-outlined text-6xl text-neutralCustom/30 mb-3">
-                    grid_view
-                  </span>
-                  <p className="text-base font-bold text-gray-900">Bàn hiện đang trống</p>
-                  <p className="text-sm text-neutralCustom/70 mt-1">
-                    Chưa có phiên ăn nào được mở tại bàn này.
-                  </p>
-                </div>
-              )}
+            )}
 
-              {/* TRƯỜNG HỢP 2 & 3: BÀN CÓ KHÁCH (ĐANG PHỤC VỤ HOẶC CHỜ THANH TOÁN) */}
-              {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
-                <>
-                  {/* Thông tin khách hàng */}
-                  <div className="mb-6">
-                    <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-2">Thông tin khách</p>
-                    <div className="flex items-center gap-4 bg-culinaryBg border border-neutralCustom/10 p-4 rounded-xl">
-                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                        VA
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900">Nguyễn Văn A</p>
-                        <p className="text-sm text-neutralCustom">0893674131231</p>
-                      </div>
+            {/* TRƯỜNG HỢP 2 & 3: BÀN CÓ KHÁCH (ĐANG PHỤC VỤ HOẶC CHỜ THANH TOÁN) */}
+            {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
+              <>
+                {/* Thông tin khách hàng */}
+                <div className="mb-6">
+                  <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-2">Thông tin khách</p>
+                  <div className="flex items-center gap-4 bg-culinaryBg border border-neutralCustom/10 p-4 rounded-xl">
+                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                      VA
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900">Nguyễn Văn A</p>
+                      <p className="text-sm text-neutralCustom">0893674131231</p>
                     </div>
                   </div>
-                  
-                  {/* Danh sách món ăn hiện tại */}
-                  <div className="mb-6">
-                    <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-2">Đơn hàng hiện tại</p>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-2">
-                        <span className="text-sm text-gray-900 font-medium">Bò Wagyu Nướng ống tre</span>
-                        <span className="font-bold text-primary">x1</span>
-                      </div>
-                      <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-2">
-                        <span className="text-sm text-gray-900 font-medium">Vang đỏ Chateau (Ly)</span>
-                        <span className="font-bold text-primary">x2</span>
-                      </div>
-                      <div className="flex justify-between items-center text-primary font-bold mt-4 pt-2 border-t border-neutralCustom/20">
-                        <span>Tổng tạm tính</span>
-                        <span>{selectedTable?.status === 'waiting' ? selectedTable.details : '1.450.000đ'}</span>
-                      </div>
+                </div>
+                
+                {/* Danh sách món ăn hiện tại */}
+                <div className="mb-6">
+                  <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-2">Đơn hàng hiện tại</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-2">
+                      <span className="text-sm text-gray-900 font-medium">Bò Wagyu Nướng ống tre</span>
+                      <span className="font-bold text-primary">x1</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-2">
+                      <span className="text-sm text-gray-900 font-medium">Vang đỏ Chateau (Ly)</span>
+                      <span className="font-bold text-primary">x2</span>
+                    </div>
+                    <div className="flex justify-between items-center text-primary font-bold mt-4 pt-2 border-t border-neutralCustom/20">
+                      <span>Tổng tạm tính</span>
+                      <span>{selectedTable?.status === 'waiting' ? selectedTable.details : '1.450.000đ'}</span>
                     </div>
                   </div>
-                </>
-              )}
-            </div>
-            
-            {/* FOOTER ACTIONS: Điều khiển các nút chức năng theo từng TH */}
-            <div className="p-6 bg-culinaryBg border-t border-neutralCustom/20">
-              
-              {/* TH1: BÀN TRỐNG -> Hiện nút Mở bàn */}
-              {selectedTable?.status === 'empty' && (
-                <button className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined">add_circle</span>
-                  MỞ BÀN MỚI
-                </button>
-              )}
-
-              {/* TH2: BÀN ĐANG PHỤC VỤ -> Hiện Thanh toán + Đóng bàn */}
-              {selectedTable?.status === 'occupied' && (
-                <div className="space-y-3">
-                  <button className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all">
-                    THANH TOÁN
-                  </button>
-                  <button className="w-full border-2 border-primary text-primary py-3 rounded-xl font-bold text-sm hover:bg-primary/10 transition-all bg-white">
-                    ĐÓNG BÀN
-                  </button>
                 </div>
-              )}
-
-              {/* TH3: BÀN CHỜ THANH TOÁN -> Hiện Thanh toán + In Bill + Đóng bàn */}
-              {selectedTable?.status === 'waiting' && (
-                <div className="space-y-3">
-                  <button className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all">
-                    THANH TOÁN ({selectedTable.details})
-                  </button>
-                  
-                  {/* Nút in hóa đơn sử dụng màu vàng nghệ tertiary chuẩn cấu hình của bạn */}
-                  <button className="w-full bg-tertiary text-white py-3 rounded-xl font-bold text-sm hover:brightness-105 transition-all shadow-sm flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-[18px]">print</span>
-                    IN BILL TẠM TÍNH
-                  </button>
-                  
-                  <button className="w-full border-2 border-primary text-primary py-3 rounded-xl font-bold text-sm hover:bg-primary/10 transition-all bg-white">
-                    ĐÓNG BÀN
-                  </button>
-                </div>
-              )}
-              
-            </div>
+              </>
+            )}
           </div>
-        </>
-      )}
+          
+          {/* FOOTER ACTIONS: Điều khiển các nút chức năng theo từng TH */}
+          <div className="p-6 bg-culinaryBg border-t border-neutralCustom/20">
+            
+            {/* TH1: BÀN TRỐNG -> Hiện nút Mở bàn */}
+            {selectedTable?.status === 'empty' && (
+              <button className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined">add_circle</span>
+                MỞ BÀN MỚI
+              </button>
+            )}
+
+            {/* TH2: BÀN ĐANG PHỤC VỤ -> Hiện Thanh toán + Đóng bàn */}
+            {selectedTable?.status === 'occupied' && (
+              <div className="space-y-3">
+                <button className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all">
+                  THANH TOÁN
+                </button>
+                <button className="w-full border-2 border-primary text-primary py-3 rounded-xl font-bold text-sm hover:bg-primary/10 transition-all bg-white">
+                  ĐÓNG BÀN
+                </button>
+              </div>
+            )}
+
+            {/* TH3: BÀN CHỜ THANH TOÁN -> Hiện Thanh toán + In Bill + Đóng bàn */}
+            {selectedTable?.status === 'waiting' && (
+              <div className="space-y-3">
+                <button className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all">
+                  THANH TOÁN ({selectedTable.details})
+                </button>
+                
+                {/* Nút in hóa đơn sử dụng màu vàng nghệ tertiary chuẩn cấu hình của bạn */}
+                <button className="w-full bg-tertiary text-white py-3 rounded-xl font-bold text-sm hover:brightness-105 transition-all shadow-sm flex items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">print</span>
+                  IN BILL TẠM TÍNH
+                </button>
+                
+                <button className="w-full border-2 border-primary text-primary py-3 rounded-xl font-bold text-sm hover:bg-primary/10 transition-all bg-white">
+                  ĐÓNG BÀN
+                </button>
+              </div>
+            )}
+            
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

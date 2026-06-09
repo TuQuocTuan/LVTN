@@ -13,8 +13,8 @@ export const CartProvider = ({ children }) => {
       try {
         setIsLoading(true);
         const [catRes, dishRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_URL}/api/categories`),
-          fetch(`${import.meta.env.VITE_API_URL}/api/dishes`)
+          fetch(`${import.meta.env.VITE_API_URL}/categories`),
+          fetch(`${import.meta.env.VITE_API_URL}/dishes`)
         ]);
 
         const catData = await catRes.json();

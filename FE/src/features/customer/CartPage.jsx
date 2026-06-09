@@ -48,7 +48,7 @@ const CartPage = () => {
         note: item.note || null
       }));
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

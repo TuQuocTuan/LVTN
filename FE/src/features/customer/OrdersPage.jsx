@@ -12,7 +12,7 @@ const OrdersPage = () => {
 
       try {
         // GỌI ĐÚNG API GET LẤY LỊCH SỬ ĐƠN HÀNG TỪ CONTROLLER getOrderBySession
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${sessionId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/orders/${sessionId}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });

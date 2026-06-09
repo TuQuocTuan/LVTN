@@ -47,7 +47,7 @@ const WelcomePage = () => {
 
     try {
       // Gọi API open-menu (Nhớ đảm bảo server Node.js đang chạy ở port 5000)
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sessions/open-menu`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sessions/open-menu`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

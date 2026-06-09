@@ -10,9 +10,10 @@ import PaymentPage from './features/customer/PaymentPage';
 
 import TableManager from './features/cashier/TableManager';
 
-import AdminDashboard from './features/admin/AdminDashboard';
-
 import KitchenOrders from './features/kitchen/KitchenOrders';
+
+import AdminDashboard from './features/admin/AdminDashboard';
+import RoleManagement from './features/admin/RoleManagement';
 
 
 function App() {
@@ -36,7 +37,8 @@ function App() {
           <Route path="/kitchen" element={<KitchenOrders />} />
 
           {/* LƯỒNG ADMIN (PC) */}
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/role-management" element={<RoleManagement />} />
 
           {/* Đường dẫn mặc định nếu gõ sai: Tự động đá về trang Chào mừng (/) */}
           <Route path="*" element={<Navigate to="/" replace />} />
