@@ -13,8 +13,8 @@ export const CartProvider = ({ children }) => {
       try {
         setIsLoading(true);
         const [catRes, dishRes] = await Promise.all([
-          fetch('http://localhost:5000/api/categories'),
-          fetch('http://localhost:5000/api/dishes')
+          fetch(`${import.meta.env.VITE_API_URL}/api/categories`),
+          fetch(`${import.meta.env.VITE_API_URL}/api/dishes`)
         ]);
 
         const catData = await catRes.json();
@@ -39,7 +39,7 @@ export const CartProvider = ({ children }) => {
           const formattedDishes = dishData.data.map(dish => ({
             id: dish.id,
             name: dish.name,
-            price: `${dish.price.toLocaleString('vi-VN')}đ`, 
+            price: `${dish.price.toLocaleString('vi-VN')}đ`,
             rawPrice: dish.price, // Giữ lại giá số nguyên để tính toán hóa đơn
             image: dish.image_url,
             quantity: 0, // Số lượng mặc định lúc chưa chọn
@@ -82,7 +82,7 @@ export const CartProvider = ({ children }) => {
 
   // Lọc tự động: Món nào có số lượng lớn hơn 0 thì chính là item nằm trong giỏ hàng
   const cartItems = menuItems.filter(item => item.quantity > 0);
-  
+
   // Tính tổng số lượng item để hiển thị lên icon quả bóng Giỏ hàng ở Header
   const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
 

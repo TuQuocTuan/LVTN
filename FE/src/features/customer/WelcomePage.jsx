@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
-  
+
   // State quản lý hiệu ứng trượt lên lúc mới vào trang
   const [isVisible, setIsVisible] = useState(false);
-  
+
   // Các state mới cho Popup
   const [showPopup, setShowPopup] = useState(false);
   const [name, setName] = useState('');
@@ -27,8 +27,8 @@ const WelcomePage = () => {
 
   // Hàm xử lý khi khách bấm "Xác nhận" trong Popup
   const handleSubmit = async (e) => {
-    e.preventDefault(); 
-    
+    e.preventDefault();
+
     // 1. Kiểm tra dữ liệu đầu vào
     if (!name.trim() || !phone.trim()) {
       setError('Vui lòng nhập đầy đủ Tên và Số điện thoại!');
@@ -40,14 +40,14 @@ const WelcomePage = () => {
       setError('Số điện thoại không hợp lệ (Phải đủ 10 số và bắt đầu bằng 0)!');
       return;
     }
-    
+
     // 2. GỌI API XUỐNG BACKEND
     setIsLoading(true);
     setError('');
 
     try {
       // Gọi API open-menu (Nhớ đảm bảo server Node.js đang chạy ở port 5000)
-      const response = await fetch('http://localhost:5000/api/sessions/open-menu', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sessions/open-menu`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,17 +85,17 @@ const WelcomePage = () => {
   const handlePhoneChange = (e) => {
     // Dùng Regex để loại bỏ tất cả các ký tự không phải là số (0-9) khi đang gõ
     const onlyNumbers = e.target.value.replace(/[^0-9]/g, '');
-    
+
     // Chỉ cho phép cập nhật vào state nếu độ dài <= 10
     if (onlyNumbers.length <= 10) {
       setPhone(onlyNumbers);
-      setError(''); 
+      setError('');
     }
   };
 
   return (
     <div className="bg-mesh min-h-screen flex flex-col text-gray-900 font-sans relative">
-      
+
       {/* --- TOP BAR --- */}
       <nav className="fixed top-0 left-0 w-full z-40 flex justify-end items-center px-4 py-3 bg-white/80 backdrop-blur-md shadow-sm">
         <div className="flex items-center gap-2 cursor-pointer active:scale-95 transition-transform p-2">
@@ -111,8 +111,7 @@ const WelcomePage = () => {
           <div className="absolute -bottom-40 -left-20 w-96 h-96 bg-tertiary/10 rounded-full blur-3xl"></div>
         </div>
 
-        <div className={`w-full max-w-md flex flex-col items-center z-10 transition-all duration-700 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        <div className={`w-full max-w-md flex flex-col items-center z-10 transition-all duration-700 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}
         >
           <div className="relative mb-12 group transition-transform duration-500 hover:scale-105">
@@ -136,7 +135,7 @@ const WelcomePage = () => {
             <div className="w-12 h-1 bg-primary mx-auto rounded-full mt-4"></div>
           </div>
 
-          <button 
+          <button
             onClick={handleOpenPopup}
             className="w-full bg-primary text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-primary/30 transition-all duration-300 hover:bg-orange-700 active:scale-95 flex items-center justify-center gap-3"
           >
@@ -151,13 +150,13 @@ const WelcomePage = () => {
       ========================================== */}
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div 
+          <div
             className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
             onClick={() => !isLoading && setShowPopup(false)}
           ></div>
-          
+
           <div className="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-[pulse_0.2s_ease-out]">
-            <button 
+            <button
               disabled={isLoading}
               onClick={() => setShowPopup(false)}
               className="absolute top-4 right-4 text-neutralCustom hover:text-gray-900 bg-gray-100 rounded-full p-1 disabled:opacity-50"
@@ -175,8 +174,8 @@ const WelcomePage = () => {
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1 ml-1">Họ và Tên</label>
                 <div className="relative">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={isLoading}
@@ -189,8 +188,8 @@ const WelcomePage = () => {
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1 ml-1">Số điện thoại</label>
                 <div className="relative">
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     value={phone}
                     onChange={handlePhoneChange}
                     disabled={isLoading}
@@ -202,7 +201,7 @@ const WelcomePage = () => {
               {error && <p className="text-red-500 text-xs font-semibold text-center animate-bounce">{error}</p>}
 
               {/* Nút Xác nhận */}
-              <button 
+              <button
                 type="submit"
                 disabled={isLoading}
                 className="w-full bg-primary text-white font-bold text-base py-3.5 rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-all mt-2 flex justify-center items-center gap-2 disabled:bg-gray-400 disabled:shadow-none"

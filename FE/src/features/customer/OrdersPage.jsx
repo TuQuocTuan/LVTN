@@ -12,13 +12,13 @@ const OrdersPage = () => {
 
       try {
         // GỌI ĐÚNG API GET LẤY LỊCH SỬ ĐƠN HÀNG TỪ CONTROLLER getOrderBySession
-        const response = await fetch(`http://localhost:5000/api/orders/${sessionId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${sessionId}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           // Xử lý linh hoạt: backend có thể trả về 'detailed_orders' hoặc 'data'
           const orderList = data.detailed_orders || data.data || [];
@@ -81,7 +81,7 @@ const OrdersPage = () => {
             <div key={order.id} className="bg-white border border-neutralCustom/20 rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-3 mb-3">
                 <div>
-                  <h3 className="font-bold text-gray-900">Đơn #{index + 1}</h3>  
+                  <h3 className="font-bold text-gray-900">Đơn #{index + 1}</h3>
                   <span className="text-xs text-neutralCustom">
                     {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -105,7 +105,7 @@ const OrdersPage = () => {
                       </div>
                       <span className="text-neutralCustom">{Number(item.price).toLocaleString('vi-VN')}đ</span>
                     </div>
-                    
+
                     {/* KIỂM TRA VÀ HIỂN THỊ GHI CHÚ (NOTE) TẠI ĐÂY */}
                     {item.note && (
                       <p className="text-xs text-neutralCustom/80 italic pl-6 mt-0.5">

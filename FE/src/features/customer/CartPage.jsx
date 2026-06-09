@@ -6,29 +6,29 @@ import { useCart } from '../../context/CartContext'; // Import chìa khóa lấy
 
 const CartPage = () => {
   const navigate = useNavigate();
-  
+
   // Bốc toàn bộ dữ liệu giỏ hàng sống từ kho chung ra dùng
-  const { 
-    cartItems, 
-    totalItems, 
-    handleIncrease, 
-    handleDecrease, 
-    handleRemove, 
+  const {
+    cartItems,
+    totalItems,
+    handleIncrease,
+    handleDecrease,
+    handleRemove,
     handleNoteChange,
     clearCart
   } = useCart();
-  
-  const [submitStatus, setSubmitStatus] = useState('idle'); 
+
+  const [submitStatus, setSubmitStatus] = useState('idle');
 
   // Tính tiền tự động thời gian thực dựa trên các món có trong giỏ
   const subTotal = cartItems.reduce((total, item) => total + (item.rawPrice * item.quantity), 0);
-  const vat = subTotal * 0.1; 
+  const vat = subTotal * 0.1;
   const finalTotal = subTotal + vat;
 
   // Gọi API lưu Order vào database của nhà hàng
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
-    
+
     try {
       setSubmitStatus('loading');
       const sessionId = localStorage.getItem('sessionId');
@@ -48,7 +48,7 @@ const CartPage = () => {
         note: item.note || null
       }));
 
-      const response = await fetch('http://localhost:5000/api/orders', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -90,7 +90,7 @@ const CartPage = () => {
       <div className="px-4 pb-48">
         {cartItems.length > 0 ? (
           cartItems.map((item) => (
-            <CartItem 
+            <CartItem
               key={item.id}
               item={item}
               onIncrease={handleIncrease}
@@ -116,10 +116,10 @@ const CartPage = () => {
             <span className="text-xl font-bold text-primary">{finalTotal.toLocaleString('vi-VN')}đ</span>
           </div>
         </div>
-        
-        <button 
+
+        <button
           onClick={handleCheckout}
-          disabled={submitStatus !== 'idle' || cartItems.length === 0} 
+          disabled={submitStatus !== 'idle' || cartItems.length === 0}
           className={`w-full py-3.5 rounded-xl text-lg font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg
             ${submitStatus === 'success' ? 'bg-green-600 text-white shadow-green-600/30' : 'bg-primary text-white shadow-primary/30'}
             ${cartItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
