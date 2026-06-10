@@ -48,7 +48,7 @@ export const openTable = async (req, res) => {
 //Mở menu(customer)
 export const openMenuCustomer = async (req, res) => {
     try {
-        const { table_id, phone_number, name } = req.body;
+        const { table_id, phone_number, name, } = req.body;
 
         if (!table_id) {
             return res.status(400).json({ success: false, message: 'Thiếu mã bàn!' });
@@ -103,6 +103,13 @@ export const openMenuCustomer = async (req, res) => {
             if (guestErr) throw guestErr;
             customerId = guestCustomer.id;
         }
+
+        const { error: updateSessionErr } = await supabase
+            .from('dining_sessions')
+            .update({ customer_id: customerId })
+            .eq('id', session.id);
+
+        if (updateSessionErr) throw updateSessionErr;
 
         return res.json({
             success: true,

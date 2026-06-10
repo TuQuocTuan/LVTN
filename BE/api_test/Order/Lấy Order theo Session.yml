@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://localhost:5000/api/orders/97d593b1-7ab7-4187-b63d-68a271d6944a
+  url: http://localhost:5000/api/orders/1bf9dc16-3f13-4dec-86c0-b627ad11d8b6
   auth: inherit
 
 settings:
