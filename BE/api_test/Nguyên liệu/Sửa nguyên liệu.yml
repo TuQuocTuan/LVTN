@@ -1,0 +1,25 @@
+info:
+  name: Sửa nguyên liệu
+  type: http
+  seq: 9
+
+http:
+  method: PUT
+  url: http://localhost:5000/api/ingredients/update
+  body:
+    type: json
+    data: |-
+      {
+        "id":10,
+        "name":"Thịt heo",
+        "quantity":5000,
+        "unit":"g",
+        "min_stock":"0"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

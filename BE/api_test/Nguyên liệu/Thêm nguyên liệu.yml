@@ -1,0 +1,24 @@
+info:
+  name: Thêm nguyên liệu
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: http://localhost:5000/api/ingredients/add
+  body:
+    type: json
+    data: |-
+      {
+        "name":"Thịt heo",
+        "quantity":500,
+        "unit":"g",
+        "min_stock":"0"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,15 @@
+info:
+  name: Xoá nguyên liệu
+  type: http
+  seq: 10
+
+http:
+  method: DELETE
+  url: http://localhost:5000/api/ingredients/delete/10
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

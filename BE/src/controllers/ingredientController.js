@@ -65,12 +65,13 @@ export const updateIngredient = async (req, res) => {
         if (unit !== undefined) updateData.unit = unit.trim();
         if (min_stock !== undefined) updateData.min_stock = Number(min_stock);
 
+        const IngredientID = Number(id);
         if (updateData.name) {
             const { data: existingName, error: nameErr } = await supabase
                 .from('ingredients')
                 .select('id')
                 .ilike('name', updateData.name)
-                .neq('id', id)
+                .neq('id', IngredientID)
                 .maybeSingle();
 
             if (nameErr) throw nameErr;
@@ -78,20 +79,43 @@ export const updateIngredient = async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Tên nguyên liệu đã tồn tại!' });
             }
         }
-
-
-        const { data: updateIngredient, error: updateErr } = await supabase
+        const { data: updatedResult, error: updateErr } = await supabase
             .from('ingredients')
             .update(updateData)
-            .eq('id', id)
+            .eq('id', IngredientID)
             .select()
             .single();
+
         if (updateErr) throw updateErr;
-        return res.status(200).json({ success: true, message: 'Cập nhật nguyên liệu thành công', updateIngredient })
+
+        return res.status(200).json({
+            success: true,
+            message: 'Cập nhật nguyên liệu thành công',
+            updateIngredient: updatedResult
+        });
+
+    } catch (error) {
+        console.error("Lỗi cập nhật nguyên liệu:", error.message);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+}
+
+// Hàm xoá nguyên liệu
+export const deleteIngredients = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập ID để xoá!' });
+        }
+        const { error } = await supabase
+            .from('ingredients')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        return res.status(200).json({ success: true, message: 'Xoá nguyên liệu thành công' })
     }
     catch (error) {
         return res.status(500).json({ success: false, error: error.message })
     }
 }
-
 
