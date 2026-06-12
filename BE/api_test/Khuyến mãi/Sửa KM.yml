@@ -1,0 +1,29 @@
+info:
+  name: "Sửa KM "
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://localhost:5000/api/promotions/add
+  body:
+    type: json
+    data: |-
+      {
+        "code": "D",
+        "name": "EF",
+        "type": "global",
+        "discount_type": "amount",
+        "discount_value": 50000,
+        "min_bill_value": 200000,
+        "start_date": "2026-06-12",
+        "end_date": "2026-06-30",
+        "is_active": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

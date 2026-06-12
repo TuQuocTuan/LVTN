@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase.js';
-
+import moment from 'moment-timezone';
 // export const getCustomerVoucher = async (req, res) => {
 //     try {
 //         const { phone_number } = req.body;
@@ -39,6 +39,133 @@ export const getAllPromotions = async (req, res) => {
         if (promotionsErr) throw promotionsErr;
         return res.status(200).json({ success: true, message: 'Danh sách khuyến mãi', promtions });
     } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const addPromotions = async (req, res) => {
+    try {
+        const { code, name, type, discount_type, discount_value, min_bill_value, start_date, end_date, is_active } = req.body;
+
+        if (!code || !name || !type || !discount_type || !discount_value || !start_date || !end_date) {
+            return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ các thông tin bắt buộc!' });
+        }
+
+        const { data: existingPromo, error: fetchErr } = await supabase
+            .from('promotions')
+            .select('id')
+            .or(`code.eq.${code.toUpperCase()},name.eq.${name.toUpperCase()}`)
+            .maybeSingle();
+
+        if (fetchErr) throw fetchErr;
+
+        if (existingPromo) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mã hoặc tên khuyến mãi đã tồn tại!'
+            });
+        }
+
+        let formatData = {
+            code: code.toUpperCase(),
+            name: name.toUpperCase(),
+            type: type.toUpperCase(),
+            discount_type: discount_type.toUpperCase(),
+            discount_value: Number(discount_value),
+            min_bill_value: min_bill_value ? Number(min_bill_value) : null,
+            start_date: moment(start_date).tz("Asia/Ho_Chi_Minh").toISOString(),
+            end_date: moment(end_date).tz("Asia/Ho_Chi_Minh").toISOString(),
+            is_active: is_active !== undefined ? Boolean(is_active) : true,
+        };
+
+        const { data: addedPromo, error: addErr } = await supabase
+            .from('promotions')
+            .insert([formatData])
+            .select();
+        if (addErr) throw addErr;
+
+        return res.status(200).json({
+            success: true,
+            message: 'Thêm khuyến mãi thành công!',
+            data: addedPromo
+        });
+
+    } catch (error) {
+        console.error("Lỗi addPromotions:", error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const updatePromotion = async (req, res) => {
+    try {
+        const { id, code, name, type, discount_type, discount_value, min_bill_value, start_date, end_date, is_active } = req.body;
+        if (!code || !name || !type || !discount_type || !discount_value || !start_date || !end_date) {
+            return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ các thông tin bắt buộc!' });
+        }
+
+        const { data: existingPromo, error: fetchErr } = await supabase
+            .from('promotions')
+            .select('*')
+            .or(`code.eq.${code.toUpperCase()},name.eq.${name.toUpperCase()}`)
+            .neq('id', id)
+            .maybeSingle();
+        if (fetchErr) throw fetchErr;
+        if (existingPromo) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mã hoặc tên bị trùng'
+            });
+        }
+
+        let formatData = {
+            code: code.toUpperCase(),
+            name: name.toUpperCase(),
+            type: type.toUpperCase(),
+            discount_type: discount_type.toUpperCase(),
+            discount_value: Number(discount_value),
+            min_bill_value: min_bill_value ? Number(min_bill_value) : null,
+            start_date: moment(start_date).tz("Asia/Ho_Chi_Minh").toISOString(),
+            end_date: moment(end_date).tz("Asia/Ho_Chi_Minh").toISOString(),
+            is_active: is_active !== undefined ? Boolean(is_active) : true,
+        };
+
+        const { data: updatedPromo, error: updateErr } = await supabase
+            .from('promotions')
+            .update(formatData)
+            .eq('id', id)
+            .select();
+        if (updateErr) throw updateErr;
+
+        return res.status(200).json({
+            success: true,
+            message: 'Cập nhật khuyến mãi thành công!',
+            data: updatedPromo
+        });
+    } catch (error) {
+        console.error("Lỗi updatePromotion:", error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const deletePromotion = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp id' });
+        }
+
+        const { data: deletePromo, error: fetchErr } = await supabase
+            .from('promotions')
+            .delete()
+            .eq('id', id)
+            .select();
+        if (fetchErr) throw fetchErr;
+        if (!deletePromo) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy khuyến mãi' });
+        }
+        return res.status(200).json({ success: true, message: 'Xóa khuyến mãi thành công!', data: deletePromo });
+    } catch (error) {
+        console.error("Lỗi deletePromotion:", error.message);
         return res.status(500).json({ success: false, message: error.message });
     }
 }
