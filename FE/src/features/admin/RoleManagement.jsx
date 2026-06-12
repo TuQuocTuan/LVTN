@@ -67,7 +67,7 @@ const RoleManagement = () => {
     <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex">
       
       {/* Truyền currentTab="users" để Sidebar tự in đậm mục Quản lý nhân sự */}
-      <AdminSidebar currentTab="users" />
+      <AdminSidebar currentTab="user" />
       <AdminHeader />
 
       {/* MAIN CONTENT */}

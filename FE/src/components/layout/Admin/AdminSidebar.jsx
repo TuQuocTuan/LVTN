@@ -5,9 +5,10 @@ const AdminSidebar = ({ currentTab }) => {
   // Cấu hình danh sách menu để dễ quản lý và render bằng vòng lặp .map
   const menuItems = [
     { id: 'dashboard', label: 'Thống kê doanh thu', icon: 'bar_chart', path: '/admin/dashboard' },
-    { id: 'recipes', label: 'Quản lý công thức', icon: 'menu_book', path: '#' },
-    { id: 'dishes', label: 'Quản lý món ăn', icon: 'restaurant_menu', path: '#' },
-    { id: 'users', label: 'Quản lý nhân sự', icon: 'manage_accounts', path: '/admin/role-management' },
+    { id: 'inventory', label: 'Quản lý nguyên vật liệu', icon: 'inventory', path: '/admin/ingredient-management' },
+    { id: 'dish', label: 'Quản lý món ăn', icon: 'restaurant_menu', path: '/admin/dish-management' },
+    { id: 'user', label: 'Quản lý nhân sự', icon: 'manage_accounts', path: '/admin/role-management' },
+    { id: 'promotion', label: 'Ưu đãi & Tin tức', icon: 'campaign', path: '/admin/promotion-management' },
   ];
 
   return (

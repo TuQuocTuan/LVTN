@@ -407,7 +407,7 @@ export const getPendingOrders = async (req, res) => {
     try {
         const { data: orders, error: orderErr } = await supabase
             .from('orders')
-            .select(`status,id,order_details(quantity, dishes(name),note),dining_sessions (tables(name))`)
+            .select(`status,id,order_details(dish_id, quantity, dishes(name),note),dining_sessions (tables(name))`)
             .eq('status', 'pending')
 
         if (orderErr) throw orderErr;

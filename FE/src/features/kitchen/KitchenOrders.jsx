@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { supabase } from '../../config/supabase';
 
-const API_URL = import.meta.env.VITE_API_URL; 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; 
 
 const KitchenDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [isRecipeOpen, setIsRecipeOpen] = useState(false);
   const [currentRecipe, setCurrentRecipe] = useState({ dishName: '', details: [] });
   const [loading, setLoading] = useState(false);
+  
+  // Xử lý âm thanh thông báo
   const audio = new Audio('/Chinese Meme Ringtone Download.mp3');
 
   // 1. Hàm lấy danh sách order đang chờ
@@ -23,26 +25,25 @@ const KitchenDashboard = () => {
     }
   };
 
-  // Gọi API lấy dữ liệu lần đầu khi vào trang
-  // Gọi API lấy dữ liệu lần đầu và lắng nghe Realtime
+  // 2. Gọi API lấy dữ liệu lần đầu và lắng nghe Realtime
   useEffect(() => {
-    // 1. Tải danh sách đơn khi vừa vào trang
     fetchPendingOrders();
     
-    // 2. Kích hoạt "chuông báo" từ Supabase
     const orderSubscription = supabase
       .channel('kitchen-realtime')
       .on(
         'postgres_changes',
         { 
-          event: '*', // Lắng nghe mọi hành động Thêm/Sửa/Xóa
+          event: '*', 
           schema: 'public', 
-          table: 'orders' // Lắng nghe trên bảng orders
+          table: 'orders' 
         },
         (payload) => {
           console.log('Có order mới hoặc cập nhật từ Database:', payload);
-          audio.play().catch(err => console.log(err));
-          // Khi nghe chuông, chờ nửa giây (để DB lưu xong chi tiết món) rồi lấy danh sách mới
+          if (payload.eventType === 'INSERT') {
+            audio.play().catch(err => console.log("Lỗi phát âm thanh:", err));
+          }
+          
           setTimeout(() => {
             fetchPendingOrders(); 
           }, 500);
@@ -50,7 +51,6 @@ const KitchenDashboard = () => {
       )
       .subscribe();
 
-    // 3. Dọn dẹp bộ nhớ khi tắt giao diện Bếp
     return () => {
       supabase.removeChannel(orderSubscription);
     };
@@ -80,9 +80,32 @@ const KitchenDashboard = () => {
 
   const toggleRecipe = () => setIsRecipeOpen(!isRecipeOpen);
 
+  // 4. Hàm hoàn thành đơn hàng
+  const handleCompleteOrder = async (orderId) => {
+    try {
+      setLoading(true);
+      const response = await axios.post(`${API_URL}/orders/completeOrder`, {
+        order_id: orderId
+      });
+
+      if (response.data.success) {
+        console.log("Đã hoàn thành order và trừ nguyên liệu thành công:", orderId);
+        fetchPendingOrders();
+      } else {
+        alert("Lỗi từ server: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Lỗi hoàn thành đơn:", error);
+      alert("Không thể kết nối đến máy chủ để hoàn thành đơn!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-culinaryBg text-neutralCustom font-sans overflow-hidden flex">
-      <main className="flex-1 ml- relative">
+      {/* Đã sửa lỗi class ml- */}
+      <main className="flex-1 relative">
         <header className="flex justify-between items-center h-16 px-8 bg-white border-b border-neutralCustom/20 sticky top-0 z-40">
           <div>
             <h1 className="text-lg font-bold text-primary leading-none">Bếp & Bàn</h1>
@@ -108,28 +131,28 @@ const KitchenDashboard = () => {
                   <p className="text-[10px] font-bold text-neutralCustom uppercase">
                     {order.dining_sessions?.tables?.name || 'Mang đi'} • #{String(order.id).slice(0,4)}
                   </p>
-                  <h3 className="font-bold text-lg">Order mới</h3>
+                  <h3 className="font-bold text-lg text-gray-900">Order mới</h3>
                 </div>
               </div>
               
               <div className="p-5 space-y-3">
                 {order.order_details?.map((detail, index) => (
-                  <div key={index} className="flex justify-between items-center border-b border-gray-100 pb-2 last:border-0">
+                  <div key={index} className="flex justify-between items-center border-b border-neutralCustom/10 pb-2 last:border-0">
                     <div className="flex gap-3 font-semibold text-primary">
                       <span>{String(detail.quantity).padStart(2, '0')}</span>
                       <div className="flex flex-col">
-                        <span>{detail.dishes?.name}</span>
+                        <span className="text-gray-900">{detail.dishes?.name}</span>
                         {/* Hiện ghi chú nếu khách có dặn dò */}
                         {detail.note && <span className="text-xs text-red-500 italic font-normal">*{detail.note}</span>}
                       </div>
                     </div>
-                    <span 
-                      className="material-symbols-outlined cursor-pointer hover:text-primary transition-colors text-gray-400" 
+                    <button 
                       onClick={() => handleViewRecipe(detail.dish_id, detail.dishes?.name)}
+                      className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                       title="Xem công thức"
                     >
-                      menu_book
-                    </span>
+                      <span className="material-symbols-outlined text-[18px]">menu_book</span>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -138,7 +161,7 @@ const KitchenDashboard = () => {
                 <button 
                   onClick={() => handleCompleteOrder(order.id)}
                   disabled={loading}
-                  className="w-full py-2 bg-primary text-white rounded-lg font-bold hover:bg-secondary transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-secondary transition-colors disabled:opacity-50 shadow-md"
                 >
                   {loading ? 'ĐANG XỬ LÝ...' : 'HOÀN THÀNH'}
                 </button>
@@ -147,36 +170,75 @@ const KitchenDashboard = () => {
           ))}
         </div>
 
-        {/* Drawer xem công thức */}
-        <div className={`fixed inset-0 z-50 transition-opacity ${isRecipeOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          <div className="absolute inset-0 bg-neutralCustom/20 backdrop-blur-sm" onClick={toggleRecipe}></div>
-          <div className={`w-full max-w-2xl bg-white h-full ml-auto shadow-2xl transition-transform ${isRecipeOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-             <div className="p-6 border-b flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-primary">{currentRecipe.dishName}</h2>
-                <button onClick={toggleRecipe}><span className="material-symbols-outlined">close</span></button>
-             </div>
-             
-             <div className="p-6">
-                <h3 className="font-bold text-lg mb-4">Thành phần nguyên liệu:</h3>
-                {currentRecipe.details.length > 0 ? (
-                  <ul className="space-y-3 mb-8">
-                    {currentRecipe.details.map((item) => (
-                      <li key={item.id} className="flex justify-between items-center border-b pb-2">
-                        <span className="text-gray-700">{item.ingredients?.name}</span>
-                        <span className="font-bold text-primary">{item.amount_required} {item.ingredients?.unit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="italic text-gray-500 mb-8">Chưa có dữ liệu nguyên liệu.</p>
-                )}
-                
-                <button onClick={toggleRecipe} className="w-full py-4 bg-primary text-white rounded-xl font-bold hover:bg-opacity-90">
-                  ĐÓNG LẠI
+        {/* MODAL XEM CÔNG THỨC */}
+        {isRecipeOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
+              onClick={toggleRecipe}
+            ></div>
+            
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden transform transition-all border border-neutralCustom/20">
+              <div className="p-6 border-b border-neutralCustom/20 flex justify-between items-center bg-culinaryBg">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Công thức chi tiết
+                  </h3>
+                  <p className="text-primary font-bold mt-1">
+                    {currentRecipe.dishName}
+                  </p>
+                </div>
+                <button 
+                  className="material-symbols-outlined text-neutralCustom hover:bg-neutralCustom/10 p-2 rounded-full transition-colors" 
+                  onClick={toggleRecipe}
+                >
+                  close
                 </button>
-             </div>
+              </div>
+              
+              <div className="p-6 overflow-y-auto max-h-[60vh] bg-white">
+                {currentRecipe.details && currentRecipe.details.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs font-bold text-neutralCustom uppercase tracking-wider border-b border-neutralCustom/20 pb-2 mb-4">
+                      <span>Nguyên liệu</span>
+                      <span>Định lượng</span>
+                    </div>
+
+                    {currentRecipe.details.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center p-3 bg-culinaryBg/40 rounded-xl border border-neutralCustom/10 hover:bg-culinaryBg/80 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <span className="material-symbols-outlined text-primary/70">kitchen</span>
+                          <span className="font-bold text-gray-900">
+                            {item.ingredients?.name || 'Nguyên liệu không xác định'}
+                          </span>
+                        </div>
+                        <div className="font-bold text-primary bg-primary/10 px-3 py-1 rounded-lg">
+                          {item.amount_required} {item.ingredients?.unit}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10">
+                    <span className="material-symbols-outlined text-5xl text-neutralCustom/30 mb-3">
+                      restaurant_menu
+                    </span>
+                    <p className="text-neutralCustom font-medium">Món ăn này chưa có công thức.</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-5 bg-culinaryBg border-t border-neutralCustom/20 flex justify-end">
+                <button 
+                  onClick={toggleRecipe}
+                  className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-secondary active:scale-95 transition-all"
+                >
+                  Đóng cửa sổ
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
