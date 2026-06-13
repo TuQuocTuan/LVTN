@@ -140,7 +140,7 @@ export const closeTable = async (req, res) => {
                 closed_at: new Date().toISOString()
             })
             .eq('table_id', table_id)
-            .eq('status', 'open')
+            .eq('status', 'serving')
             .select()
             .maybeSingle();
         if (error) throw error;
@@ -151,6 +151,13 @@ export const closeTable = async (req, res) => {
                 message: 'Bàn chưa được mở!!!!'
             })
         }
+        return res.json({
+            success: true,
+            message: 'Đóng bàn thành công!',
+            session_id: session.id,
+            table_id,
+            closed_at: session.closed_at
+        });
 
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });

@@ -8,19 +8,14 @@ http:
   url: http://localhost:5000/api/orders/checkout
   body:
     type: json
-    data: "{\r
-
-      \  \"session_id\": \"be36cc68-61eb-476a-861f-0bb8862323bf\",\r
-
-      \  \"phone_number\": \"0901234567\",\r
-
-      \  \"email\": \"tuan@test.com\",\r
-
-      \  \"voucher_code\": \"TRIAN20K\",\r
-
-      \  \"is_preview\": true\r
-
-      }"
+    data: |-
+      {
+        "session_id": "80aed815-ace8-4ab7-9381-a697665aada1",
+        "phone_number": "0901234567",
+        "email": "tuan@test.com",
+        "voucher_code": "TRIAN20K",
+        "is_preview": true
+      }
   auth: inherit
 
 settings:

@@ -1,16 +1,16 @@
 info:
-  name: Hoàn thành đơn
+  name: Lấy tổng tiền
   type: http
-  seq: 9
+  seq: 6
 
 http:
-  method: POST
-  url: http://localhost:5000/api/orders/completeOrder
+  method: GET
+  url: http://localhost:5000/api/promotions/getcustomerbill
   body:
     type: json
     data: |-
       {
-          "order_id" : 71
+        "customer_id":"cc3fbd02-da92-4924-81c5-8eb655c1070e"
       }
   auth: inherit
 

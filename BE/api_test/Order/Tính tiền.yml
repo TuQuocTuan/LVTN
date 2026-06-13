@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "session_id": "1586ae32-83cf-418e-9d00-a35dfd752975",
+        "session_id": "4573eba3-a4d3-497c-8ffc-e872b8a5335a",
         "is_preview": false,
         "close_user": "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e",
         "payment_method": "cash", 

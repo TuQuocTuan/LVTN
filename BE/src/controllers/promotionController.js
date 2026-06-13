@@ -169,3 +169,91 @@ export const deletePromotion = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+export const calculateCustomerTotalBill = async (customer_id) => {
+    const { data: dining_session, error: fetchCusErr } = await supabase
+        .from('dining_sessions')
+        .select('customers(name, phone_number),id')
+        .eq('customer_id', customer_id);
+    if (fetchCusErr) throw fetchCusErr;
+
+    let arrayIDSession = dining_session.map((session) => session.id);
+    console.log(arrayIDSession);
+    let totalbill = 0;
+
+    const { data: bill, error: fetchBillErr } = await supabase
+        .from('bills')
+        .select('total_amount')
+        .in('session_id', arrayIDSession);
+    if (fetchBillErr) throw fetchBillErr;
+    totalbill = bill.reduce((total, item) => total + item.total_amount, 0);
+    return totalbill;
+}
+
+export const getTotalBillCustomer = async (req, res) => {
+    try {
+        const { customer_id } = req.body;
+        if (!customer_id) {
+            return res.status(400).json({ success: false, message: 'Thiếu Customer ID!' });
+        }
+
+        const totalbill = await calculateCustomerTotalBill(customer_id);
+
+        return res.status(200).json({ success: true, message: 'Tổng số tiền đã chi ra:', totalbill });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const addVoucherCustomer = async (req, res) => {
+    const { code, name, type, discount_type, discount_value, min_bill_value, start_date, end_date, is_active, customer_id } = req.body;
+
+    try {
+        if (!code || !name || !type || !discount_type || !discount_value || !start_date || !end_date || !customer_id) {
+            return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ các thông tin bắt buộc!' });
+        }
+
+        const totalBill = await calculateCustomerTotalBill(customer_id);
+
+        if (type === "VOUCHER" && totalBill < 5000000) {
+            return res.status(400).json({ success: false, message: 'Chưa đủ điều kiện chi tiêu 5 triệu!' });
+        }
+
+        let formatData = {
+            code: code.toUpperCase(),
+            name: name.toUpperCase(),
+            type: type.toUpperCase(),
+            discount_type: discount_type.toUpperCase(),
+            discount_value: Number(discount_value),
+            min_bill_value: min_bill_value ? Number(min_bill_value) : null,
+            start_date: moment(start_date).tz("Asia/Ho_Chi_Minh").toISOString(),
+            end_date: moment(end_date).tz("Asia/Ho_Chi_Minh").toISOString(),
+            is_active: is_active !== undefined ? Boolean(is_active) : true,
+        };
+
+        if (formatData.type === "VOUCHER") {
+            const { data: addedPromo, error: addErr } = await supabase
+                .from('promotions')
+                .insert([formatData])
+                .select('*,id')
+                .single();
+
+            if (addErr) throw addErr;
+
+            const { data: addedPromoCustomer, error: addErrCustomer } = await supabase
+                .from('customer_vouchers')
+                .insert({
+                    customer_id: customer_id,
+                    promotion_id: addedPromo.id,
+                    is_used: false,
+                    created_at: moment().tz("Asia/Ho_Chi_Minh").toISOString(),
+                })
+                .select();
+            if (addErrCustomer) throw addErrCustomer;
+        }
+        return res.status(200).json({ success: true, message: 'Thêm khuyến mãi thành công!' });
+    } catch (error) {
+        console.error("Lỗi addPromotions:", error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}

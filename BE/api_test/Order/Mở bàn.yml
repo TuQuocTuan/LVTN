@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "table_id": 2
+        "table_id": 3
       }
   auth: inherit
 
