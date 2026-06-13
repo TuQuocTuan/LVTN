@@ -80,35 +80,7 @@ export const getOrderBySession = async (req, res) => {
     }
 }
 
-//Hàm tính subtotal khi khách thêm món
-export const calculateSubtotal = (orders) => {
-    let sub_total = 0;
-    const billDetails = {};
-    orders.forEach(order => {
-        if (order.order_details && Array.isArray(order.order_details)) {
-            order.order_details.forEach(detail => {
-                const dishName = detail.dishes?.name;
-                if (!dishName) return;
 
-                const giahientai = detail.price;
-                const soluongsanpham = detail.quantity;
-                const tonggiahientai = soluongsanpham * giahientai;
-                if (billDetails[dishName]) {
-                    billDetails[dishName].quantity += soluongsanpham;
-                    billDetails[dishName].sub_total += tonggiahientai;
-                } else {
-                    billDetails[dishName] = {
-                        price: giahientai,
-                        quantity: soluongsanpham,
-                        sub_total: tonggiahientai
-                    }
-                }
-                sub_total += tonggiahientai;
-            });
-        }
-    });
-    return { sub_total, billDetails };
-}
 
 //Hàm tính giảm giá  
 export const calculateDiscount = async (sub_total, voucher_code, customerId) => {
@@ -261,22 +233,37 @@ const handleFinalPayment = async (session_id, close_user, payment_method, custom
     return session.users?.fullname;
 };
 
-
+//Gom bill và tính tạm tính
 export const getTamtinhBill = async (session_id) => {
     try {
         let totals = 0;
+        const gomBill = {};
+
         const { data: orders, error: fetchErr } = await supabase
             .from('orders')
-            .select('id,sub_total,order_details(dish_id(name),quantity,price)')
+            .select('id, sub_total, order_details(dishes(name), quantity, price)')
             .eq('session_id', session_id)
             .eq('status', 'completed');
 
         if (fetchErr) throw fetchErr;
 
+        orders.forEach(order => {
+            order.order_details.forEach(detail => {
+                const tenmon = detail.dishes?.name;
+                const soluong = detail.quantity;
+                const giatien = detail.price;
+                if (gomBill[tenmon]) {
+                    gomBill[tenmon].quantity += soluong;
+                } else {
+                    gomBill[tenmon] = { quantity: soluong, price: giatien };
+                }
+            })
+        })
+
         totals = orders.reduce((tong, item) => tong + item.sub_total, 0);
 
         if (fetchErr) throw fetchErr;
-        return { orders: orders, total: totals };
+        return { orders: orders, total: totals, billDetails: gomBill };
     } catch (error) {
         return { success: false, message: error.message };
     }
@@ -285,24 +272,13 @@ export const getTamtinhBill = async (session_id) => {
 //Hàm tính tiền và đóng bàn
 export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
-        const {
-            session_id,
-            close_user,
-            is_preview,
-            payment_method,
-            customer_name,
-            phone_number,
-            email,
-            voucher_code
-        } = req.body;
+        const { session_id, close_user, is_preview, payment_method, customer_name, phone_number, email, voucher_code } = req.body;
 
-        const { orders, total: sub_total } = await getTamtinhBill(session_id);
+        const { orders, total: sub_total, billDetails } = await getTamtinhBill(session_id);
 
         if (!orders || orders.length === 0) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn cho phiên ăn này!' });
         }
-
-        const { billDetails } = calculateSubtotal(orders);
 
         let customerId = null;
         let isNewCustomerOrMissingEmail = false;
