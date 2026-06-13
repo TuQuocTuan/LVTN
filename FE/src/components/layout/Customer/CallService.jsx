@@ -1,12 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../config/supabase';
 
-const CallService = () => {
+const CallService = ({ tableName = "Bàn 2" }) => {
   const [showModal, setShowModal] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
   const [called, setCalled] = useState(false);
+  const [channel, setChannel] = useState(null);
 
-  const handleCall = () => {
+  // Khởi tạo kết nối tới Channel khi component mount
+  useEffect(() => {
+    const notifyChannel = supabase.channel('restaurant-notifications');
+    // Đăng ký tham gia channel
+    notifyChannel.subscribe((status) => {});
+    
+    setChannel(notifyChannel);
+
+    return () => {
+      supabase.removeChannel(notifyChannel);
+    };
+  }, []);
+
+  const handleCall = async () => {
     setIsCalling(true);
+
+    if (channel) {
+      // Thêm await để chờ kết quả trả về từ Supabase
+      const status = await channel.send({
+        type: 'broadcast',
+        event: 'call_staff',
+        payload: { 
+          tableName: tableName, 
+          time: new Date().toLocaleTimeString(),
+          message: 'Khách cần hỗ trợ'
+        }
+      });
+    } else {
+      console.error("Lỗi: Kênh kết nối chưa sẵn sàng!");
+    }
+
     setTimeout(() => {
       setIsCalling(false);
       setCalled(true);

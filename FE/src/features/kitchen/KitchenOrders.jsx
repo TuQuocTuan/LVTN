@@ -9,6 +9,9 @@ const KitchenDashboard = () => {
   const [isRecipeOpen, setIsRecipeOpen] = useState(false);
   const [currentRecipe, setCurrentRecipe] = useState({ dishName: '', details: [] });
   const [loading, setLoading] = useState(false);
+
+  const [notifications, setNotifications] = useState([]);
+  const [showNotiDropdown, setShowNotiDropdown] = useState(false);
   
   // Xử lý âm thanh thông báo
   const audio = new Audio('/Chinese Meme Ringtone Download.mp3');
@@ -34,16 +37,19 @@ const KitchenDashboard = () => {
       .on(
         'postgres_changes',
         { 
-          event: '*', 
+          event: 'INSERT',
           schema: 'public', 
           table: 'orders' 
         },
         (payload) => {
-          console.log('Có order mới hoặc cập nhật từ Database:', payload);
-          if (payload.eventType === 'INSERT') {
-            audio.play().catch(err => console.log("Lỗi phát âm thanh:", err));
-          }
-          
+          audio.play().catch(err => console.log("Lỗi phát âm thanh:", err));
+          const newNotification = {
+            tableName: `Mã đơn #${String(payload.new.id).slice(0,4)}`, 
+            time: new Date().toLocaleTimeString(),
+            message: 'Vừa có order mới cần chế biến!'
+          };
+          setNotifications(prev => [newNotification, ...prev]);
+        
           setTimeout(() => {
             fetchPendingOrders(); 
           }, 500);
@@ -112,7 +118,64 @@ const KitchenDashboard = () => {
             <p className="text-xs text-neutralCustom opacity-70">Hệ thống quản lý</p>
           </div>
           <div className="flex items-center gap-4">
-            <button className="text-neutralCustom hover:text-primary"><span className="material-symbols-outlined">notifications</span></button>
+            <div className="flex items-center gap-4 relative">
+              <button 
+                onClick={() => setShowNotiDropdown(!showNotiDropdown)}
+                className={`hover:text-primary transition-colors relative p-1.5 rounded-full flex items-center justify-center ${showNotiDropdown ? 'text-primary bg-primary/10' : 'text-neutralCustom'}`}
+              >
+                <span className="material-symbols-outlined text-2xl">notifications</span>
+                {notifications.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {showNotiDropdown && (
+                <div className="absolute -right-16 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutralCustom/20 py-3 z-50">
+                  <div className="flex justify-between items-center px-4 pb-2 border-b border-neutralCustom/10">
+                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                      Danh sách gọi phục vụ
+                    </h4>
+                    {notifications.length > 0 && (
+                      <button 
+                        onClick={() => setNotifications([])}
+                        className="text-xs text-primary hover:underline font-semibold"
+                      >
+                        Xóa tất cả
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto mt-2 px-2 space-y-1">
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-8 text-sm text-neutralCustom opacity-60 flex flex-col items-center justify-center gap-1">
+                        <span className="material-symbols-outlined text-3xl opacity-40">notifications_off</span>
+                        Không có thông báo mới
+                      </div>
+                    ) : (
+                      notifications.map((note, index) => (
+                        <div key={index} className="flex justify-between items-start p-2.5 rounded-xl hover:bg-culinaryBg/60 transition-colors border-b border-gray-50 last:border-none">
+                          <div className="flex gap-2.5">
+                            <span className="material-symbols-outlined text-primary text-xl mt-0.5">notifications_active</span>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">{note.tableName}</p>
+                              <p className="text-[11px] font-medium text-primary mt-0.5">{note.message}</p>
+                              <p className="text-[11px] text-neutralCustom opacity-80 mt-0.5">{note.time}</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setNotifications(prev => prev.filter((_, i) => i !== index)); }}
+                            className="text-neutralCustom hover:text-red-500 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-base">close</span>
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2 font-semibold text-primary">
               <span className="material-symbols-outlined">account_circle</span>
               <span>Bếp trưởng</span>

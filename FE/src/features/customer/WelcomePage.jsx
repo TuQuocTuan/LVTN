@@ -53,7 +53,7 @@ const WelcomePage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          table_id: 2,
+          table_id: 6,
           name: name,
           phone_number: phone
         })

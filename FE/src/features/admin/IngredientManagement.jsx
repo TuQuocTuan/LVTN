@@ -1,22 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminSidebar from '../../components/layout/Admin/AdminSidebar';
 import AdminHeader from '../../components/layout/Admin/AdminHeader';
 
+// Cấu hình URL gọi API
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const IngredientManagement = () => {
-  // State quản lý danh mục và tìm kiếm
   const [activeCategory, setActiveCategory] = useState('Tất cả kho');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // STATE: Quản lý dữ liệu từ API
+  const [ingredients, setIngredients] = useState([]);
+  const [categories, setCategories] = useState(['Tất cả kho']); // Khởi tạo mặc định có 'Tất cả kho'
+  const [isLoading, setIsLoading] = useState(true);
 
-  const categories = ['Tất cả kho', 'Thịt', 'Rau củ', 'Đồ khô', 'Bơ sữa', 'Gia vị', 'Tinh bột'];
+  // 1. GỌI API LẤY DANH MỤC NGUYÊN LIỆU
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_URL}/categories/category_ingredients`);
+      const result = await response.json();
 
-  // Dữ liệu mẫu (Khớp với model trả về từ ingredientController.js)
-  const mockIngredients = [
-    { id: 1, name: 'Thịt bò Wagyu A5', category: 'Thịt', unit: 'kg', quantity: 4.2, min_stock: 15, price: 2400000, image: 'https://images.unsplash.com/photo-1603048297172-c92544798d5e?w=150&h=150&fit=crop' },
-    { id: 2, name: 'Bún tươi', category: 'Tinh bột', unit: 'kg', quantity: 45.0, min_stock: 10, price: 15000, image: 'https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=150&h=150&fit=crop' },
-    { id: 3, name: 'Hoa hồi nguyên cánh', category: 'Gia vị', unit: 'hộp', quantity: 0, min_stock: 2, price: 85000, image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=150&h=150&fit=crop' },
-    { id: 4, name: 'Cà rốt hữu cơ', category: 'Rau củ', unit: 'kg', quantity: 12.5, min_stock: 10, price: 35000, image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=150&h=150&fit=crop' },
-    { id: 5, name: 'Sữa tươi nguyên chất', category: 'Bơ sữa', unit: 'lít', quantity: 82.0, min_stock: 15, price: 22000, image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=150&h=150&fit=crop' }
-  ];
+      if (result.success && result.categories) {
+        // Backend trả về mảng object [{name: 'Thịt'}, {name: 'Rau củ'}]
+        // Ta cần map nó ra thành mảng chuỗi và chèn 'Tất cả kho' lên đầu
+        const categoryNames = result.categories.map(cat => cat.name);
+        setCategories(['Tất cả kho', ...categoryNames]);
+      }
+    } catch (error) {
+      console.error("Lỗi khi fetch danh mục nguyên liệu:", error);
+    }
+  };
+
+  // 2. GỌI API LẤY DANH SÁCH NGUYÊN LIỆU
+  const fetchIngredients = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_URL}/ingredients`);
+      const result = await response.json();
+
+      if (result.success) {
+       const formattedData = result.data.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          min_stock: item.min_stock,
+          
+          // ĐỌC ĐÚNG OBJECT TỪ BACKEND TRẢ VỀ:
+          category: item.category_ingredients?.name || 'Khác', 
+          
+          price: item.price || 0,
+          image: item.image_url || 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=150&h=150&fit=crop'
+      }));
+        setIngredients(formattedData);
+      } else {
+        console.error("Lỗi từ server:", result.message);
+      }
+    } catch (error) {
+      console.error("Lỗi khi fetch nguyên liệu:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 3. Chạy 1 lần khi mở trang để tải cả danh mục và nguyên liệu
+  useEffect(() => {
+    fetchCategories();
+    fetchIngredients();
+  }, []);
+
+  // Hàm gọi API XÓA nguyên liệu
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa nguyên liệu "${name}" không?`)) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/ingredients/delete/${id}`, {
+        method: 'DELETE'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        alert("Xóa thành công!");
+        fetchIngredients(); // Tải lại danh sách sau khi xóa
+      } else {
+        alert("Lỗi: " + result.message);
+      }
+    } catch (error) {
+      alert("Lỗi kết nối đến máy chủ!");
+    }
+  };
 
   // Hàm tính toán trạng thái tồn kho và màu sắc hiển thị
   const getStockStatus = (quantity, min_stock) => {
@@ -27,7 +99,7 @@ const IngredientManagement = () => {
   };
 
   // Logic lọc dữ liệu
-  const filteredIngredients = mockIngredients.filter(item => {
+  const filteredIngredients = ingredients.filter(item => {
     const matchCategory = activeCategory === 'Tất cả kho' || item.category === activeCategory;
     const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
@@ -89,14 +161,6 @@ const IngredientManagement = () => {
                   </button>
                 ))}
               </div>
-              <div className="ml-auto flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 border border-neutralCustom/20 bg-white rounded-lg text-neutralCustom font-bold text-sm hover:bg-culinaryBg transition-colors shadow-sm">
-                  <span className="material-symbols-outlined text-[18px]">filter_list</span> Bộ lọc
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 border border-neutralCustom/20 bg-white rounded-lg text-neutralCustom font-bold text-sm hover:bg-culinaryBg transition-colors shadow-sm">
-                  <span className="material-symbols-outlined text-[18px]">file_download</span> Xuất file
-                </button>
-              </div>
             </div>
 
             {/* Table Header */}
@@ -110,8 +174,13 @@ const IngredientManagement = () => {
             </div>
 
             {/* Table Rows */}
-            <div className="flex-1 overflow-y-auto">
-              {filteredIngredients.length > 0 ? (
+            <div className="flex-1 overflow-y-auto relative">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-full text-neutralCustom/60 py-10 animate-pulse">
+                  <span className="material-symbols-outlined text-4xl mb-2">hourglass_empty</span>
+                  <p>Đang tải dữ liệu kho...</p>
+                </div>
+              ) : filteredIngredients.length > 0 ? (
                 filteredIngredients.map((item) => {
                   const status = getStockStatus(item.quantity, item.min_stock);
                   const isOutOfStock = item.quantity === 0;
@@ -151,21 +220,25 @@ const IngredientManagement = () => {
                         </div>
                       </div>
 
-                      {/* Mức cảnh báo (Đã căn giữa) */}
+                      {/* Mức cảnh báo */}
                       <div className="col-span-1 text-neutralCustom text-sm font-medium text-center">{item.min_stock} {item.unit}</div>
 
-                      {/* Đơn giá (Đã căn phải) */}
+                      {/* Đơn giá */}
                       <div className="col-span-2 text-gray-900 text-sm font-bold text-right">
-                        {item.price.toLocaleString('vi-VN')} đ
+                        {item.price > 0 ? `${item.price.toLocaleString('vi-VN')} đ` : '---'}
                       </div>
 
-                      {/* Thao tác (Đã xóa nút Lịch sử, căn phải) */}
+                      {/* Thao tác */}
                       <div className="col-span-1 flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                         <button className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Chỉnh sửa">
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
-                        <button className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Điều chỉnh kho">
-                          <span className="material-symbols-outlined text-[18px]">tune</span>
+                        <button 
+                          onClick={() => handleDelete(item.id, item.name)}
+                          className="p-1.5 text-neutralCustom hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" 
+                          title="Xóa nguyên liệu"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
                       </div>
                     </div>
@@ -186,7 +259,6 @@ const IngredientManagement = () => {
                   <span className="material-symbols-outlined text-sm">chevron_left</span>
                 </button>
                 <button className="px-3 py-1 bg-primary text-white rounded-lg font-bold shadow-sm">1</button>
-                <button className="px-3 py-1 hover:bg-white rounded-lg text-neutralCustom font-medium transition-colors">2</button>
                 <button className="p-1.5 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom transition-colors">
                   <span className="material-symbols-outlined text-sm">chevron_right</span>
                 </button>

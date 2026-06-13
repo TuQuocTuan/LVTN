@@ -8,25 +8,11 @@ export const getIngredients = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('ingredients')
-            .select('id,name,quantity,unit,min_stock,updated_at')
+            .select('id,name,quantity,unit,min_stock,updated_at,category_ingredients(name)')
         if (error) throw error;
         res.status(200).json({ success: true, data })
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi không lấy được nguyên liệu' })
-    }
-}
-
-export const getIngredientsByCate = async (req, res) => {
-    try {
-        const { category_id } = req.params;
-        const { data, error } = await supabase
-            .from('ingredients')
-            .select('name, quantity, unit, min_stock,updated_at')
-            .eq('category_id', category_id)
-        if (error) throw error;
-        return res.status(200).json({ success: true, data })
-    } catch (error) {
-        return res.status(500).json({ success: false, message: 'Lỗi không lấy được nguyên liệu' })
     }
 }
 
