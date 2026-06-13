@@ -16,6 +16,20 @@ export const getIngredients = async (req, res) => {
     }
 }
 
+export const getIngredientsByCate = async (req, res) => {
+    try {
+        const { category_id } = req.params;
+        const { data, error } = await supabase
+            .from('ingredients')
+            .select('name, quantity, unit, min_stock,updated_at')
+            .eq('category_id', category_id)
+        if (error) throw error;
+        return res.status(200).json({ success: true, data })
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Lỗi không lấy được nguyên liệu' })
+    }
+}
+
 export const addIngredients = async (req, res) => {
     try {
         const { name, quantity, unit, min_stock } = req.body;
