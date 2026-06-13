@@ -178,7 +178,6 @@ export const calculateCustomerTotalBill = async (customer_id) => {
     if (fetchCusErr) throw fetchCusErr;
 
     let arrayIDSession = dining_session.map((session) => session.id);
-    console.log(arrayIDSession);
     let totalbill = 0;
 
     const { data: bill, error: fetchBillErr } = await supabase

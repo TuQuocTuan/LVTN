@@ -6,6 +6,21 @@ info:
 http:
   method: POST
   url: http://localhost:5000/api/promotions/addvoucher
+  body:
+    type: json
+    data: |-
+      {
+        "code": "vouchergiamgia",
+        "name": "voucher tặng khách",
+        "type": "voucher",
+        "discount_type": "amount",
+        "discount_value": 50000,
+        "min_bill_value": 0,
+        "start_date": "2026-06-13",
+        "end_date": "2026-06-30",
+        "is_active": true,
+        "customer_id": "cc3fbd02-da92-4924-81c5-8eb655c1070e"
+      }
   auth: inherit
 
 settings:
