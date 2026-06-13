@@ -30,6 +30,8 @@ import moment from 'moment-timezone';
 //     }
 // }
 
+
+//Hàm lấy KM
 export const getAllPromotions = async (req, res) => {
     try {
         const { data: promtions, error: promotionsErr } = await supabase
@@ -43,6 +45,7 @@ export const getAllPromotions = async (req, res) => {
     }
 }
 
+//Hàm thêm KM
 export const addPromotions = async (req, res) => {
     try {
         const { code, name, type, discount_type, discount_value, min_bill_value, start_date, end_date, is_active } = req.body;
@@ -96,6 +99,7 @@ export const addPromotions = async (req, res) => {
     }
 }
 
+//Hàm cập nhật KM
 export const updatePromotion = async (req, res) => {
     try {
         const { id, code, name, type, discount_type, discount_value, min_bill_value, start_date, end_date, is_active } = req.body;
@@ -147,6 +151,7 @@ export const updatePromotion = async (req, res) => {
     }
 }
 
+//Hàm xoá KM
 export const deletePromotion = async (req, res) => {
     try {
         const { id } = req.params;
@@ -170,6 +175,7 @@ export const deletePromotion = async (req, res) => {
     }
 }
 
+//Hàm tính tổng bill của khách
 export const calculateCustomerTotalBill = async (customer_id) => {
     const { data: dining_session, error: fetchCusErr } = await supabase
         .from('dining_sessions')
@@ -189,6 +195,7 @@ export const calculateCustomerTotalBill = async (customer_id) => {
     return totalbill;
 }
 
+//Hàm lấy tổng bill của khách
 export const getTotalBillCustomer = async (req, res) => {
     try {
         const { customer_id } = req.body;
@@ -204,6 +211,7 @@ export const getTotalBillCustomer = async (req, res) => {
     }
 }
 
+//Hàm thêm voucher cho khách
 export const addVoucherCustomer = async (req, res) => {
     const { code, name, type, discount_type, discount_value, min_bill_value, start_date, end_date, is_active, customer_id } = req.body;
 

@@ -2,7 +2,7 @@
 //=====================================================
 
 import express from 'express';
-import { createOrder, getCheckoutBillandCloseSession, getPendingOrders, updateOrderStatus, getOrderBySession, cancelOrderStatus } from '../controllers/orderController.js';
+import { createOrder, getCheckoutBillandCloseSession, getPendingOrders, updateOrderStatus, getOrderBySession, cancelOrderStatus, getTamtinhBill } from '../controllers/orderController.js';
 
 const router = express.Router();
 
@@ -11,5 +11,6 @@ router.post('/checkout', getCheckoutBillandCloseSession);
 router.get('/pendingOrders', getPendingOrders);
 router.post('/completeOrder', updateOrderStatus);
 router.post('/cancelOrder', cancelOrderStatus);
+router.get('/tamtinh', getTamtinhBill)
 router.get('/:session_id', getOrderBySession);
 export default router;

@@ -261,6 +261,27 @@ const handleFinalPayment = async (session_id, close_user, payment_method, custom
     return session.users?.fullname;
 };
 
+
+export const getTamtinhBill = async (session_id) => {
+    try {
+        let totals = 0;
+        const { data: orders, error: fetchErr } = await supabase
+            .from('orders')
+            .select('id,sub_total,order_details(dish_id(name),quantity,price)')
+            .eq('session_id', session_id)
+            .eq('status', 'completed');
+
+        if (fetchErr) throw fetchErr;
+
+        totals = orders.reduce((tong, item) => tong + item.sub_total, 0);
+
+        if (fetchErr) throw fetchErr;
+        return { orders: orders, total: totals };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
 //Hàm tính tiền và đóng bàn
 export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
@@ -275,27 +296,13 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             voucher_code
         } = req.body;
 
-        const { data: orders, error: orderErr } = await supabase
-            .from('orders')
-            .select(`
-                id, 
-                sub_total,
-                total_amount, 
-                created_at,
-                order_details(
-                    quantity, 
-                    price,
-                    dishes(name)
-                )
-            `)
-            .eq('session_id', session_id);
+        const { orders, total: sub_total } = await getTamtinhBill(session_id);
 
-        if (orderErr) throw orderErr;
         if (!orders || orders.length === 0) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn cho phiên ăn này!' });
         }
 
-        const { sub_total, billDetails } = calculateSubtotal(orders);
+        const { billDetails } = calculateSubtotal(orders);
 
         let customerId = null;
         let isNewCustomerOrMissingEmail = false;
