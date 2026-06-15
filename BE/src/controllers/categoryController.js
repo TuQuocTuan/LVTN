@@ -19,7 +19,7 @@ export const getIngredientsCategories = async (req, res) => {
     try {
         const { data: categories, error: fetchErr } = await supabase
             .from('category_ingredients')
-            .select('name')
+            .select('id,name')
         if (fetchErr) throw fetchErr;
 
         res.status(200).json({
