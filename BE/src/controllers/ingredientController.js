@@ -16,10 +16,6 @@ export const getIngredients = async (req, res) => {
     }
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> a3ac3ac (a)
 export const addIngredients = async (req, res) => {
     try {
         const { name, quantity, unit, min_stock, category_id } = req.body;
