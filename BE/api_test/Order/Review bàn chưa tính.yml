@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "session_id": "80aed815-ace8-4ab7-9381-a697665aada1",
+        "session_id": "417881ef-d14f-4eee-8cdd-17f64a1d449b",
         "phone_number": "0901234567",
         "email": "tuan@test.com",
         "voucher_code": "TRIAN20K",

@@ -1,90 +1,138 @@
+import qs from 'qs';
 import crypto from 'crypto';
-import axios from 'axios';
+import moment from 'moment-timezone';
 
-export const createMoMoPayment = async (req, res) => {
+// Hàm helper mã hóa chuẩn viết hoa ký tự đặc biệt của VNPay (Dùng chung cho cả tạo link và IPN)
+const vnpEncode = (str) => {
+    return encodeURIComponent(str)
+        .replace(/%20/g, '+') // VNPay bắt buộc khoảng trắng trong chuỗi hash phải là dấu +
+        .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+};
+
+// 1. Hàm tạo link thanh toán VNPay
+export const createVnPayUrl = (req, session_id, amount) => {
+    let ipAddr = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    if (ipAddr === '::1' || ipAddr === '::ffff:127.0.0.1') {
+        ipAddr = '127.0.0.1';
+    }
+
+    // 🎯 ĐÃ ĐỒNG BỘ: Điền chính xác thông tin từ Email của bạn
+    const tmnCode = 'HFZO9WRM';
+    const secretKey = 'HXWPBBC8GOHC2CWLRJUYV0L2O51IUIOI';
+    const vnpUrl = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+    const returnUrl = process.env.VNP_RETURN_URL || 'http://localhost:5173/payment-return';
+
+    const date = new Date();
+    const createDate = moment(date).tz("Asia/Ho_Chi_Minh").format('YYYYMMDDHHmmss');
+
+    let vnp_Params = {
+        'vnp_Version': '2.1.0',
+        'vnp_Command': 'pay',
+        'vnp_TmnCode': tmnCode,
+        'vnp_Locale': 'vn',
+        'vnp_CurrCode': 'VND',
+        'vnp_TxnRef': `${session_id}_${createDate}`,
+        'vnp_OrderInfo': `Thanh toan hoa don phien an ${session_id}`,
+        'vnp_OrderType': 'other',
+        'vnp_Amount': amount * 100,
+        'vnp_ReturnUrl': returnUrl,
+        'vnp_IpAddr': ipAddr,
+        'vnp_CreateDate': createDate
+    };
+
+    // Sắp xếp tham số theo alphabet
+    vnp_Params = Object.keys(vnp_Params)
+        .sort()
+        .reduce((obj, key) => {
+            obj[key] = vnp_Params[key];
+            return obj;
+        }, {});
+
+    // Tự nối chuỗi signData để tạo mã băm
+    const signData = Object.entries(vnp_Params)
+        .map(([key, val]) => `${encodeURIComponent(key)}=${vnpEncode(val)}`)
+        .join('&');
+
+    const hmac = crypto.createHmac("sha512", secretKey);
+    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+
+    vnp_Params['vnp_SecureHash'] = signed;
+
+    // Ghép thành chuỗi URL hoàn chỉnh
+    const linkParams = Object.entries(vnp_Params)
+        .map(([key, val]) => `${encodeURIComponent(key)}=${vnpEncode(val)}`)
+        .join('&');
+
+    return `${vnpUrl}?${linkParams}`;
+};
+
+
+// 2. Hàm IPN hứng và xác thực kết quả thanh toán ngầm từ VNPay
+export const vnpayIPN = async (req, res) => {
     try {
-        const { session_id, tongtien } = req.body;
+        let vnp_Params = req.query;
+        const secureHash = vnp_Params['vnp_SecureHash'];
 
-        if (!session_id || !tongtien) {
-            return res.status(400).json({ success: false, message: 'Thiếu session_id hoặc tongtien!' });
+        delete vnp_Params['vnp_SecureHash'];
+        delete vnp_Params['vnp_SecureHashType'];
+
+        // Sắp xếp tham số theo alphabet
+        vnp_Params = Object.keys(vnp_Params)
+            .sort()
+            .reduce((obj, key) => {
+                obj[key] = vnp_Params[key];
+                return obj;
+            }, {});
+
+        // 🎯 ĐÃ ĐỒNG BỘ: Dùng đúng mã secretKey từ email
+        const secretKey = 'HXWPBBC8GOHC2CWLRJUYV0L2O51IUIOI';
+
+        // 🎯 ĐÃ ĐỒNG BỘ: Sử dụng cùng hàm vnpEncode ghép chuỗi đối chiếu giống hàm tạo link
+        const signData = Object.entries(vnp_Params)
+            .map(([key, val]) => `${encodeURIComponent(key)}=${vnpEncode(val)}`)
+            .join('&');
+
+        const hmac = crypto.createHmac("sha512", secretKey);
+        const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+
+        if (secureHash === signed) {
+            const responseCode = vnp_Params['vnp_ResponseCode'];
+            const txnRef = vnp_Params['vnp_TxnRef'];
+            const session_id = txnRef.split('_')[0];
+
+            if (responseCode === '00') {
+                // 🎯 KÉO LOGIC UPDATE DATABASE QUA ĐÂY:
+                // 1. Chuyển status của dining_sessions thành 'closed'
+                // 2. Insert dữ liệu vào bảng bills thành công
+
+                console.log(`Thanh toan thanh cong cho session: ${session_id}`);
+                return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
+            } else {
+                console.log(`Giao dich that bai hoặc bi huy: ${responseCode}`);
+                return res.status(200).json({ RspCode: '01', Message: 'Payment Failed' });
+            }
+        } else {
+            console.log("Lỗi: Không trùng khớp chữ ký SecureHash!");
+            return res.status(200).json({ RspCode: '97', Message: 'Invalid Checksum' });
         }
-
-        const partnerCode = "MOMO";
-        const accessKey = "P8yK0Pq7B2f7nK5m";
-        const secretKey = "v0F8eC0w3mJ7zY9qX6kZ0w3e";
-        const endpoint = "https://test-payment.momo.vn/v2/gateway/api/create";
-        const redirectUrl = "http://localhost:3000/payment-success";
-        const ipnUrl = "https://state-bobbing-faculty.ngrok-free.dev/api/payments/momo-ipn"; // Đã sửa thừa dấu ;;
-
-        const orderId = partnerCode + new Date().getTime();
-        const requestId = orderId;
-        const orderInfo = `Thanh toan don hang cho session ${session_id}`;
-
-        // CẬP NHẬT: Đảm bảo số tiền luôn là số nguyên sạch sẽ
-        const amount = Math.round(Number(tongtien)).toString();
-        const requestType = "captureWallet";
-
-        // CẬP NHẬT: Thay vì dùng JSON.stringify, truyền chuỗi text thuần túy để tránh lỗi ký tự đặc biệt
-        const extraData = `session_id=${session_id}`;
-
-        // Tạo chuỗi ký số theo quy định nghiêm ngặt của MoMo
-        const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&requestId=${requestId}&redirectUrl=${redirectUrl}&requestType=${requestType}`;
-
-        const signature = crypto
-            .createHmac('sha256', secretKey)
-            .update(rawSignature)
-            .digest('hex');
-
-        const requestBody = {
-            partnerCode, requestId, orderId, orderInfo, amount,
-            redirectUrl, ipnUrl, requestType, extraData, signature,
-            lang: 'vi'
-        };
-
-        // Bắn dữ liệu sang MoMo Server
-        const momoResponse = await axios.post(endpoint, requestBody);
-
-        // Trả payUrl về cho Frontend chuyển hướng người dùng
-        return res.json({
-            success: true,
-            payUrl: momoResponse.data.payUrl
-        });
-
     } catch (error) {
-        if (error.response) {
-            console.log("MoMo Error Data:", error.response.data);
-        }
-        return res.status(500).json({ success: false, message: error.message });
+        return res.status(500).json({ RspCode: '99', Message: error.message });
     }
 };
 
-// 2. WEBHOOK IPN (MOMO TỰ ĐỘNG GỌI NGẦM ĐỂ CẬP NHẬT TRẠNG THÁI CLOSED)
-export const momoIPNListener = async (req, res) => {
+
+// 3. Request API phụ trợ tạo Url độc lập
+export const createPaymentUrlRequest = async (req, res) => {
     try {
-        const { resultCode, extraData } = req.body;
+        const { session_id, amount } = req.body;
 
-        if (resultCode === 0 && extraData) {
-            // CẬP NHẬT: Tách chuỗi lấy giá trị session_id sau dấu "="
-            const session_id = extraData.split('=')[1];
-
-            // Tự động cập nhật trạng thái đóng bàn dưới Supabase
-            const { error } = await supabase
-                .from('dining_sessions')
-                .update({
-                    status: 'closed',
-                    closed_at: new Date().toISOString(),
-                    payment_method: 'momo'
-                })
-                .eq('id', session_id);
-
-            if (error) throw error;
-            console.log(`[MoMo] Đã tự động đóng bàn thành công cho session: ${session_id}`);
+        if (!session_id || !amount) {
+            return res.status(400).json({ success: false, message: "Thiếu session_id hoặc amount!" });
         }
 
-        return res.status(204).send();
-
+        const paymentUrl = createVnPayUrl(req, session_id, amount);
+        return res.status(200).json({ success: true, payment_url: paymentUrl });
     } catch (error) {
-        console.error('[MoMo IPN Error]:', error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ success: false, message: error.message });
     }
 };

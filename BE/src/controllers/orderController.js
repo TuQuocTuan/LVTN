@@ -4,6 +4,7 @@
 
 import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
+import { createVnPayUrl } from '../controllers/paymentController.js';
 
 //Hàm tạo Order
 export const createOrder = async (req, res) => {
@@ -166,7 +167,7 @@ export const calculateDiscount = async (sub_total, voucher_code, customerId) => 
 
 
 //Hàm xử lý thanh toán cuối cùng: cập nhật thông tin khách hàng, đổi trạng thái voucher, đóng phiên ăn
-const handleFinalPayment = async (session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId, financialData) => {
+const handleFinalPayment = async (req, session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId, financialData) => {
     let customerId = null;
 
     if (phone_number) {
@@ -199,7 +200,27 @@ const handleFinalPayment = async (session_id, close_user, payment_method, custom
             .eq('id', client_voucher_id);
     }
 
-    const { data: session, error } = await supabase
+    const { data: sessionData, error: sessionErr } = await supabase
+        .from('dining_sessions')
+        .select('*, users (fullname)')
+        .eq('id', session_id)
+        .single();
+
+    if (sessionErr) throw sessionErr;
+
+    const { sub_total, discount_amount, vat_rate, vat_amount, tongtien } = financialData;
+
+    if (payment_method.toUpperCase() === 'VNPAY') {
+        const vnpayUrl = createVnPayUrl(req, session_id, tongtien);
+
+        return {
+            payment_type: 'ONLINE',
+            payment_url: vnpayUrl,
+            closed_by: 'Chờ thanh toán VNPay'
+        };
+    }
+
+    const { error: closeErr } = await supabase
         .from('dining_sessions')
         .update({
             status: 'closed',
@@ -207,13 +228,9 @@ const handleFinalPayment = async (session_id, close_user, payment_method, custom
             closed_at: new Date().toISOString(),
             payment_method: payment_method
         })
-        .eq('id', session_id)
-        .select('*, users (fullname)')
-        .single();
+        .eq('id', session_id);
 
-    if (error) throw error;
-
-    const { sub_total, discount_amount, vat_rate, vat_amount, tongtien } = financialData;
+    if (closeErr) throw closeErr;
 
     const { error: billErr } = await supabase
         .from('bills')
@@ -225,12 +242,15 @@ const handleFinalPayment = async (session_id, close_user, payment_method, custom
             vat_amount,
             total_amount: tongtien,
             payment_method,
-            created_by: session.users?.fullname
+            created_by: sessionData.users?.fullname
         }]);
 
     if (billErr) throw billErr;
 
-    return session.users?.fullname;
+    return {
+        payment_type: 'OFFLINE',
+        closed_by: sessionData.users?.fullname
+    };
 };
 
 //Gom bill và tính tạm tính
@@ -338,6 +358,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Vui lòng chọn phương thức thanh toán!' });
             }
             closedByName = await handleFinalPayment(
+                req,
                 session_id,
                 close_user,
                 payment_method,
@@ -368,7 +389,8 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             is_missing_email: isNewCustomerOrMissingEmail,
             created_at: thoigianthanhtoan,
             session_id,
-            closed_by: closedByName,
+            closed_by: is_preview ? 'Khách xem tạm tính' : closedByName.closed_by,
+            payment_url: is_preview ? null : (closedByName.payment_url || null),
             payment_method: is_preview ? null : payment_method,
             items: billDetails,
             sub_total,
@@ -377,7 +399,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             vat_amount,
             tongtien,
             voucher_name: appliedVoucherName || "Không áp dụng",
-            is_closed: !is_preview
+            is_closed: !is_preview && payment_method.toUpperCase() !== 'VNPAY'
         });
 
     } catch (error) {

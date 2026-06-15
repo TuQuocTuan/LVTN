@@ -14,7 +14,8 @@ http:
         "name":"Thịt heo",
         "quantity":5000,
         "unit":"g",
-        "min_stock":"0"
+        "min_stock":"0",
+        "category_id":"1"
       }
   auth: inherit
 

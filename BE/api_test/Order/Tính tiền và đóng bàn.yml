@@ -10,10 +10,10 @@ http:
     type: json
     data: |-
       {
-        "session_id": "a392e4eb-dea0-4243-b6f7-e09f27bb9a9c",
+        "session_id": "417881ef-d14f-4eee-8cdd-17f64a1d449b",
         "is_preview": false,
         "close_user": "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e",
-        "payment_method": "cash", 
+        "payment_method": "VNPAY", 
         "phone_number": "0896415447",
         "customer_name": "Quốc Tuấn",
         "voucher_code": "TRIAN20K",

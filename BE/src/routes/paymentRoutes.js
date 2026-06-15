@@ -1,9 +1,9 @@
 import express from 'express';
-import { createMoMoPayment, momoIPNListener } from '../controllers/paymentController.js';
+import { vnpayIPN, createPaymentUrlRequest } from '../controllers/paymentController.js';
 
 const router = express.Router();
 
-router.post('/momo', createMoMoPayment);
-router.post('/momo-ipn', momoIPNListener);
+router.get('/vnpay-ipn', vnpayIPN);
+router.post('/vnpay', createPaymentUrlRequest);
 
 export default router;
