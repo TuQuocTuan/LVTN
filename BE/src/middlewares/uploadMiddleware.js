@@ -21,3 +21,12 @@ export const uploadDishImage = (req, res, next) => {
         next();
     });
 };
+
+export const uploadNewsImage = (req, res, next) => {
+    upload(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, message: `Lỗi Multer: ${err.message}` });
+        }
+        next();
+    });
+};

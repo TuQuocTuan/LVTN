@@ -1,11 +1,11 @@
 info:
-  name: New Request
+  name: Lấy tin tức
   type: http
-  seq: 3
+  seq: 1
 
 http:
   method: GET
-  url: ""
+  url: http://localhost:5000/api/news/
   auth: inherit
 
 settings:

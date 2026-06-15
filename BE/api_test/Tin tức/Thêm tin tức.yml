@@ -1,0 +1,37 @@
+info:
+  name: Thêm tin tức
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:5000/api/news/add
+  body:
+    type: multipart-form
+    data:
+      - name: promotion_id
+        type: text
+        value: 71cb3d9a-4f6e-411d-a00d-06cc3c715353
+      - name: title
+        type: text
+        value: Vừa tới lệnh cấm vape, Độ Mixi đã đi đầu làm gương cho anh em xem stream
+      - name: content
+        type: text
+        value: Bước qua ngày đầu năm mới 2025, thì theo Nghị Quyết của Chính Phủ cuối tháng 11 các hành vi sản xuất, kinh doanh, nhập khẩu, vận chuyển, sử dụng thuốc lá điện tử, thuốc lá nung nóng (vape, Pod) đều là hành vi vi phạm pháp luật.Kể từ khi được ban hành, Nghị quyết này Độ Mixi đã tích cực vận động, khuyến khích fan của mình đều tuân thủ quy định của pháp luật. Dù trước đây không thiếu những hình ảnh của Độ Mixi sử dụng các món thuốc lá điện tử, nhưng đó là chuyện quá khứ khi chưa có quy định cụ thể. Bây giờ, thì Tộc Trưởng quyết định sẽ đi đầu làm gương từ bỏ thú chơi này để khuyến khích cộng đồng fan của mình từ bỏ thú vui này.Ngay sau ngày bắt đầu có lệnh cấm, nam streamer đã quyết định thể hiện sự tuân thủ nghiêm minh với pháp luật bằng chính hành động của mình. Theo đó, Tộc Trưởng đã đăng tải video mình dọn sạch sẽ luôn kho thuốc lá điện tử và bỏ vào thùng tác.
+      - name: image
+        type: file
+        value:
+          - C:\Users\ADMIN\Desktop\do-mixi-tu-bo-thuoc-la-dien-tu-thumb.jpg
+      - name: is_published
+        type: text
+        value: "true"
+      - name: created_at
+        type: text
+        value: 2026-15-6
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
