@@ -70,6 +70,7 @@ export const createVnPayUrl = (req, session_id, amount) => {
 // 2. Hàm IPN hứng và xác thực kết quả thanh toán ngầm từ VNPay
 export const vnpayIPN = async (req, res) => {
     try {
+
         let vnp_Params = req.query;
         const secureHash = vnp_Params['vnp_SecureHash'];
 
