@@ -7,13 +7,6 @@ const AdminHeader = ({ userName = "Admin User", userRole = "Quản lý" }) => {
   return (
     <header className="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-white border-b border-neutralCustom/20 z-40 flex items-center justify-end px-8 shadow-sm">
       <div className="flex items-center gap-4">
-        
-        {/* Nút thông báo */}
-        <button className="p-2 rounded-full text-neutralCustom hover:text-primary transition-colors relative">
-          <span className="material-symbols-outlined">notifications</span>
-          <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-
         {/* Khung User có thêm relative để căn chỉnh dropdown bên trong */}
         <div className="flex items-center gap-3 pl-4 border-l border-neutralCustom/20 relative">
           <div className="text-right hidden lg:block">

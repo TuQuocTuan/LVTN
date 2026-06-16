@@ -76,7 +76,8 @@ const PaymentPage = () => {
           type: 'broadcast',
           event: 'call_staff',
           payload: { 
-            tableName: `${tableName} (Tính tiền)`, 
+            tableName: tableName, 
+            type: 'checkout',
             time: new Date().toLocaleTimeString(),
             message: 'Khách yêu cầu thanh toán'
           }

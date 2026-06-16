@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../config/supabase';  
+import StaffHeader from '../../components/layout/Staff/StaffHeader';
 
 // Cấu hình URL Backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -16,7 +17,12 @@ const TableManager = () => {
   const [tables, setTables] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // File âm thanh của bạn
+  const [billData, setBillData] = useState(null);
+  const [loadingBill, setLoadingBill] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [voucherCode, setVoucherCode] = useState('');
+
   const audio = new Audio('/Chinese Meme Ringtone Download.mp3');
 
   // Lấy danh sách bàn từ API
@@ -55,6 +61,36 @@ const TableManager = () => {
     }
   };
 
+  // FETCH: Lấy dữ liệu hóa đơn tạm tính từ API
+  const fetchCurrentBill = async (sessionId) => {
+    if (!sessionId) return;
+    try {
+      setLoadingBill(true);
+      setBillData(null);
+      const response = await fetch(`${API_BASE_URL}/orders/${sessionId}`);
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        const allOrders = result.data; 
+        
+        // Lọc món đã chế biến xong để tính tiền
+        const completedOrders = allOrders.filter(o => o.status === 'completed');
+        const calculatedSubTotal = completedOrders.reduce((acc, order) => acc + Number(order.sub_total || 0), 0);
+
+        setBillData({
+          allOrders: allOrders,
+          orders: completedOrders,
+          subTotal: calculatedSubTotal,
+          grandTotal: calculatedSubTotal * 1.1 // VAT 10%
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi lấy tạm tính:", error);
+    } finally {
+      setLoadingBill(false);
+    }
+  };
+
   useEffect(() => {
     fetchTables(); 
 
@@ -67,6 +103,18 @@ const TableManager = () => {
 
     return () => supabase.removeChannel(channel);
   }, []);
+
+  // Lắng nghe hành động click chọn bàn để nạp thông tin hóa đơn tương ứng
+  useEffect(() => {
+    if (selectedTable && selectedTable.sessionId && selectedTable.status !== 'empty') {
+      fetchCurrentBill(selectedTable.sessionId);
+    } else {
+      setBillData(null);
+      setPhoneNumber('');
+      setEmail('');
+      setVoucherCode('');
+    }
+  }, [selectedTable]);
 
   // Gọi API Mở Bàn Mới
   const handleOpenTable = async (tableId) => {
@@ -91,9 +139,9 @@ const TableManager = () => {
     }
   };
 
-  // Gọi API Đóng Bàn
+  // CHỨC NĂNG ĐÓNG BÀN (Huỷ không thu tiền)
   const handleCloseTable = async (tableId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn đóng bàn này không?")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn đóng bàn này mà không tính tiền không?")) return;
     
     try {
       const response = await fetch(`${API_BASE_URL}/sessions/close`, {
@@ -113,6 +161,63 @@ const TableManager = () => {
     } catch (error) {
       console.error("Lỗi đóng bàn:", error);
       alert("Không thể kết nối đến server.");
+    }
+  };
+
+  // CHỨC NĂNG THANH TOÁN (Trực tuyến & Tiền mặt)
+  const handleCheckout = async (paymentMethod) => {
+    if (!selectedTable?.sessionId) return;
+    
+    if (!billData || !billData.allOrders || billData.allOrders.length === 0) {
+      return alert("Bàn này chưa gọi món ăn nào!");
+    }
+
+    if (!billData.orders || billData.orders.length === 0) {
+      return alert("Các món ăn tại bàn này đều ở trạng thái [Đang chế biến].\n\nPhải có ít nhất 1 món đã hoàn thành mới có thể tính tiền!");
+    }
+
+    const confirmMsg = paymentMethod === 'CASH' 
+      ? `Xác nhận thanh toán TIỀN MẶT cho ${selectedTable.name}?` 
+      : `Xác nhận tạo mã VNPAY QR cho ${selectedTable.name}?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: selectedTable.sessionId,
+          payment_method: paymentMethod, // Truyền 'CASH' hoặc 'VNPAY' tương ứng nút bấm
+          customer_name: 'Khách tại bàn',
+          phone_number: phoneNumber.trim() || null,
+          email: email.trim() || null,
+          voucher_code: voucherCode.trim() || null,
+          is_preview: false,
+          close_user: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e' 
+        })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        if (paymentMethod === 'CASH') {
+          alert(`Thanh toán thành công!\nSố tiền thu: ${data.tongtien.toLocaleString('vi-VN')} đ`);
+          handleCloseModal();
+          fetchTables();
+        } else if (paymentMethod === 'VNPAY') {
+          if (data.payment_url) {
+            window.open(data.payment_url, '_blank');
+            handleCloseModal();
+            fetchTables();
+          } else {
+            alert("Không sinh được link VNPAY: " + data.message);
+          }
+        }
+      } else {
+        alert("Lỗi xử lý hóa đơn: " + data.message);
+      }
+    } catch (error) {
+      alert("Lỗi kết nối API thanh toán!");
     }
   };
 
@@ -138,84 +243,19 @@ const TableManager = () => {
   return (
     <div className="bg-culinaryBg text-neutralCustom font-sans min-h-screen flex">
       <main className="flex-1 relative">
+
         {/* Header */}
-        <header className="flex justify-between items-center h-16 px-8 sticky top-0 z-40 bg-white border-b border-neutralCustom/20">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">Bàn & Thanh Toán</h1>
-            <p className="text-sm text-neutralCustom opacity-70">Hệ thống quản lý</p>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 relative">
-              <button 
-                onClick={() => setShowNotiDropdown(!showNotiDropdown)}
-                className={`hover:text-primary transition-colors relative p-1.5 rounded-full flex items-center justify-center ${showNotiDropdown ? 'text-primary bg-primary/10' : 'text-neutralCustom'}`}
-              >
-                <span className="material-symbols-outlined text-2xl">notifications</span>
-                {notifications.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
+        <StaffHeader 
+          title="Bàn & Thanh Toán"
+          subtitle="Hệ thống quản lý"
+          userName="Thu Ngân Nguyễn"
+          userRole="Nhân viên thu ngân"
+          notifications={notifications}
+          onDismissNotification={(index) => setNotifications(prev => prev.filter((_, i) => i !== index))}
+          onClearAllNotifications={() => setNotifications([])}
+        />
 
-              {showNotiDropdown && (
-                <div className="absolute -right-16 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutralCustom/20 py-3 z-50">
-                  <div className="flex justify-between items-center px-4 pb-2 border-b border-neutralCustom/10">
-                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                      Danh sách gọi phục vụ
-                    </h4>
-                    {notifications.length > 0 && (
-                      <button 
-                        onClick={() => setNotifications([])}
-                        className="text-xs text-primary hover:underline font-semibold"
-                      >
-                        Xóa tất cả
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-64 overflow-y-auto mt-2 px-2 space-y-1">
-                    {notifications.length === 0 ? (
-                      <div className="text-center py-8 text-sm text-neutralCustom opacity-60 flex flex-col items-center justify-center gap-1">
-                        <span className="material-symbols-outlined text-3xl opacity-40">notifications_off</span>
-                        Không có thông báo mới
-                      </div>
-                    ) : (
-                      notifications.map((note, index) => (
-                        <div key={index} className="flex justify-between items-start p-2.5 rounded-xl hover:bg-culinaryBg/60 transition-colors border-b border-gray-50 last:border-none">
-                          <div className="flex gap-2.5">
-                            <span className="material-symbols-outlined text-primary text-xl mt-0.5">notifications_active</span>
-                            <div>
-                              <p className="text-sm font-bold text-gray-900">{note.tableName} gọi phục vụ!</p>
-                              <p className="text-[11px] text-neutralCustom opacity-80 mt-0.5">{note.time}</p>
-                            </div>
-                          </div>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setNotifications(prev => prev.filter((_, i) => i !== index)); }}
-                            className="text-neutralCustom hover:text-red-500 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-base">close</span>
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-3 pl-6 border-l border-neutralCustom/20">
-              <div className="text-right">
-                <p className="text-sm font-bold text-gray-900 leading-none">Thu Ngân Nguyễn</p>
-                <p className="text-[10px] text-neutralCustom uppercase tracking-wider mt-1">Nhân viên thu ngân</p>
-              </div>
-              <div className="flex items-center gap-4 text-neutralCustom">
-                <button className="material-symbols-outlined hover:text-primary transition-colors">account_circle</button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Nôi dung chính */}
+        {/* Nội dung chính Sơ đồ bàn */}
         <div className="p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
             <div>
@@ -226,7 +266,6 @@ const TableManager = () => {
             </div>
           </div>
 
-          {/* Bộ Lọc */}
           <div className="flex flex-wrap items-center gap-2 mb-8 px-4 py-3 bg-white rounded-2xl shadow-sm border border-neutralCustom/20">
             <button onClick={() => setActiveFilter('all')} className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${activeFilter === 'all' ? 'bg-neutralCustom/10 ring-1 ring-neutralCustom/30' : 'hover:bg-culinaryBg'}`}>
               <span className="material-symbols-outlined text-[18px] text-neutralCustom">lists</span>
@@ -252,7 +291,6 @@ const TableManager = () => {
             </button>
           </div>
 
-          {/* Render Sơ đồ bàn */}
           {isLoading ? (
             <div className="flex justify-center py-20 text-neutralCustom">Đang tải dữ liệu bàn...</div>
           ) : (
@@ -305,64 +343,164 @@ const TableManager = () => {
         </div>
       </main>
 
-      {/* Modal & Backdrop */}
-      <div className={`fixed inset-0 z-[60] transition-all duration-300 ${isModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={handleCloseModal}></div>
-        <div className={`fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-[70] flex flex-col transform transition-transform duration-300 border-l border-neutralCustom/20 ${isModalOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-          <div className="p-6 border-b border-neutralCustom/20 flex justify-between items-center bg-culinaryBg">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">Chi tiết {selectedTable?.name}</h3>
-              <p className="text-xs text-neutralCustom/80 mt-0.5">
-                Trạng thái: {selectedTable?.status === 'empty' ? 'Bàn trống' : selectedTable?.status === 'occupied' ? 'Đang phục vụ' : 'Chờ thanh toán'}
-              </p>
-            </div>
-            <button className="material-symbols-outlined text-neutralCustom hover:bg-neutralCustom/10 p-2 rounded-full transition-colors" onClick={handleCloseModal}>close</button>
-          </div>
+      {/* KHU VỰC MODAL POPUP CHÍNH GIỮA MÀN HÌNH */}
+      {isModalOpen && selectedTable && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={handleCloseModal}></div>
           
-          <div className="flex-1 p-6 overflow-y-auto">
-            {selectedTable?.status === 'empty' && (
-              <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                <span className="material-symbols-outlined text-6xl text-neutralCustom/30 mb-3">grid_view</span>
-                <p className="text-base font-bold text-gray-900">Bàn hiện đang trống</p>
-                <p className="text-sm text-neutralCustom/70 mt-1">Chưa có phiên ăn nào được mở tại bàn này.</p>
-              </div>
-            )}
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh] z-[70]">
             
-            {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
-              <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                 <span className="material-symbols-outlined text-6xl text-primary/30 mb-3">restaurant</span>
-                 <p className="text-base font-bold text-gray-900">Bàn đang có khách</p>
+            {/* Header Popup */}
+            <div className="p-5 border-b border-neutralCustom/20 flex justify-between items-center bg-culinaryBg">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Chi tiết {selectedTable?.name}</h3>
+                <p className="text-xs text-neutralCustom/80 mt-0.5">
+                  Trạng thái: {selectedTable?.status === 'empty' ? 'Bàn trống' : selectedTable?.status === 'occupied' ? 'Đang phục vụ' : 'Chờ thanh toán'}
+                </p>
               </div>
-            )}
-          </div>
-          
-          <div className="p-6 bg-culinaryBg border-t border-neutralCustom/20">
-            {/* TH1: MỞ BÀN */}
-            {selectedTable?.status === 'empty' && (
-              <button 
-                onClick={() => handleOpenTable(selectedTable.id)}
-                className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all flex items-center justify-center gap-2"
-              >
-                <span className="material-symbols-outlined">add_circle</span>
-                MỞ BÀN MỚI
+              <button className="material-symbols-outlined text-neutralCustom hover:bg-neutralCustom/10 p-2 rounded-full transition-colors" onClick={handleCloseModal}>
+                close
               </button>
-            )}
+            </div>
+            
+            {/* Nội dung Popup */}
+            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-white">
+              {selectedTable?.status === 'empty' && (
+                <div className="flex flex-col items-center justify-center h-full text-center py-10">
+                  <span className="material-symbols-outlined text-6xl text-neutralCustom/30 mb-3">grid_view</span>
+                  <p className="text-base font-bold text-gray-900">Bàn hiện đang trống</p>
+                  <p className="text-sm text-neutralCustom/70 mt-1">Chưa có phiên ăn nào được mở tại bàn này.</p>
+                </div>
+              )}
+              
+              {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
+                <div className="h-full flex flex-col justify-between space-y-4">
+                   <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-primary font-bold text-sm border-b pb-2">
+                         <span className="material-symbols-outlined text-sm">restaurant_menu</span>
+                         Món ăn đã đặt tại bàn:
+                      </div>
 
-            {/* TH2: BÀN CÓ KHÁCH (ĐÓNG BÀN) */}
-            {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
-              <div className="space-y-3">
-                <button className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all">THANH TOÁN</button>
+                      {loadingBill ? (
+                        <div className="text-center py-4 text-xs text-neutralCustom animate-pulse">Đang đồng bộ hóa đơn tạm tính...</div>
+                      ) : billData && billData.allOrders && billData.allOrders.length > 0 ? (
+                        <div className="space-y-2 max-h-52 overflow-y-auto custom-scrollbar pr-1">
+                          {billData.allOrders.map((order, oIdx) => 
+                            order.order_details.map((detail, dIdx) => (
+                              <div key={`${oIdx}-${dIdx}`} className={`flex justify-between items-center text-xs p-2.5 rounded-xl border transition-all mb-2
+                                ${order.status === 'pending' ? 'bg-amber-50/60 border-amber-200' : 'bg-culinaryBg/30 border-neutralCustom/10'}`}
+                              >
+                                <div>
+                                  <p className="font-bold text-gray-900">
+                                    {detail.dishes?.name}
+                                    {order.status === 'pending' && (
+                                      <span className="ml-2 text-[9px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-medium animate-pulse">Đang chế biến</span>
+                                    )}
+                                  </p>
+                                  {detail.note && <p className="text-[10px] text-orange-600 italic mt-0.5">📌 {detail.note}</p>}
+                                </div>
+                                <span className="bg-primary/10 text-primary font-black px-2 py-0.5 rounded-md">x{detail.quantity}</span>
+                              </div>
+                            ))
+                          )}
+                          
+                          {/* KHU VỰC THÔNG TIN KHÁCH HÀNG & EMAIL */}
+                          <div className="pt-4 border-t border-neutralCustom/10 space-y-3 mt-4">
+                            <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Khách hàng & Khuyến mãi</p>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <input 
+                                type="text" 
+                                placeholder="Số điện thoại" 
+                                value={phoneNumber}
+                                onChange={(e) => setPhoneNumber(e.target.value)}
+                                className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                              />
+                              <input 
+                                type="email" 
+                                placeholder="Email nhận hóa đơn" 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                              />
+                            </div>
+                            
+                            <input 
+                              type="text" 
+                              placeholder="Mã giảm giá / Voucher" 
+                              value={voucherCode}
+                              onChange={(e) => setVoucherCode(e.target.value)}
+                              className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all uppercase"
+                            />
+                          </div>
+
+                        </div>
+                      ) : (
+                        <p className="text-xs text-amber-600 bg-amber-50 p-3 rounded-xl text-center">Bàn đã mở nhưng chưa tạo yêu cầu gọi món nào!</p>
+                      )}
+                   </div>
+
+                   {/* Tính tiền các món nấu chín */}
+                   {billData && (
+                      <div className="border-t border-dashed pt-4 space-y-1 text-sm">
+                         <div className="flex justify-between text-neutralCustom">
+                            <span>Cộng tiền món (Đã chín):</span>
+                            <span className="font-bold text-gray-800">{billData.subTotal?.toLocaleString('vi-VN')} đ</span>
+                         </div>
+                         <div className="flex justify-between text-gray-900 font-black text-base border-t pt-2 mt-2">
+                            <span>Tạm tính (Gồm VAT 10%):</span>
+                            <span className="text-primary text-xl">{billData.grandTotal?.toLocaleString('vi-VN')} đ</span>
+                         </div>
+                      </div>
+                   )}
+                </div>
+              )}
+            </div>
+            
+            {/* FOOTER POPUP - VỚI 3 NÚT TÁCH BIỆT RÕ RÀNG */}
+            <div className="p-5 bg-culinaryBg border-t border-neutralCustom/20">
+              {selectedTable?.status === 'empty' && (
                 <button 
-                  onClick={() => handleCloseTable(selectedTable.id)}
-                  className="w-full border-2 border-primary text-primary py-3 rounded-xl font-bold text-sm hover:bg-primary/10 transition-all bg-white"
+                  onClick={() => handleOpenTable(selectedTable.id)}
+                  className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all flex items-center justify-center gap-2"
                 >
-                  ĐÓNG BÀN
+                  <span className="material-symbols-outlined">add_circle</span>
+                  MỞ BÀN MỚI
                 </button>
-              </div>
-            )}
+              )}
+
+              {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
+                <div className="space-y-3">
+                  {/* Nút 2 & 3: Thanh toán Tiền Mặt / Thanh toán VNPay */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => handleCheckout('CASH')}
+                      className="w-full bg-primary text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-secondary transition-all"
+                    >
+                      TIỀN MẶT
+                    </button>
+                    <button 
+                      onClick={() => handleCheckout('VNPAY')}
+                      className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                      VN PAY
+                    </button>
+                  </div>
+
+                  {/* Nút 1: Đóng bàn */}
+                  <button 
+                    onClick={() => handleCloseTable(selectedTable.id)}
+                    className="w-full border-2 border-primary text-primary py-3 rounded-xl font-bold text-sm hover:bg-primary/10 transition-all bg-white"
+                  >
+                    ĐÓNG BÀN (HỦY PHIÊN)
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

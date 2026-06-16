@@ -6,65 +6,35 @@ const WelcomePage = () => {
 
   // State quản lý hiệu ứng trượt lên lúc mới vào trang
   const [isVisible, setIsVisible] = useState(false);
-
-  // Các state mới cho Popup
-  const [showPopup, setShowPopup] = useState(false);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Thêm state loading khi gọi API
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
-  // Hàm xử lý khi bấm nút "Bắt đầu gọi món" ở màn hình chính
-  const handleOpenPopup = () => {
-    setShowPopup(true);
-    setError('');
-  };
-
-  // Hàm xử lý khi khách bấm "Xác nhận" trong Popup
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // 1. Kiểm tra dữ liệu đầu vào
-    if (!name.trim() || !phone.trim()) {
-      setError('Vui lòng nhập đầy đủ Tên và Số điện thoại!');
-      return;
-    }
-
-    const phoneRegex = /^0\d{9}$/;
-    if (!phoneRegex.test(phone)) {
-      setError('Số điện thoại không hợp lệ (Phải đủ 10 số và bắt đầu bằng 0)!');
-      return;
-    }
-
-    // 2. GỌI API XUỐNG BACKEND
+  // Hàm xử lý khi bấm nút "Bắt đầu gọi món"
+  const handleStartOrdering = async () => {
     setIsLoading(true);
     setError('');
 
     try {
-      // Gọi API open-menu (Nhớ đảm bảo server Node.js đang chạy ở port 5000)
+      // Gọi API open-menu
       const response = await fetch(`${import.meta.env.VITE_API_URL}/sessions/open-menu`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          table_id: 6,
-          name: name,
-          phone_number: phone
+          table_id: 6 // Mã bàn (hiện tại bạn đang fix cứng là 6, sau này có thể lấy từ URL param)
         })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // NẾU THÀNH CÔNG: Lưu dữ liệu Backend trả về vào két sắt
-        localStorage.setItem('customerName', name);
-        localStorage.setItem('customerPhone', phone);
+        // NẾU THÀNH CÔNG: Lưu dữ liệu Backend trả về vào két sắt (bỏ lưu name và phone)
         localStorage.setItem('sessionId', data.session_id); // Dùng để gọi món sau này
         localStorage.setItem('creatorId', data.creator_id); // Dùng để biết ai là người gọi
 
@@ -79,17 +49,6 @@ const WelcomePage = () => {
       setError('Không thể kết nối đến máy chủ. Vui lòng gọi phục vụ!');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handlePhoneChange = (e) => {
-    // Dùng Regex để loại bỏ tất cả các ký tự không phải là số (0-9) khi đang gõ
-    const onlyNumbers = e.target.value.replace(/[^0-9]/g, '');
-
-    // Chỉ cho phép cập nhật vào state nếu độ dài <= 10
-    if (onlyNumbers.length <= 10) {
-      setPhone(onlyNumbers);
-      setError('');
     }
   };
 
@@ -131,96 +90,37 @@ const WelcomePage = () => {
 
           <div className="w-full glass-card border border-neutralCustom/20 rounded-xl p-8 mb-10 text-center shadow-lg">
             <div className="text-xs font-bold text-neutralCustom mb-2">VỊ TRÍ CHỖ NGỒI</div>
-            <div className="font-bold text-primary text-6xl md:text-7xl mb-1">Bàn số 12</div>
+            <div className="font-bold text-primary text-6xl md:text-7xl mb-1">Bàn số 6</div>
             <div className="w-12 h-1 bg-primary mx-auto rounded-full mt-4"></div>
           </div>
 
+          {/* Hiển thị lỗi nếu bàn chưa mở */}
+          {error && (
+            <div className="w-full mb-4 p-3 bg-red-50 border border-red-200 rounded-xl animate-bounce">
+              <p className="text-red-500 text-sm font-bold text-center">{error}</p>
+            </div>
+          )}
+
+          {/* Nút Bắt đầu gọi món gánh luôn luồng API */}
           <button
-            onClick={handleOpenPopup}
-            className="w-full bg-primary text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-primary/30 transition-all duration-300 hover:bg-orange-700 active:scale-95 flex items-center justify-center gap-3"
+            onClick={handleStartOrdering}
+            disabled={isLoading}
+            className="w-full bg-primary text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-primary/30 transition-all duration-300 hover:bg-orange-700 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-70 disabled:active:scale-100"
           >
-            <span className="material-symbols-outlined">restaurant_menu</span>
-            Bắt đầu gọi món
+            {isLoading ? (
+              <>
+                <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                Đang mở thực đơn...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined">restaurant_menu</span>
+                Bắt đầu gọi món
+              </>
+            )}
           </button>
         </div>
       </main>
-
-      {/* =========================================
-          POPUP ĐIỀN THÔNG TIN KHÁCH HÀNG
-      ========================================== */}
-      {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
-            onClick={() => !isLoading && setShowPopup(false)}
-          ></div>
-
-          <div className="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-[pulse_0.2s_ease-out]">
-            <button
-              disabled={isLoading}
-              onClick={() => setShowPopup(false)}
-              className="absolute top-4 right-4 text-neutralCustom hover:text-gray-900 bg-gray-100 rounded-full p-1 disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[20px]">close</span>
-            </button>
-
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Thông tin của bạn</h3>
-              <p className="text-sm text-neutralCustom mt-1">Vui lòng cho bếp biết tên của bạn nhé!</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Field: Tên */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1 ml-1">Họ và Tên</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={isLoading}
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block px-4 py-3 outline-none transition-colors disabled:opacity-60"
-                  />
-                </div>
-              </div>
-
-              {/* Field: Số điện thoại (Đã gọi đúng hàm handlePhoneChange) */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1 ml-1">Số điện thoại</label>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={handlePhoneChange}
-                    disabled={isLoading}
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-primary focus:border-primary block px-4 py-3 outline-none transition-colors disabled:opacity-60"
-                  />
-                </div>
-              </div>
-
-              {error && <p className="text-red-500 text-xs font-semibold text-center animate-bounce">{error}</p>}
-
-              {/* Nút Xác nhận */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-primary text-white font-bold text-base py-3.5 rounded-xl shadow-lg shadow-primary/30 active:scale-95 transition-all mt-2 flex justify-center items-center gap-2 disabled:bg-gray-400 disabled:shadow-none"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-                    Đang xử lý...
-                  </>
-                ) : (
-                  'Xác nhận & Vào bàn'
-                )}
-              </button>
-            </form>
-
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };
