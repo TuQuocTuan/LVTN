@@ -6,6 +6,9 @@ info:
 http:
   method: GET
   url: http://localhost:5000/api/promotions/list
+  body:
+    type: json
+    data: ""
   auth: inherit
 
 settings:

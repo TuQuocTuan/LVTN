@@ -8,11 +8,11 @@ http:
   url: http://localhost:5000/api/promotions/customer-voucher
   body:
     type: json
-    data: "{\r
-
-      \  \"phone_number\": \"0896415447\"\r
-
-      }"
+    data: |-
+      {
+        "phone_number":0896415447,
+        "email":"tuan@test.com"
+      }
   auth: inherit
 
 settings:
