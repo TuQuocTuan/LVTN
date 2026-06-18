@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,17 +22,11 @@ const WelcomePage = () => {
 
     try {
       // Gọi API open-menu
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/sessions/open-menu`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/sessions/open-menu`, {
           table_id: 6 // Mã bàn (hiện tại bạn đang fix cứng là 6, sau này có thể lấy từ URL param)
-        })
       });
-
-      const data = await response.json();
+      
+      const data = response.data;
 
       if (data.success) {
         // NẾU THÀNH CÔNG: Lưu dữ liệu Backend trả về vào két sắt (bỏ lưu name và phone)

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 // Import supabase client để gọi thông báo realtime cho thu ngân
 import { supabase } from '../../config/supabase'; 
+import { initBroadcastChannel } from '../../utils/realtimeHelper';
+import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -22,45 +24,42 @@ const PaymentPage = () => {
   // State lưu kênh thông báo
   const [channel, setChannel] = useState(null);
 
+ // 1. Khởi tạo kênh báo thu ngân bằng hàm helper
   useEffect(() => {
-    const notifyChannel = supabase.channel('restaurant-notifications');
-    notifyChannel.subscribe();
+    const notifyChannel = initBroadcastChannel('restaurant-notifications');
     setChannel(notifyChannel);
 
-    return () => {
-      supabase.removeChannel(notifyChannel);
-    };
+    return () => supabase.removeChannel(notifyChannel);
   }, []);
 
-  // GỌI API LẤY HÓA ĐƠN TẠM TÍNH KHI MỞ TRANG
+  // 2. GỌI API LẤY HÓA ĐƠN TẠM TÍNH KHI VÀO TRANG
   useEffect(() => {
     const fetchPreviewBill = async () => {
       if (!sessionId) {
-        setIsLoading(false);
+        setIsLoading(false); // Không có session thì tắt loading luôn
         return;
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/orders/checkout`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
             session_id: sessionId,
-            is_preview: true // Báo cho Backend biết đây chỉ là xem tạm tính
-          })
+            is_preview: true // Báo cho BE biết đây là luồng xem trước tạm tính
         });
 
-        const data = await response.json();
+        const data = response.data;
         
         if (data.success) {
-          setBillData(data);
+          setBillData(data); // Nạp dữ liệu hóa đơn vào màn hình
         } else {
-          console.error("Lỗi lấy hóa đơn:", data.message);
+          console.error("Backend báo lỗi:", data.message);
+          setBillData(null);
         }
       } catch (error) {
-        console.error("Lỗi kết nối API:", error);
+        console.error("Lỗi kết nối API mạng:", error);
+        setBillData(null);
       } finally {
-        setIsLoading(false);
+        // ĐẢM BẢO CHẮC CHẮN: Dù thành công hay lỗi đều phải tắt chữ "Đang tải..."
+        setIsLoading(false); 
       }
     };
 
@@ -121,7 +120,7 @@ const PaymentPage = () => {
         {/* Tiêu đề trang */}
         <div className="flex items-center gap-2 mb-6">
           <span className="material-symbols-outlined text-primary text-3xl">receipt_long</span>
-          <h2 className="text-xl font-bold text-gray-900">Tạm tính hóa đơn</h2>
+          <h2 className="text-xl font-bold text-gray-900">Hóa đơn tạm tính</h2>
         </div>
 
         {/* THÔNG TIN BÀN & TRẠNG THÁI */}
@@ -151,7 +150,7 @@ const PaymentPage = () => {
                     {detail.quantity}
                   </span>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm max-w-[160px] truncate">{dishName}</p>
+                    <p className="font-bold text-gray-900 text-sm break-words">{dishName}</p>
                     <p className="text-xs text-neutralCustom">{detail.price.toLocaleString()}đ / món</p>
                   </div>
                 </div>

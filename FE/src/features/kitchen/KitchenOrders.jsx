@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { supabase } from '../../config/supabase';
 import StaffHeader from '../../components/layout/Staff/StaffHeader';
+import { listenDatabaseChanges } from '../../utils/realtimeHelper';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; 
 
@@ -29,42 +30,27 @@ const KitchenDashboard = () => {
     }
   };
 
-  // Gọi API lấy dữ liệu lần đầu và lắng nghe Realtime
+  // Lắng nghe Realtime Bếp
   useEffect(() => {
     fetchPendingOrders();
     
-    const orderSubscription = supabase
-      .channel('kitchen-realtime')
-      .on(
-        'postgres_changes',
-        { 
-          event: 'INSERT',
-          schema: 'public', 
-          table: 'orders' 
-        },
-        (payload) => {
-          audio.play().catch(err => console.log("Lỗi phát âm thanh:", err));
-          const newNotification = {
-            tableName: `Mã đơn #${String(payload.new.id).slice(0,4)}`, 
-            time: new Date().toLocaleTimeString(),
-            type: 'new_order',
-            message: 'Vừa có order mới cần chế biến!'
-          };
-          setNotifications(prev => [newNotification, ...prev]);
-        
-          setTimeout(() => {
-            fetchPendingOrders(); 
-          }, 500);
-        }
-      )
-      .subscribe();
+    const channel = listenDatabaseChanges('kitchen-realtime', 'orders', 'INSERT', (payload) => {
+      audio.play().catch(err => console.log(err));
+      
+      const newNotification = {
+        tableName: `Mã đơn #${String(payload.new.id).slice(0,4)}`, 
+        time: new Date().toLocaleTimeString(),
+        type: 'new_order',
+        message: 'Vừa có order mới cần chế biến!'
+      };
+      setNotifications(prev => [newNotification, ...prev]);
+      setTimeout(() => fetchPendingOrders(), 500);
+    });
 
-    return () => {
-      supabase.removeChannel(orderSubscription);
-    };
+    return () => supabase.removeChannel(channel); // Cleanup
   }, []);
 
-  // 3. Hàm xem công thức món ăn
+  // Hàm xem công thức món ăn
   const handleViewRecipe = async (dishId, dishName) => {
     if (!dishId) {
       alert("Thiếu ID món ăn để xem công thức!");

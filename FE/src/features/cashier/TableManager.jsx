@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../config/supabase';
 import StaffHeader from '../../components/layout/Staff/StaffHeader';
+import { listenBroadcast } from '../../utils/realtimeHelper';
+import axios from 'axios';
 
 // Cấu hình URL Backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -28,8 +30,8 @@ const TableManager = () => {
   // Lấy danh sách bàn từ API
   const fetchTables = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/tables`);
-      const data = await response.json();
+      const response = await axios.get(`${API_BASE_URL}/tables`);
+      const data = response.data;
 
       if (data.success) {
         const formattedTables = data.tables.map(table => {
@@ -61,14 +63,14 @@ const TableManager = () => {
     }
   };
 
-  // FETCH: Lấy dữ liệu hóa đơn tạm tính từ API
+  // Lấy dữ liệu hóa đơn tạm tính từ API
   const fetchCurrentBill = async (sessionId) => {
     if (!sessionId) return;
     try {
       setLoadingBill(true);
       setBillData(null);
-      const response = await fetch(`${API_BASE_URL}/orders/${sessionId}`);
-      const result = await response.json();
+      const response = await axios.get(`${API_BASE_URL}/orders/${sessionId}`);
+      const result = response.data;
 
       if (result.success && result.data) {
         const allOrders = result.data;
@@ -91,15 +93,15 @@ const TableManager = () => {
     }
   };
 
+  // Lắng nghe Khách gọi phục vụ / thanh toán
   useEffect(() => {
     fetchTables();
 
-    const channel = supabase.channel('restaurant-notifications')
-      .on('broadcast', { event: 'call_staff' }, (payload) => {
+    const channel = listenBroadcast('restaurant-notifications', 'call_staff', (payload) => {
         const data = payload.payload;
         setNotifications((prev) => [data, ...prev]);
-        audio.play().catch(err => console.log("Lỗi phát âm thanh:", err));
-      }).subscribe();
+        audio.play().catch(err => console.log(err));
+    });
 
     return () => supabase.removeChannel(channel);
   }, []);
@@ -119,12 +121,8 @@ const TableManager = () => {
   // Gọi API Mở Bàn Mới
   const handleOpenTable = async (tableId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sessions/serving`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ table_id: tableId })
-      });
-      const data = await response.json();
+      const response = await axios.post(`${API_BASE_URL}/sessions/serving`, { table_id: tableId });
+      const data = response.data;
 
       if (data.success) {
         alert("Mở bàn thành công!");
@@ -144,12 +142,8 @@ const TableManager = () => {
     if (!window.confirm("Bạn có chắc chắn muốn đóng bàn này mà không tính tiền không?")) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/sessions/close`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ table_id: tableId })
-      });
-      const data = await response.json();
+      const response = await axios.post(`${API_BASE_URL}/sessions/close`, { table_id: tableId });
+      const data = response.data;
 
       if (data.success) {
         alert("Đóng bàn thành công!");
@@ -183,10 +177,7 @@ const TableManager = () => {
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/orders/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
           session_id: selectedTable.sessionId,
           payment_method: paymentMethod, // Truyền 'CASH' hoặc 'VNPAY' tương ứng nút bấm
           customer_name: 'Khách tại bàn',
@@ -195,9 +186,8 @@ const TableManager = () => {
           voucher_code: voucherCode.trim() || null,
           is_preview: false,
           close_user: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e'
-        })
-      });
-      const data = await response.json();
+        });
+      const data = response.data;
 
       if (data.success) {
         if (paymentMethod === 'CASH') {
@@ -213,15 +203,11 @@ const TableManager = () => {
           //   alert("Không sinh được link VNPAY: " + data.message);
           // }
           try {
-            const vnpayResponse = await fetch('https://state-bobbing-faculty.ngrok-free.dev/api/payments/vnpay', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+            const vnpayResponse = await axios.post('https://state-bobbing-faculty.ngrok-free.dev/api/payments/vnpay', {
                 session_id: selectedTable.sessionId,
                 amount: billData.grandTotal // Tổng tiền đã gồm VAT 10%
-              })
-            });
-            const vnpayData = await vnpayResponse.json();
+              });
+            const vnpayData = vnpayResponse.data;
 
             if (vnpayData.success && vnpayData.payment_url) {
               // Mở link cổng thanh toán tại tab hiện tại để thu ngân lấy QR cho khách quét

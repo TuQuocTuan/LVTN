@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminSidebar from '../../components/layout/Admin/AdminSidebar';
 import AdminHeader from '../../components/layout/Admin/AdminHeader';
+import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -37,8 +38,8 @@ const IngredientManagement = () => {
   // GỌI API LẤY DANH MỤC
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_URL}/categories/category_ingredients`);
-      const result = await response.json();
+      const response = await axios.get(`${API_URL}/categories/category_ingredients`);
+      const result = response.data;
       if (result.success && result.categories) {
         setCategoryOptions(result.categories); 
         const categoryNames = result.categories.map(cat => cat.name);
@@ -53,8 +54,8 @@ const IngredientManagement = () => {
   const fetchIngredients = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_URL}/ingredients`);
-      const result = await response.json();
+      const response = await axios.get(`${API_URL}/ingredients`);
+      const result = response.data;
 
       if (result.success) {
         const formattedData = result.data.map(item => ({
@@ -106,12 +107,8 @@ const IngredientManagement = () => {
         category_id: Number(addData.category_id)
       };
 
-      const response = await fetch(`${API_URL}/ingredients/add`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
+      const response = await axios.post(`${API_URL}/ingredients/add`, payload);
+      const result = response.data
       
       if (result.success) {
         alert("Thêm nguyên liệu thành công!");
@@ -156,12 +153,8 @@ const IngredientManagement = () => {
         category_id: Number(editData.category_id)
       };
 
-      const response = await fetch(`${API_URL}/ingredients/update`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
+      const response = await axios.put(`${API_URL}/ingredients/update`, payload);
+      const result = response.data;
       
       if (result.success) {
         alert("Cập nhật nguyên liệu thành công!");
@@ -181,8 +174,8 @@ const IngredientManagement = () => {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Bạn có chắc muốn xóa "${name}" không?`)) return;
     try {
-      const response = await fetch(`${API_URL}/ingredients/delete/${id}`, { method: 'DELETE' });
-      const result = await response.json();
+      const response = await axios.delete(`${API_URL}/ingredients/delete/${id}`);
+      const result = response.data;
       if (result.success) {
         alert("Xóa thành công!");
         fetchIngredients();

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 import CartItem from '../../components/layout/Customer/CartItem';
 import { useCart } from '../../context/CartContext'; // Import chìa khóa lấy kho chung
+import axios from 'axios';
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -48,17 +49,13 @@ const CartPage = () => {
         note: item.note || null
       }));
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: sessionId,
-          customer_id: creatorId,
-          items: itemsToOrder
-        })
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/orders`, {
+        session_id: sessionId,
+        customer_id: creatorId,
+        items: itemsToOrder
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         setSubmitStatus('success');

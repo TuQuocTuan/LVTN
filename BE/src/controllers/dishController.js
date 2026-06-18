@@ -16,7 +16,7 @@ export const getDishes = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('dishes')
-            .select('id, name, price, image_url, status, categories(name)');
+            .select('id, name, price, description, image_url, status, categories(name)');
         if (error) throw error;
         res.status(200).json({ success: true, data });
     }
@@ -92,6 +92,7 @@ export const addDish = async (req, res) => {
                 price: Number(price),
                 instructions: [instructions],
                 image_url: imageUrl,
+                status: 'available',
             })
             .select()
             .single();
