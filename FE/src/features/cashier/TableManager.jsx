@@ -24,6 +24,7 @@ const TableManager = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
+  const [customerVouchers, setCustomerVouchers] = useState([]);
 
   const audio = new Audio('/Chinese Meme Ringtone Download.mp3');
 
@@ -83,7 +84,8 @@ const TableManager = () => {
           allOrders: allOrders,
           orders: completedOrders,
           subTotal: calculatedSubTotal,
-          grandTotal: calculatedSubTotal * 1.1 // VAT 10%
+          grandTotal: calculatedSubTotal * 1.1, // VAT 10%
+          originalGrandTotal: calculatedSubTotal * 1.1
         });
       }
     } catch (error) {
@@ -117,6 +119,70 @@ const TableManager = () => {
       setVoucherCode('');
     }
   }, [selectedTable]);
+
+  // Tự động tìm voucher khi có số điện thoại
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      
+      if (phoneNumber.trim().length >= 10 || email.includes('@')) {
+        try {
+          const response = await axios.post(`${API_BASE_URL}/promotions/customer-voucher`, {
+            phone_number: phoneNumber.trim(),
+            email: email.trim()
+          });
+          
+          if (response.data && response.data.success) {
+            setCustomerVouchers(response.data.promotion || []);
+          } else {
+             // Trường hợp BE trả về 200 nhưng success: false
+             setCustomerVouchers([]); 
+          }
+        } catch (error) {
+          console.log("Khách hàng này chưa có voucher hoặc không tồn tại.");
+          setCustomerVouchers([]); 
+        }
+      } else {
+        // Nhập chưa đủ thì xóa rỗng
+        setCustomerVouchers([]);
+        setVoucherCode(''); 
+      }
+      
+    }, 800);
+
+    // 🌟 3. Dọn dẹp bộ đếm nếu người dùng gõ tiếp ký tự mới
+    return () => clearTimeout(delayDebounceFn);
+    
+  }, [phoneNumber, email]);
+
+  // Theo dõi sự thay đổi của mã voucher
+  useEffect(() => {
+    const updatePreviewBill = async () => {
+      // Thêm !billData để tránh lỗi nếu chưa có hóa đơn
+      if (!selectedTable?.sessionId || !billData) return;
+      
+      try {
+        const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
+          session_id: selectedTable.sessionId,
+          voucher_code: voucherCode || null,
+          phone_number: phoneNumber.trim() || null,
+          email: email.trim() || null,
+          is_preview: true 
+        });
+
+        if (response.data) {
+          setBillData(prev => ({
+            ...prev, 
+            grandTotal: response.data.tongtien || prev.grandTotal, 
+            discountAmount: response.data.discount_amount || 0 
+          }));
+        }
+      } catch (error) {
+        console.error("Lỗi khi áp dụng voucher:", error);
+      }
+    };
+
+    updatePreviewBill();
+  }, [voucherCode]);
 
   // Gọi API Mở Bàn Mới
   const handleOpenTable = async (tableId) => {
@@ -433,13 +499,31 @@ const TableManager = () => {
                             />
                           </div>
 
-                          <input
-                            type="text"
-                            placeholder="Mã giảm giá / Voucher"
-                            value={voucherCode}
-                            onChange={(e) => setVoucherCode(e.target.value)}
-                            className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all uppercase"
-                          />
+                          {/* XỬ LÝ VOUCHER DROP-DOWN */}
+                          <div className="relative mt-3">
+                            {customerVouchers.length > 0 ? (
+                              <select
+                                value={voucherCode}
+                                onChange={(e) => setVoucherCode(e.target.value)}
+                                className="w-full px-3 py-2 text-sm bg-white border border-primary/50 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 shadow-sm font-bold"
+                              >
+                                <option value="" disabled>-- Chọn mã giảm giá của khách --</option>
+                                {customerVouchers.map((v) => (
+                                  <option key={v.code || v.id} value={v.code || v.id}>
+                                    {v.code} - {v.name} (Giảm: {v.discount_value})
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Mã giảm giá / Voucher (nếu có)"
+                                value={voucherCode}
+                                onChange={(e) => setVoucherCode(e.target.value)}
+                                className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all uppercase"
+                              />
+                            )}
+                          </div>
                         </div>
 
                       </div>
@@ -450,11 +534,20 @@ const TableManager = () => {
 
                   {/* Tính tiền các món nấu chín */}
                   {billData && (
-                    <div className="border-t border-dashed pt-4 space-y-1 text-sm">
+                    <div className="border-t border-dashed pt-4 space-y-2 text-sm">
                       <div className="flex justify-between text-neutralCustom">
                         <span>Cộng tiền món (Đã chín):</span>
                         <span className="font-bold text-gray-800">{billData.subTotal?.toLocaleString('vi-VN')} đ</span>
                       </div>
+                      
+                      {/* Hiển thị dòng tiền giảm giá nếu có áp dụng voucher */}
+                      {billData.discountAmount > 0 && (
+                        <div className="flex justify-between text-green-600 font-medium">
+                          <span>Giảm giá Voucher:</span>
+                          <span>- {billData.discountAmount?.toLocaleString('vi-VN')} đ</span>
+                        </div>
+                      )}
+                      
                       <div className="flex justify-between text-gray-900 font-black text-base border-t pt-2 mt-2">
                         <span>Tạm tính (Gồm VAT 10%):</span>
                         <span className="text-primary text-xl">{billData.grandTotal?.toLocaleString('vi-VN')} đ</span>
