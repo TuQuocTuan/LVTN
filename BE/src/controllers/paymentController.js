@@ -31,7 +31,7 @@ export const createVnPayUrl = (req, session_id, amount) => {
         'vnp_TxnRef': `${session_id}_${createDate}`,
         'vnp_OrderInfo': `Thanh toan hoa don phien an ${session_id}`,
         'vnp_OrderType': 'other',
-        'vnp_Amount': amount * 100,
+        'vnp_Amount': Math.round(amount) * 100,
         'vnp_ReturnUrl': returnUrl,
         'vnp_IpAddr': ipAddr,
         'vnp_CreateDate': createDate
@@ -92,12 +92,10 @@ export const vnpayIPN = async (req, res) => {
 
             const responseCode = vnp_Params['vnp_ResponseCode'];
             const txnRef = vnp_Params['vnp_TxnRef'];
-
             const session_id = txnRef.split('_')[0];
 
             if (responseCode === '00') {
                 console.log(`[IPN] Đang tiến hành xử lý cho session_id: ${session_id}...`);
-
 
                 const { data: sessionData, error: fetchError } = await supabase
                     .from('dining_sessions')
@@ -120,11 +118,14 @@ export const vnpayIPN = async (req, res) => {
                     return res.status(200).json({ RspCode: '02', Message: 'Update session failed' });
                 }
 
-                const totalAmount = parseInt(vnp_Params['vnp_Amount'], 10) / 100;
+                const totalAmount = parseInt(vnp_Params['vnp_Amount'], 10) / 100; // Số tiền cuối thu từ VNPay (Tổng tiền)
                 const vatRate = 0.10;
+
+
                 const discountAmount = sessionData.discount_amount || 0;
-                const subTotal = sessionData.sub_total || (totalAmount / (1 + vatRate) + discountAmount);
-                const vatAmount = (subTotal - discountAmount) * vatRate;
+
+                const subTotal = sessionData.sub_total || Math.round(totalAmount / (1 + vatRate) + discountAmount);
+                const vatAmount = Math.round((subTotal - discountAmount) * vatRate);
 
                 const { data: billData, error: billError } = await supabase
                     .from('bills')
@@ -162,7 +163,6 @@ export const vnpayIPN = async (req, res) => {
         return res.status(500).json({ RspCode: '99', Message: error.message });
     }
 };
-
 
 export const createPaymentUrlRequest = async (req, res) => {
     try {

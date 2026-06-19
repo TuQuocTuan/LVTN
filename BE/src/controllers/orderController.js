@@ -166,6 +166,23 @@ export const calculateDiscount = async (sub_total, voucher_code, customerId) => 
 };
 
 
+const getOrderBySessionId = async (session_id) => {
+    try {
+        let arrayOrder = [];
+        const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('session_id', session_id);
+        if (error) throw error;
+        if (data && data.length > 0) {
+            arrayOrder.push(...data);
+        }
+        return arrayOrder;
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
 //Hàm xử lý thanh toán cuối cùng: cập nhật thông tin khách hàng, đổi trạng thái voucher, đóng phiên ăn
 const handleFinalPayment = async (req, session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId, financialData) => {
     let customerId = null;
@@ -191,6 +208,18 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             .from('dining_sessions')
             .update({ customer_id: customerId })
             .eq('id', session_id);
+    }
+
+    const activeOrders = await getOrderBySessionId(session_id);
+
+    const pendingOrder = activeOrders.filter(order => order.status === 'pending');
+
+    if (pendingOrder.length > 0) {
+        await supabase
+            .from('orders')
+            .update({ status: 'cancelled' })
+            .eq('session_id', session_id)
+            .eq('status', 'pending');
     }
 
     if (client_voucher_id && appliedPromotionId) {
