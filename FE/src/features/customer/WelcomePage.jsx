@@ -23,7 +23,7 @@ const WelcomePage = () => {
     try {
       // Gọi API open-menu
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/sessions/open-menu`, {
-          table_id: 6 // Mã bàn (hiện tại bạn đang fix cứng là 6, sau này có thể lấy từ URL param)
+          table_id: 2 // Mã bàn (hiện tại bạn đang fix cứng là 6, sau này có thể lấy từ URL param)
       });
       
       const data = response.data;
