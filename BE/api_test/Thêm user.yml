@@ -1,0 +1,26 @@
+info:
+  name: Thêm user
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: http://localhost:5000/api/user/add
+  body:
+    type: json
+    data: |-
+      {
+        "username" : "adminT",
+        "password": "1234",
+        "fullname": "ABC",
+        "role": "admin",
+        "email": "adminTuan@test.com",
+        "phone_number": "0912345679"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

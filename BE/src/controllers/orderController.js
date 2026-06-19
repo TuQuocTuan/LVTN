@@ -210,6 +210,7 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             .eq('id', session_id);
     }
 
+
     const activeOrders = await getOrderBySessionId(session_id);
 
     const pendingOrder = activeOrders.filter(order => order.status === 'pending');
@@ -222,12 +223,9 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             .eq('status', 'pending');
     }
 
-    if (client_voucher_id && appliedPromotionId) {
-        await supabase
-            .from('customer_vouchers')
-            .update({ is_used: true, used_at: new Date().toISOString() })
-            .eq('id', client_voucher_id);
-    }
+    console.log("Customer ID lấy được:", customerId);
+    console.log("Applied Promotion ID lấy được:", appliedPromotionId);
+
 
     const { data: sessionData, error: sessionErr } = await supabase
         .from('dining_sessions')
@@ -275,6 +273,13 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
         }]);
 
     if (billErr) throw billErr;
+
+    if (customerId && appliedPromotionId) {
+        await supabase
+            .from('customer_vouchers')
+            .update({ is_used: true, used_at: new Date().toISOString() })
+            .eq('customer_id', customerId);
+    }
 
     return {
         payment_type: 'OFFLINE',
