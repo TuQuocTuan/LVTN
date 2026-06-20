@@ -100,9 +100,9 @@ const TableManager = () => {
     fetchTables();
 
     const channel = listenBroadcast('restaurant-notifications', 'call_staff', (payload) => {
-        const data = payload.payload;
-        setNotifications((prev) => [data, ...prev]);
-        audio.play().catch(err => console.log(err));
+      const data = payload.payload;
+      setNotifications((prev) => [data, ...prev]);
+      audio.play().catch(err => console.log(err));
     });
 
     return () => supabase.removeChannel(channel);
@@ -123,57 +123,55 @@ const TableManager = () => {
   // Tự động tìm voucher khi có số điện thoại
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
-      
+
       if (phoneNumber.trim().length >= 10 || email.includes('@')) {
         try {
           const response = await axios.post(`${API_BASE_URL}/promotions/customer-voucher`, {
             phone_number: phoneNumber.trim(),
             email: email.trim()
           });
-          
+
           if (response.data && response.data.success) {
             setCustomerVouchers(response.data.promotion || []);
           } else {
-             // Trường hợp BE trả về 200 nhưng success: false
-             setCustomerVouchers([]); 
+            // Trường hợp BE trả về 200 nhưng success: false
+            setCustomerVouchers([]);
           }
         } catch (error) {
-          console.log("Khách hàng này chưa có voucher hoặc không tồn tại.");
-          setCustomerVouchers([]); 
+          setCustomerVouchers([]);
         }
       } else {
         // Nhập chưa đủ thì xóa rỗng
         setCustomerVouchers([]);
-        setVoucherCode(''); 
+        setVoucherCode('');
       }
-      
+
     }, 800);
 
     // 🌟 3. Dọn dẹp bộ đếm nếu người dùng gõ tiếp ký tự mới
     return () => clearTimeout(delayDebounceFn);
-    
+
   }, [phoneNumber, email]);
 
   // Theo dõi sự thay đổi của mã voucher
   useEffect(() => {
     const updatePreviewBill = async () => {
-      // Thêm !billData để tránh lỗi nếu chưa có hóa đơn
-      if (!selectedTable?.sessionId || !billData) return;
-      
+      if (!selectedTable?.sessionId || !billData || !billData.subTotal) return;
+
       try {
         const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
           session_id: selectedTable.sessionId,
           voucher_code: voucherCode || null,
           phone_number: phoneNumber.trim() || null,
           email: email.trim() || null,
-          is_preview: true 
+          is_preview: true
         });
 
         if (response.data) {
           setBillData(prev => ({
-            ...prev, 
-            grandTotal: response.data.tongtien || prev.grandTotal, 
-            discountAmount: response.data.discount_amount || 0, 
+            ...prev,
+            grandTotal: response.data.tongtien || prev.grandTotal,
+            discountAmount: response.data.discount_amount || 0,
             voucherName: response.data.voucher_name
           }));
         }
@@ -183,7 +181,7 @@ const TableManager = () => {
     };
 
     updatePreviewBill();
-  }, [voucherCode]);
+  }, [voucherCode, billData?.subTotal]);
 
   // Gọi API Mở Bàn Mới
   const handleOpenTable = async (tableId) => {
@@ -245,15 +243,15 @@ const TableManager = () => {
 
     try {
       const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
-          session_id: selectedTable.sessionId,
-          payment_method: paymentMethod, // Truyền 'CASH' hoặc 'VNPAY' tương ứng nút bấm
-          customer_name: 'Khách tại bàn',
-          phone_number: phoneNumber.trim() || null,
-          email: email.trim() || null,
-          voucher_code: voucherCode.trim() || null,
-          is_preview: false,
-          close_user: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e'
-        });
+        session_id: selectedTable.sessionId,
+        payment_method: paymentMethod, // Truyền 'CASH' hoặc 'VNPAY' tương ứng nút bấm
+        customer_name: 'Khách tại bàn',
+        phone_number: phoneNumber.trim() || null,
+        email: email.trim() || null,
+        voucher_code: voucherCode.trim() || null,
+        is_preview: false,
+        close_user: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e'
+      });
       const data = response.data;
 
       if (data.success) {
@@ -271,9 +269,9 @@ const TableManager = () => {
           // }
           try {
             const vnpayResponse = await axios.post('https://state-bobbing-faculty.ngrok-free.dev/api/payments/vnpay', {
-                session_id: selectedTable.sessionId,
-                amount: billData.grandTotal // Tổng tiền đã gồm VAT 10%
-              });
+              session_id: selectedTable.sessionId,
+              amount: billData.grandTotal // Tổng tiền đã gồm VAT 10%
+            });
             const vnpayData = vnpayResponse.data;
 
             if (vnpayData.success && vnpayData.payment_url) {
@@ -471,7 +469,7 @@ const TableManager = () => {
                   {loadingBill ? (
                     <div className="text-center py-4 text-xs text-neutralCustom animate-pulse shrink-0">Đang đồng bộ hóa đơn tạm tính...</div>
                   ) : billData && billData.allOrders && billData.allOrders.length > 0 ? (
-                    
+
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
                       {(() => {
                         // 1. Chạy logic gộp món trước (Chỉ gom thuần túy dữ liệu để hiển thị)
@@ -481,22 +479,22 @@ const TableManager = () => {
                             const name = detail.dishes?.name;
                             const status = order.status;
                             const note = detail.note?.trim();
-                            
+
                             const existing = groupedDishes.find(
                               item => item.name === name && item.status === status
                             );
-                            
+
                             if (existing) {
                               existing.quantity += detail.quantity;
                               if (note) {
                                 existing.note = existing.note ? `${existing.note} | ${note}` : note;
                               }
                             } else {
-                              groupedDishes.push({ 
-                                name, 
-                                status, 
-                                quantity: detail.quantity, 
-                                note: note || '' 
+                              groupedDishes.push({
+                                name,
+                                status,
+                                quantity: detail.quantity,
+                                note: note || ''
                               });
                             }
                           });
@@ -548,28 +546,22 @@ const TableManager = () => {
                     </div>
 
                     <div className="relative">
-                      {customerVouchers.length > 0 ? (
-                        <select
-                          value={voucherCode}
-                          onChange={(e) => setVoucherCode(e.target.value)}
-                          className="w-full px-3 py-2 text-sm bg-white border border-primary/50 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 shadow-sm font-bold"
-                        >
-                          <option value="" disabled>-- Chọn mã giảm giá của khách --</option>
-                          {customerVouchers.map((v) => (
-                            <option key={v.code || v.id} value={v.code || v.id}>
-                              {v.code || v.id} - {v.name} (Giảm: {v.discount_value})
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type="text"
-                          placeholder="Mã giảm giá / Voucher (nếu có)"
-                          value={voucherCode}
-                          onChange={(e) => setVoucherCode(e.target.value)}
-                          className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all uppercase"
-                        />
-                      )}
+                      <select
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value)}
+                        className={`w-full px-3 py-2 text-sm bg-white border outline-none focus:ring-2 transition-all shadow-sm font-bold rounded-xl cursor-pointer
+                          ${customerVouchers.length > 0 ? 'border-primary/50 text-primary focus:ring-primary/20 focus:border-primary' : 'border-neutralCustom/30 text-gray-500'}
+                        `}
+                      >
+                        <option value="">
+                          {customerVouchers.length > 0 ? "-- Chọn mã giảm giá của khách --" : "-- Khách chưa có mã giảm giá --"}
+                        </option>
+                        {customerVouchers.map((v) => (
+                          <option key={v.code || v.id} value={v.code || v.id}>
+                            {v.code || v.id} - {v.name} (Giảm: {Number(v.discount_value).toLocaleString('vi-VN')}đ)
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
@@ -579,22 +571,21 @@ const TableManager = () => {
                         <span>Tổng tiền món (Đã xuất món):</span>
                         <span className="font-bold text-gray-800">{billData.subTotal?.toLocaleString('vi-VN')} đ</span>
                       </div>
-                      
-                      {billData.discountAmount > 0 && (
-                        <div className="flex flex-col text-green-600 font-medium">
-                          <div className="flex justify-between">
-                            <span>Khuyến mãi áp dụng:</span>
-                            <span>- {billData.discountAmount?.toLocaleString('vi-VN')} đ</span>
-                          </div>
-                          {/* In chi tiết cộng dồn những mã nào */}
-                          {billData.voucherName && billData.voucherName !== "Không áp dụng" && (
-                            <span className="text-[10.5px] italic text-right mt-0.5 opacity-80 leading-tight">
-                              *{billData.voucherName}
-                            </span>
+
+                      {billData.voucherName && billData.voucherName !== "Không áp dụng" && (
+                            <div className="flex flex-col items-end mt-1.5 space-y-1">
+                              {billData.voucherName.split(/\+|,/).map((promoName, idx) => {
+                                const name = promoName.trim();
+                                if (!name) return null;
+                                return (
+                                  <span key={idx} className="text-[10.5px] italic opacity-90 leading-tight bg-green-50 px-2 py-1 rounded-md border border-green-100">
+                                    accepted {name}
+                                  </span>
+                                );
+                              })}
+                            </div>
                           )}
-                        </div>
-                      )}
-                      
+
                       <div className="flex justify-between text-gray-900 font-black text-base border-t border-neutralCustom/10 pt-2 mt-2">
                         <span>Tạm tính (Gồm VAT 10%):</span>
                         <span className="text-primary text-xl">{billData.grandTotal?.toLocaleString('vi-VN')} đ</span>
