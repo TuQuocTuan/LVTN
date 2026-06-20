@@ -8,11 +8,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const IngredientManagement = () => {
   const [activeCategory, setActiveCategory] = useState('Tất cả kho');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const [ingredients, setIngredients] = useState([]);
-  const [categories, setCategories] = useState(['Tất cả kho']); 
-  const [categoryOptions, setCategoryOptions] = useState([]); 
-  
+  const [categories, setCategories] = useState(['Tất cả kho']);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -41,7 +41,7 @@ const IngredientManagement = () => {
       const response = await axios.get(`${API_URL}/categories/category_ingredients`);
       const result = response.data;
       if (result.success && result.categories) {
-        setCategoryOptions(result.categories); 
+        setCategoryOptions(result.categories);
         const categoryNames = result.categories.map(cat => cat.name);
         setCategories(['Tất cả kho', ...categoryNames]);
       }
@@ -64,7 +64,7 @@ const IngredientManagement = () => {
           quantity: item.quantity,
           unit: item.unit,
           min_stock: item.min_stock,
-          category: item.category_ingredients?.name || 'Khác', 
+          category: item.category_ingredients?.name || 'Khác',
           price: item.price || 0,
           image: item.image_url || 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=150&h=150&fit=crop'
         }));
@@ -109,7 +109,7 @@ const IngredientManagement = () => {
 
       const response = await axios.post(`${API_URL}/ingredients/add`, payload);
       const result = response.data
-      
+
       if (result.success) {
         alert("Thêm nguyên liệu thành công!");
         setIsAddModalOpen(false);
@@ -155,7 +155,7 @@ const IngredientManagement = () => {
 
       const response = await axios.put(`${API_URL}/ingredients/update`, payload);
       const result = response.data;
-      
+
       if (result.success) {
         alert("Cập nhật nguyên liệu thành công!");
         setIsEditModalOpen(false);
@@ -189,10 +189,24 @@ const IngredientManagement = () => {
 
   // RENDER DỮ LIỆU
   const getStockStatus = (quantity, min_stock) => {
-    if (quantity === 0) return { color: 'text-red-500', bg: 'bg-red-500', barWidth: '0%' };
-    if (quantity < min_stock) return { color: 'text-red-600', bg: 'bg-red-500', barWidth: `${(quantity / min_stock) * 50}%` };
-    if (quantity < min_stock * 1.5) return { color: 'text-tertiary', bg: 'bg-tertiary', barWidth: '75%' };
-    return { color: 'text-green-600', bg: 'bg-green-500', barWidth: '100%' };
+    // Nếu chưa cài đặt mức cảnh báo (min_stock = 0) để tránh lỗi chia cho 0
+    if (min_stock === 0) return { color: 'text-green-600', bg: 'bg-green-500', barWidth: '100%' };
+
+    // Tính toán độ dài thanh bar dựa trên mức cảnh báo (giới hạn thanh không dài quá 100%)
+    const percentage = Math.min((quantity / min_stock) * 100, 100);
+
+    if (quantity > min_stock) {
+      // Tồn kho hiện tại > cảnh báo => thanh đầy màu xanh
+      return { color: 'text-green-600', bg: 'bg-green-500', barWidth: '100%' };
+    }
+    else if (quantity >= min_stock / 2) {
+      // Một nửa cảnh báo <= tồn kho hiện tại <= cảnh báo => thanh màu vàng
+      return { color: 'text-amber-600', bg: 'bg-amber-500', barWidth: `${percentage}%` };
+    }
+    else {
+      // Tồn kho hiện tại <= một nửa cảnh báo => thanh màu đỏ
+      return { color: 'text-red-600', bg: 'bg-red-500', barWidth: `${percentage}%` };
+    }
   };
 
   const filteredIngredients = ingredients.filter(item => {
@@ -213,7 +227,7 @@ const IngredientManagement = () => {
       <AdminHeader />
 
       <main className="ml-64 pt-24 p-8 w-full flex flex-col h-screen">
-        
+
         {/* Header Bar */}
         <div className="flex flex-col gap-6 mb-6 flex-shrink-0">
           <div className="flex justify-between items-end">
@@ -221,7 +235,7 @@ const IngredientManagement = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Nguyên vật liệu</h2>
               <p className="text-neutralCustom text-sm">Quản lý nguyên liệu, mức tồn kho và cảnh báo nhập hàng cho hệ thống.</p>
             </div>
-            <button 
+            <button
               onClick={openAddModal}
               className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-secondary transition-all active:scale-95 text-sm"
             >
@@ -348,27 +362,27 @@ const IngredientManagement = () => {
               <form id="addIngredientForm" onSubmit={handleAddSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Tên nguyên liệu *</label>
-                  <input type="text" required value={addData.name} onChange={(e) => setAddData({...addData, name: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
+                  <input type="text" required value={addData.name} onChange={(e) => setAddData({ ...addData, name: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Danh mục *</label>
-                  <select required value={addData.category_id} onChange={(e) => setAddData({...addData, category_id: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary cursor-pointer">
+                  <select required value={addData.category_id} onChange={(e) => setAddData({ ...addData, category_id: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary cursor-pointer">
                     <option value="" disabled>-- Chọn danh mục --</option>
                     {categoryOptions.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Đơn vị tính *</label>
-                  <input type="text" required value={addData.unit} onChange={(e) => setAddData({...addData, unit: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
+                  <input type="text" required value={addData.unit} onChange={(e) => setAddData({ ...addData, unit: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Số lượng đầu *</label>
-                    <input type="number" step="any" min="0" required value={addData.quantity} onChange={(e) => setAddData({...addData, quantity: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
+                    <input type="number" step="any" min="0" required value={addData.quantity} onChange={(e) => setAddData({ ...addData, quantity: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Mức cảnh báo *</label>
-                    <input type="number" step="any" min="0" required value={addData.min_stock} onChange={(e) => setAddData({...addData, min_stock: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
+                    <input type="number" step="any" min="0" required value={addData.min_stock} onChange={(e) => setAddData({ ...addData, min_stock: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
                   </div>
                 </div>
               </form>
@@ -399,27 +413,27 @@ const IngredientManagement = () => {
               <form id="editIngredientForm" onSubmit={handleEditSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Tên nguyên liệu *</label>
-                  <input type="text" required value={editData.name} onChange={(e) => setEditData({...editData, name: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
+                  <input type="text" required value={editData.name} onChange={(e) => setEditData({ ...editData, name: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Danh mục *</label>
-                  <select required value={editData.category_id} onChange={(e) => setEditData({...editData, category_id: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary cursor-pointer">
+                  <select required value={editData.category_id} onChange={(e) => setEditData({ ...editData, category_id: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary cursor-pointer">
                     <option value="" disabled>-- Chọn danh mục --</option>
                     {categoryOptions.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Đơn vị tính *</label>
-                  <input type="text" required value={editData.unit} onChange={(e) => setEditData({...editData, unit: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
+                  <input type="text" required value={editData.unit} onChange={(e) => setEditData({ ...editData, unit: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Số lượng *</label>
-                    <input type="number" step="any" min="0" required value={editData.quantity} onChange={(e) => setEditData({...editData, quantity: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
+                    <input type="number" step="any" min="0" required value={editData.quantity} onChange={(e) => setEditData({ ...editData, quantity: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Cảnh báo tồn *</label>
-                    <input type="number" step="any" min="0" required value={editData.min_stock} onChange={(e) => setEditData({...editData, min_stock: e.target.value})} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
+                    <input type="number" step="any" min="0" required value={editData.min_stock} onChange={(e) => setEditData({ ...editData, min_stock: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary" />
                   </div>
                 </div>
               </form>

@@ -44,20 +44,13 @@ export const kiemtraMinStock = async () => {
                     .update({ status: 'out_of_stock' })
                     .eq('id', d.id);
                 console.log(`[MinStock] Đã tự động đóng món [${d.name}] do chạm ngưỡng an toàn.`);
+
                 await supabase.channel('restaurant-notifications').send({
                     type: 'broadcast',
                     event: 'dish_out_of_stock',
                     payload: { dish_id: d.id, name: d.name, status: 'out_of_stock' }
                 });
             }
-        }
-
-        if (dishesOutOfStock.length > 0) {
-            await supabase.channel('restaurant-notifications').send({
-                type: 'broadcast',
-                event: 'dish_out_of_stock',
-                payload: { dish_id: d.id, name: d.name, status: 'out_of_stock' }
-            });
         }
         return dishesOutOfStock;
     } catch (error) {

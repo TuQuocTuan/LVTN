@@ -495,7 +495,7 @@ const DishManagement = () => {
                     type="button"
                     onClick={() => {
                       setIsDrawerOpen(false);
-                      navigate('/admin/recipe-detail');
+                      navigate(`/admin/recipe-management/${selectedDish.id}`);
                     }}
                     className="inline-block text-xs font-bold text-secondary hover:underline mt-1"
                   >

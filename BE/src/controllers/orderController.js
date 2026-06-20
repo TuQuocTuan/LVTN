@@ -5,6 +5,7 @@
 import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
 import { createVnPayUrl } from '../controllers/paymentController.js';
+import { kiemtraMinStock } from './dishController.js';
 
 export const kiemtraTonkho = async (items) => {
     try {
@@ -579,6 +580,7 @@ export const updateOrderStatus = async (req, res) => {
                 }
             }
         }
+        await kiemtraMinStock();
         return res.json({ success: true, order: currentOrder });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
