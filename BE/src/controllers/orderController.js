@@ -6,10 +6,67 @@ import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
 import { createVnPayUrl } from '../controllers/paymentController.js';
 
+export const kiemtraTonkho = async (items) => {
+    try {
+        const dishIDs = items.map(item => Number(item.dish_id))
+
+        const { data: recipes, error: fetchErr } = await supabase
+            .from('recipes')
+            .select('dish_id,amount_required,ingredient_id')
+            .in('dish_id', dishIDs);
+        if (fetchErr) throw fetchErr;
+
+        const requiredIngredients = {};
+
+        recipes.forEach(recipe => {
+            const orderItem = items.find(item => Number(item.dish_id) === recipe.dish_id);
+            const orderQuantity = orderItem ? Number(orderItem.quantity) : 0;
+
+            const totalRequired = Number(recipe.amount_required) * orderQuantity;
+
+            if (requiredIngredients[recipe.ingredient_id]) {
+                requiredIngredients[recipe.ingredient_id] += totalRequired;
+            } else {
+                requiredIngredients[recipe.ingredient_id] = totalRequired;
+            }
+        })
+
+        const ingredientIds = Object.keys(requiredIngredients).map(id => Number(id));
+        const { data: ingredients, error: fetchInErr } = await supabase
+            .from('ingredients')
+            .select('id,name, min_stock,quantity')
+            .in('id', ingredientIds);
+
+        if (fetchInErr) throw fetchInErr;
+        const outOfStockDishIds = new Set();
+        for (const ingre of ingredients) {
+            const need = requiredIngredients[ingre.id]
+            if (Number(ingre.quantity) < need) {
+
+                recipes.forEach(recipe => {
+                    if (recipe.ingredient_id === ingre.id) {
+                        outOfStockDishIds.add(recipe.dish_id);
+                    }
+                });
+
+                return {
+                    dishIDs: Array.from(outOfStockDishIds),
+                    success: false,
+                    message: `Nguyên liệu [${ingre.name}] trong kho không đủ để phục vụ số lượng món đặt!`
+                };
+            }
+        }
+        return { success: true, message: "Đủ nguyên liệu chế biến món ăn!" };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
+
 //Hàm tạo Order
 export const createOrder = async (req, res) => {
     try {
-        const { session_id, items, customer_id } = req.body;
+        const { session_id, items } = req.body;
 
         if (!session_id) {
             return res.status(400).json({ success: false, message: 'Thiếu mã phiên ăn (session_id)!' });
@@ -17,6 +74,18 @@ export const createOrder = async (req, res) => {
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Danh sách món ăn không hợp lệ!' });
+        }
+
+        const checkKho = await kiemtraTonkho(items);
+        if (checkKho.success === false) {
+            const { data: outstockDish, error: fetchErr } = await supabase
+                .from('dishes')
+                .update({ status: 'out_of_stock' })
+                .in('id', checkKho.dishIDs)
+                .select()
+            if (fetchErr) throw fetchErr;
+
+            return res.status(400).json({ success: false, message: checkKho.message });
         }
 
         let calculatedSubTotal = 0;
@@ -36,6 +105,7 @@ export const createOrder = async (req, res) => {
             .single();
 
         if (orderErr) throw orderErr;
+
 
         const detailItems = items.map(item => ({
             order_id: order.id,
@@ -456,12 +526,13 @@ export const getPendingOrders = async (req, res) => {
     }
 }
 
+
+
 //Hàm cập nhật trạng thái đơn
 export const updateOrderStatus = async (req, res) => {
     try {
         const { order_id } = req.body;
 
-        // 1. SỬA: Thêm cột dish_id vào select của order_details
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .update({ status: 'completed' })
@@ -475,7 +546,6 @@ export const updateOrderStatus = async (req, res) => {
 
         const currentOrder = order[0];
 
-        // 2. Vòng lặp duyệt qua từng chi tiết món ăn
         for (const orderDetail of currentOrder.order_details) {
             const { data: recipeItems, error: recipeErr } = await supabase
                 .from('recipes')

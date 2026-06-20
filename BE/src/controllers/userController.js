@@ -71,3 +71,18 @@ export const addUser = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+export const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { data: deletedUser, error: deleteErr } = await supabase
+            .from('users')
+            .update({ is_active: false })
+            .eq('id', id)
+            .select();
+        if (deleteErr) throw deleteErr;
+        return res.status(200).json({ success: true, message: 'Xóa User thành công' });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
