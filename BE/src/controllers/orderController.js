@@ -6,6 +6,7 @@ import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
 import { createVnPayUrl } from '../controllers/paymentController.js';
 import { kiemtraMinStock } from './dishController.js';
+import e from 'express';
 
 export const kiemtraTonkho = async (items) => {
     try {
@@ -17,47 +18,61 @@ export const kiemtraTonkho = async (items) => {
             .in('dish_id', dishIDs);
         if (fetchErr) throw fetchErr;
 
-        const requiredIngredients = {};
-
-        recipes.forEach(recipe => {
-            const orderItem = items.find(item => Number(item.dish_id) === recipe.dish_id);
-            const orderQuantity = orderItem ? Number(orderItem.quantity) : 0;
-
-            const totalRequired = Number(recipe.amount_required) * orderQuantity;
-
-            if (requiredIngredients[recipe.ingredient_id]) {
-                requiredIngredients[recipe.ingredient_id] += totalRequired;
-            } else {
-                requiredIngredients[recipe.ingredient_id] = totalRequired;
-            }
-        })
-
-        const ingredientIds = Object.keys(requiredIngredients).map(id => Number(id));
+        const ingredientIDs = recipes.map(r => r.ingredient_id);
         const { data: ingredients, error: fetchInErr } = await supabase
             .from('ingredients')
-            .select('id,name, min_stock,quantity')
-            .in('id', ingredientIds);
-
+            .select('id, name, quantity, min_stock')
+            .in('id', ingredientIDs)
         if (fetchInErr) throw fetchInErr;
-        const outOfStockDishIds = new Set();
-        for (const ingre of ingredients) {
-            const need = requiredIngredients[ingre.id]
-            if (Number(ingre.quantity) < need) {
 
-                recipes.forEach(recipe => {
-                    if (recipe.ingredient_id === ingre.id) {
-                        outOfStockDishIds.add(recipe.dish_id);
-                    }
-                });
+        const ingredientMap = {};
+        ingredients.forEach(i => {
+            ingredientMap[i.id] = {
+                name: i.name,
+                quantity: Number(i.quantity || 0)
+            };
+        });
 
-                return {
-                    dishIDs: Array.from(outOfStockDishIds),
-                    success: false,
-                    message: `Nguyên liệu [${ingre.name}] trong kho không đủ để phục vụ số lượng món đặt!`
-                };
+        const thongtinMonAn = {};
+
+        for (const item of items) {
+            const currentDishRecipes = recipes.filter(r => Number(r.dish_id) === Number(item.dish_id));
+            let SoMonToiDa = Number(item.quantity);
+
+            for (const recipe of currentDishRecipes) {
+                const ingre = ingredientMap[recipe.ingredient_id];
+                const soluongcancho1mon = Number(recipe.amount_required);
+
+                const soluongIngreMax = Math.floor(ingre.quantity / soluongcancho1mon);
+                if (soluongIngreMax < SoMonToiDa) {
+                    SoMonToiDa = soluongIngreMax;
+                }
+                thongtinMonAn[item.dish_id] = {
+                    requested: Number(item.quantity),
+                    maxAvailable: SoMonToiDa,
+                }
             }
         }
-        return { success: true, message: "Đủ nguyên liệu chế biến món ăn!" };
+
+        const danhsachDatLo = [];
+        for (const dishId in thongtinMonAn) {
+            const info = thongtinMonAn[dishId];
+            if (info.maxAvailable < info.requested) {
+                danhsachDatLo.push({
+                    dish_id: Number(dishId),
+                    maxAvailable: info.maxAvailable
+                })
+            }
+        }
+
+        if (danhsachDatLo.length > 0) {
+            return {
+                success: false,
+                danhsachDatLo: danhsachDatLo,
+                message: "Một số món ăn không đủ số lượng trong kho!"
+            };
+        }
+        return { success: true };
     } catch (error) {
         return { success: false, message: error.message };
     }
@@ -79,14 +94,28 @@ export const createOrder = async (req, res) => {
 
         const checkKho = await kiemtraTonkho(items);
         if (checkKho.success === false) {
-            const { data: outstockDish, error: fetchErr } = await supabase
-                .from('dishes')
-                .update({ status: 'out_of_stock' })
-                .in('id', checkKho.dishIDs)
-                .select()
-            if (fetchErr) throw fetchErr;
+            const dishesToClose = checkKho.danhsachDatLo
+                .filter(err => err.maxAvailable === 0)
+                .map(err => err.dish_id);
 
-            return res.status(400).json({ success: false, message: checkKho.message });
+            if (dishesToClose.length > 0) {
+                await supabase
+                    .from('dishes')
+                    .update({ status: 'out_of_stock' })
+                    .in('id', dishesToClose);
+
+                await supabase.channel('restaurant-notifications').send({
+                    type: 'broadcast',
+                    event: 'dish_out_of_stock',
+                    payload: { dishes: dishesToClose.map(id => ({ id })), status: 'out_of_stock' }
+                });
+            }
+            return res.status(400).json({
+                success: false,
+                code: "INSUFFICIENT_STOCK",
+                danhsachDatLo: checkKho.danhsachDatLo,
+                message: "Kho không đủ số lượng đáp ứng đơn hàng."
+            });
         }
 
         let calculatedSubTotal = 0;

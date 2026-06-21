@@ -10,13 +10,13 @@ http:
     type: json
     data: |-
       {
-        "session_id": "e0e7d4d2-965a-46a3-a6f6-51a3d9627e1a",
-        "total_amount": 299000,
+        "session_id": "63eec913-a79f-4f48-ab97-d9b229feba3c",
         "items": [
           {
-            "dish_id": 2, 
-            "quantity": 1,
-            "note": "Không hành"
+            "dish_id": 1,
+            "quantity": 2,
+            "price": 120000,
+            "note": "Ăn tại bàn"
           }
         ]
       }
