@@ -65,7 +65,6 @@ export const CartProvider = ({ children }) => {
     // Gọi hàm helper của bạn: (channelName, tableName, eventType, callback)
     const channel = listenDatabaseChanges('menu-public-realtime', 'dishes', 'UPDATE', (payload) => {
 
-      console.log("Dữ liệu Database vừa thay đổi:", payload.new);
       const updatedDish = payload.new;
 
       setMenuItems(prev => prev.map(item => {
@@ -111,6 +110,10 @@ export const CartProvider = ({ children }) => {
     setMenuItems(prev => prev.map(item => ({ ...item, quantity: 0, note: '' })));
   };
 
+  const handleSetQuantity = (id, quantity) => {
+    setMenuItems(prev => prev.map(item => item.id === id ? { ...item, quantity: quantity } : item));
+  };
+
   // Lọc tự động: Món nào có số lượng lớn hơn 0 thì chính là item nằm trong giỏ hàng
   const cartItems = menuItems.filter(item => item.quantity > 0);
 
@@ -128,7 +131,8 @@ export const CartProvider = ({ children }) => {
       handleDecrease,
       handleRemove,
       handleNoteChange,
-      clearCart
+      clearCart,
+      handleSetQuantity
     }}>
       {children}
     </CartContext.Provider>
