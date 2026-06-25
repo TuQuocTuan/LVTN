@@ -1,18 +1,17 @@
 info:
-  name: Sửa role
+  name: Đổi pass user
   type: http
-  seq: 2
+  seq: 5
 
 http:
   method: PUT
-  url: http://localhost:5000/api/user/update
+  url: http://localhost:5000/api/user/change
   body:
     type: json
     data: |-
       {
-        "id": "495cb538-be0d-4367-8895-40e11b215fac",
-        "role": "admin",
-        "is_active": true
+        "id":"9180de74-1ba7-4996-8848-f5dbb90fd0a5",
+        "password": "12345"
       }
   auth: inherit
 
