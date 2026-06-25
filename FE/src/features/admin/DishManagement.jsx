@@ -18,7 +18,7 @@ const DishManagement = () => {
   // State Phân trang
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
-  
+
   const [dishes, setDishes] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]); // Chứa danh sách category từ DB
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +53,7 @@ const DishManagement = () => {
 
       // Lấy danh mục món ăn
       const response = await axios.get(`${API_BASE_URL}/categories`);
-      
+
       // Vì Backend trả thẳng về mảng dữ liệu (res.json(data)) nên mảng chính là catRes.data
       const categoriesData = Array.isArray(response.data) ? response.data : [];
       setCategoriesList(categoriesData);
@@ -152,7 +152,7 @@ const DishManagement = () => {
       submitData.append('category_id', formData.category_id);
       submitData.append('description', formData.description);
       submitData.append('instructions', formData.instructions);
-      
+
       if (imageFile) {
         submitData.append('image', imageFile);
       }
@@ -188,10 +188,9 @@ const DishManagement = () => {
       <AdminSidebar currentTab="dish" />
       <AdminHeader />
 
-{/* MAIN CONTENT */}
-      {/* 1. Ép chiều cao cố định h-screen cho toàn bộ khung màn hình bên phải sidebar */}
+      {/* MAIN CONTENT */}
       <main className="ml-64 pt-24 p-8 w-full flex flex-col h-screen bg-culinaryBg">
-        
+
         {/* Page Header & Actions */}
         <div className="flex flex-col gap-6 mb-6 flex-shrink-0">
           <div className="flex justify-between items-start">
@@ -200,7 +199,7 @@ const DishManagement = () => {
               <p className="text-neutralCustom text-sm">Quản lý danh sách món ăn, giá cả và danh mục của nhà hàng.</p>
             </div>
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => handleOpenPopup(null)}
                 className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-secondary active:scale-95 transition-all shadow-md"
               >
@@ -213,9 +212,9 @@ const DishManagement = () => {
           <div className="flex items-center">
             <div className="relative w-full max-w-md">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutralCustom">search</span>
-              <input 
-                type="text" 
-                placeholder="Tìm kiếm tên món ăn..." 
+              <input
+                type="text"
+                placeholder="Tìm kiếm tên món ăn..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-neutralCustom/20 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all shadow-sm"
@@ -228,17 +227,17 @@ const DishManagement = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Hộp trắng lớn: Ép h-full và overflow-hidden để chặn scroll tổng */}
           <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm mb-6">
-            
+
             {/* TABS HEADER: Đứng im ở đỉnh hộp trắng */}
             <div className="flex justify-between items-center p-4 border-b border-neutralCustom/20 bg-culinaryBg/30 shrink-0">
               <div className="flex gap-6 overflow-x-auto no-scrollbar">
                 {tabCategories.map((cat) => (
-                  <button 
+                  <button
                     key={cat}
                     onClick={() => setActiveTab(cat)}
                     className={`pb-1 px-1 whitespace-nowrap text-sm font-bold transition-colors border-b-2
-                      ${activeTab === cat 
-                        ? 'text-primary border-primary' 
+                      ${activeTab === cat
+                        ? 'text-primary border-primary'
                         : 'text-neutralCustom/70 border-transparent hover:text-primary'}
                     `}
                   >
@@ -254,20 +253,20 @@ const DishManagement = () => {
             {/* LIST CONTENT: Vùng chứa danh sách món ăn (Hiện thanh cuộn dọc riêng biệt tại đây) */}
             <div className="flex-1 overflow-y-auto relative custom-scrollbar">
               {isLoading ? (
-                 <div className="flex justify-center py-10 text-neutralCustom">Đang tải dữ liệu thực đơn...</div>
+                <div className="flex justify-center py-10 text-neutralCustom">Đang tải dữ liệu thực đơn...</div>
               ) : paginatedDishes.length > 0 ? (
                 paginatedDishes.map((dish) => (
-                  <div 
-                    key={dish.id} 
+                  <div
+                    key={dish.id}
                     onClick={() => handleOpenPopup(dish)}
                     className={`flex items-center p-4 border-b border-neutralCustom/10 hover:bg-culinaryBg/50 transition-colors cursor-pointer group
                       ${dish.status === 'out_of_stock' ? 'opacity-75' : ''}
                     `}
                   >
-                    <img 
-                      src={dish.image_url || dish.image} 
-                      alt={dish.name} 
-                      className={`w-14 h-14 rounded-xl object-cover mr-4 shadow-sm ${dish.status === 'out_of_stock' ? 'grayscale-[50%]' : ''}`} 
+                    <img
+                      src={dish.image_url || dish.image}
+                      alt={dish.name}
+                      className={`w-14 h-14 rounded-xl object-cover mr-4 shadow-sm ${dish.status === 'out_of_stock' ? 'grayscale-[50%]' : ''}`}
                     />
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 text-base">{dish.name}</h4>
@@ -309,31 +308,31 @@ const DishManagement = () => {
             {totalPages > 1 && (
               <div className="p-4 bg-culinaryBg/50 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0 rounded-b-2xl">
                 <div className="flex gap-2">
-                  <button 
-                    onClick={() => setCurrentPage(prev => prev - 1)} 
-                    disabled={currentPage === 1} 
+                  <button
+                    onClick={() => setCurrentPage(prev => prev - 1)}
+                    disabled={currentPage === 1}
                     className="p-1.5 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center"
                   >
                     <span className="material-symbols-outlined text-sm">chevron_left</span>
                   </button>
-                  
+
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button 
-                      key={page} 
-                      onClick={() => setCurrentPage(page)} 
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
                       className={`px-3 py-1.5 rounded-lg shadow-sm transition-colors font-bold text-sm
-                        ${currentPage === page 
-                          ? 'bg-primary text-white' 
+                        ${currentPage === page
+                          ? 'bg-primary text-white'
                           : 'bg-white hover:bg-gray-50 text-neutralCustom border border-neutralCustom/10'}
                       `}
                     >
                       {page}
                     </button>
                   ))}
-                  
-                  <button 
-                    onClick={() => setCurrentPage(prev => prev + 1)} 
-                    disabled={currentPage === totalPages || totalPages === 0} 
+
+                  <button
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    disabled={currentPage === totalPages || totalPages === 0}
                     className="p-1.5 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center"
                   >
                     <span className="material-symbols-outlined text-sm">chevron_right</span>
@@ -349,15 +348,15 @@ const DishManagement = () => {
       {/* OVERLAY & POPUP MODAL CHÍNH GIỮA */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          
+
           {/* LỚP NỀN MỜ (BACKDROP) */}
-          <div 
+          <div
             className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => !isSaving && setIsDrawerOpen(false)}
           ></div>
 
           {/* HỘP POPUP CHÍNH GIỮA */}
-          <div 
+          <div
             className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-neutralCustom/10 z-10 max-h-[85vh] animate-scale-up"
             style={{
               animation: 'scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
@@ -373,7 +372,7 @@ const DishManagement = () => {
                   {selectedDish ? selectedDish.name : 'Tạo món ăn mới'}
                 </h3>
               </div>
-              <button 
+              <button
                 onClick={() => setIsDrawerOpen(false)}
                 className="p-2 hover:bg-neutralCustom/10 rounded-full transition-colors text-neutralCustom flex items-center justify-center"
               >
@@ -383,9 +382,9 @@ const DishManagement = () => {
 
             {/* Nội dung Popup (Có scroll tự động nếu nội dung quá dài) */}
             <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar bg-white">
-              
+
               {/* Khu vực Upload Ảnh */}
-              <div 
+              <div
                 onClick={() => fileInputRef.current.click()} // Kích hoạt chọn ảnh khi bấm bất kỳ đâu trong khung
                 className="relative h-48 w-full rounded-2xl overflow-hidden shadow-md bg-culinaryBg flex flex-col items-center justify-center border-2 border-dashed border-neutralCustom/30 cursor-pointer hover:bg-neutralCustom/5 transition-all group shrink-0"
                 title="Bấm vào đây để thay đổi hình ảnh món ăn"
@@ -398,15 +397,15 @@ const DishManagement = () => {
                     <span className="text-sm font-medium">Bấm để chọn ảnh</span>
                   </div>
                 )}
-                
-                <input 
-                  type="file" 
-                  accept="image/*" 
+
+                <input
+                  type="file"
+                  accept="image/*"
                   ref={fileInputRef}
                   onChange={handleImageChange}
-                  className="hidden" 
+                  className="hidden"
                 />
-                
+
                 {/* Cây bút nhỏ ở góc dưới vẫn giữ để báo hiệu, nhưng không bị tranh chấp sự kiện click */}
                 <div className="absolute bottom-3 right-3 bg-white/90 p-2 rounded-lg shadow-sm group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined text-sm">edit</span>
@@ -417,31 +416,31 @@ const DishManagement = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5 tracking-wide">Tên món ăn</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" 
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
                     placeholder="Nhập tên món ăn..."
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5 tracking-wide">Giá bán (VNĐ)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" 
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
                       placeholder="0"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5 tracking-wide">Danh mục</label>
-                    <select 
+                    <select
                       value={formData.category_id}
-                      onChange={(e) => setFormData({...formData, category_id: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                       className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all cursor-pointer"
                     >
                       <option value="" disabled>Chọn Danh Mục</option>
@@ -451,14 +450,14 @@ const DishManagement = () => {
                     </select>
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5 tracking-wide">Mô tả ngắn</label>
-                  <textarea 
+                  <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows="3"
-                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" 
+                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
                     placeholder="Mô tả chi tiết món ăn..."
                   ></textarea>
                 </div>
@@ -472,11 +471,11 @@ const DishManagement = () => {
                     <p className="text-xs text-neutralCustom">Đang hiển thị trên thực đơn</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
                       checked={formData.status === 'available'}
-                      onChange={(e) => setFormData({...formData, status: e.target.checked ? 'available' : 'out_of_stock'})}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.checked ? 'available' : 'out_of_stock' })}
                     />
                     <div className="w-11 h-6 bg-neutralCustom/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
                   </label>
@@ -491,7 +490,7 @@ const DishManagement = () => {
                     <h4 className="font-bold text-sm">Quản lý Công thức</h4>
                   </div>
                   <p className="text-xs text-neutralCustom">Thiết lập định lượng nguyên liệu để hệ thống tự động trừ kho khi có đơn đặt món này.</p>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => {
                       setIsDrawerOpen(false);
@@ -507,14 +506,14 @@ const DishManagement = () => {
 
             {/* Footer Nút hành động */}
             <div className="p-6 border-t border-neutralCustom/20 bg-culinaryBg/20 flex gap-3 shrink-0">
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsDrawerOpen(false)}
                 className="flex-1 py-3 border border-neutralCustom/20 bg-white rounded-xl font-bold text-sm text-neutralCustom hover:bg-gray-50 transition-colors"
               >
                 Hủy bỏ
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={handleSaveDish}
                 disabled={isSaving}

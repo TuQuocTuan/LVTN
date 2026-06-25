@@ -41,12 +41,14 @@ export const getCustomerVoucher = async (req, res) => {
 //Hàm lấy KM
 export const getAllPromotions = async (req, res) => {
     try {
-        const { data: promtions, error: promotionsErr } = await supabase
+        const { data: promotions, error: promotionsErr } = await supabase
             .from('promotions')
-            .select('code,name,type,discount_value,min_bill_value,start_date,end_date')
-            .eq('is_active', true)
+            .select('id,code,name,type,discount_type,discount_value,min_bill_value,start_date,end_date,is_active')
+            //.eq('is_active', true)
+            .order('created_at', { ascending: false });
+
         if (promotionsErr) throw promotionsErr;
-        return res.status(200).json({ success: true, message: 'Danh sách khuyến mãi', promtions });
+        return res.status(200).json({ success: true, message: 'Danh sách khuyến mãi', promotions });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
