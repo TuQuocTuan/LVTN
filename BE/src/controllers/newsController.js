@@ -28,7 +28,7 @@ export const addNews = async (req, res) => {
         if (!file) {
             return res.status(400).json({ success: false, message: 'Vui lòng cung cấp hình ảnh!' });
         }
-        if (!promotion_id || !title || !content || !is_published) {
+        if (!title || !content || !is_published) {
             return res.status(400).json({ success: false, message: 'Vui lòng cung cấp đầy đủ thông tin!' });
         }
 
@@ -168,7 +168,7 @@ export const updateNews = async (req, res) => {
 
         if (Err) throw Err;
 
-        return res.status(200).json({ success: true, data: updateNews, message: 'Cập nhật thành công' });
+        return res.status(200).json({ success: true, data: updatedNews, message: 'Cập nhật thành công' });
 
     } catch (error) {
         console.error("Lỗi updateNews:", error);
