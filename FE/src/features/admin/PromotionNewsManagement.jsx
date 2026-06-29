@@ -460,7 +460,11 @@ const PromotionNewsManagement = () => {
                       <div className="relative h-40 bg-culinaryBg flex items-center justify-center">
                         {/* LẤY ẢNH: Dùng image_url */}
                         {news.image_url ? (
-                          <img src={news.image_url} alt={news.title} className="w-full h-full object-cover" />
+                          <img
+                            src={`${news.image_url}?t=${Date.now()}`}
+                            alt={news.title}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <span className="material-symbols-outlined text-4xl text-neutralCustom/30">add_photo_alternate</span>
                         )}
@@ -516,7 +520,11 @@ const PromotionNewsManagement = () => {
             <div className="w-full bg-gray-100 flex justify-center items-center relative shrink-0 border-b border-neutralCustom/10">
               {selectedNews.image_url ? (
                 // 🌟 Dùng object-contain và max-h-80 để ảnh tự khớp mà không bao giờ bị cắt đầu cắt đuôi
-                <img src={selectedNews.image_url} alt={selectedNews.title} className="max-w-full max-h-80 object-contain" />
+                <img
+                  src={`${selectedNews.image_url}?t=${Date.now()}`}
+                  alt={selectedNews.title}
+                  className="max-w-full max-h-80 object-contain"
+                />
               ) : (
                 <div className="w-full h-48 flex flex-col items-center justify-center text-neutralCustom/40">
                   <span className="material-symbols-outlined text-4xl mb-2">image</span>
@@ -817,7 +825,11 @@ const PromotionNewsManagement = () => {
                   >
                     {imagePreview ? (
                       <>
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-contain bg-black/5" />
+                        <img
+                          src={imagePreview?.startsWith('http') ? `${imagePreview}?t=${Date.now()}` : imagePreview}
+                          alt="Preview"
+                          className="w-full h-full object-contain bg-black/5"
+                        />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
                           <span className="material-symbols-outlined text-4xl mb-2">image_search</span>
                           <span className="font-bold text-sm">Nhấn để chọn ảnh khác</span>
