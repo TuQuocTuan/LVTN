@@ -49,7 +49,7 @@ const PromotionNewsManagement = () => {
   const [selectedNews, setSelectedNews] = useState(null);
 
 
-  // Gọi API lấy danh sách khuyến mãi khi component được render
+  // Gọi API lấy danh sách khuyến mãi & tin tức khi component được render
   useEffect(() => {
     fetchPromotions();
     fetchNews();
@@ -59,7 +59,6 @@ const PromotionNewsManagement = () => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/promotions/list`);
-
       if (response.data.success) {
         const dataList = response.data.promotions || [];
         setPromotionsList(dataList);
@@ -75,9 +74,9 @@ const PromotionNewsManagement = () => {
     setIsLoadingNews(true);
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/news`);
-      // Giả định backend trả về { success: true, data: [...] } hoặc { success: true, news: [...] }
+      // Đọc đúng key 'data' trả về từ getNews của newsController.js
       if (response.data.success) {
-        setNewsList(response.data.data || response.data.news || []);
+        setNewsList(response.data.data || []);
       }
     } catch (error) {
       console.error("Lỗi tải danh sách tin tức:", error);
@@ -94,6 +93,7 @@ const PromotionNewsManagement = () => {
     return d.toISOString().slice(0, 16);
   };
 
+  // ====================== CÁC HÀM XỬ LÝ KHUYẾN MÃI ======================
   const handleOpenAddModal = () => {
     setFormData(initialPromoState);
     setIsPromoModalOpen(true);
@@ -122,7 +122,6 @@ const PromotionNewsManagement = () => {
 
     setIsSaving(true);
     try {
-      // Dựa vào id để phân biệt là Đang Thêm mới hay Đang Cập nhật
       const url = formData.id
         ? `${import.meta.env.VITE_API_URL}/promotions/update`
         : `${import.meta.env.VITE_API_URL}/promotions/add`;
@@ -136,7 +135,7 @@ const PromotionNewsManagement = () => {
       if (res.data.success) {
         alert(formData.id ? "Cập nhật khuyến mãi thành công!" : "Thêm khuyến mãi mới thành công!");
         setIsPromoModalOpen(false);
-        fetchPromotions(); // Tải lại danh sách
+        fetchPromotions(); 
       }
     } catch (error) {
       alert(error.response?.data?.message || "Lỗi khi lưu dữ liệu!");
@@ -158,6 +157,7 @@ const PromotionNewsManagement = () => {
     }
   };
 
+  // ====================== CÁC HÀM XỬ LÝ TIN TỨC ======================
   const handleOpenAddNewsModal = () => {
     setNewsFormData(initialNewsState);
     setImagePreview(null);
@@ -168,27 +168,48 @@ const PromotionNewsManagement = () => {
     const file = e.target.files[0];
     if (file) {
       setNewsFormData({ ...newsFormData, imageFile: file });
-      setImagePreview(URL.createObjectURL(file)); // Hiển thị ảnh xem trước
+      setImagePreview(URL.createObjectURL(file)); 
     }
   };
 
   const handleSaveNews = async () => {
-    if (!newsFormData.title || !newsFormData.content) return alert("Vui lòng điền đủ Tiêu đề và Nội dung bài viết!");
+    // 🌟 Ràng buộc 1: Thiếu text
+    if (!newsFormData.title || !newsFormData.content) {
+        return alert("Vui lòng điền đủ Tiêu đề và Nội dung bài viết!");
+    }
+    
+    // 🌟 Ràng buộc 2: Khớp lỗi Backend (Thêm mới bắt buộc phải có ảnh)
+    if (!newsFormData.id && !newsFormData.imageFile) {
+        return alert("Vui lòng tải lên ảnh bìa cho bài viết mới!");
+    }
+
     setIsSaving(true);
     try {
       const payload = new FormData();
       if (newsFormData.id) payload.append('id', newsFormData.id);
+      
+      // 🌟 ĐÃ FIX: Truyền đủ 'title' cho Backend
+      payload.append('title', newsFormData.title);
       payload.append('content', newsFormData.content);
       payload.append('is_published', newsFormData.is_published);
       if (newsFormData.promotion_id) payload.append('promotion_id', newsFormData.promotion_id);
-      if (newsFormData.imageFile) payload.append('image', newsFormData.imageFile);
+      
+      // 🌟 ĐÃ FIX: Khớp chính xác với upload.single('image') của uploadMiddleware
+      if (newsFormData.imageFile) payload.append('image', newsFormData.imageFile); 
 
-      // Chuyển URL dựa trên việc thêm hay sửa
-      const url = newsFormData.id
-        ? `${import.meta.env.VITE_API_URL}/news/update`
-        : `${import.meta.env.VITE_API_URL}/news/add`;
-
-      const res = await axios.post(url, payload, { headers: { 'Content-Type': 'multipart/form-data' } });
+      // 🌟 ĐÃ FIX: Chuyển URL và Method động khớp 100% với newsRoute.js
+      let res;
+      if (newsFormData.id) {
+          // Gọi route update (Method: PUT)
+          res = await axios.put(`${import.meta.env.VITE_API_URL}/news/update`, payload, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+          });
+      } else {
+          // Gọi route add (Method: POST)
+          res = await axios.post(`${import.meta.env.VITE_API_URL}/news/add`, payload, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+          });
+      }
 
       if (res.data.success) {
         alert(newsFormData.id ? "Cập nhật tin tức thành công!" : "Đăng tin tức thành công!");
@@ -214,7 +235,7 @@ const PromotionNewsManagement = () => {
       content: news.content,
       promotion_id: news.promotion_id || '',
       is_published: news.is_published,
-      imageFile: null // Ảnh cũ sẽ không cần upload lại trừ khi chọn ảnh mới
+      imageFile: null 
     });
     setImagePreview(news.image_url || null);
     setIsNewsDetailOpen(false);
@@ -227,7 +248,7 @@ const PromotionNewsManagement = () => {
       const res = await axios.delete(`${import.meta.env.VITE_API_URL}/news/delete/${id}`);
       if (res.data.success) {
         alert("Xóa tin tức thành công!");
-        setIsNewsDetailOpen(false); // Đóng modal chi tiết nếu đang mở
+        setIsNewsDetailOpen(false); 
         fetchNews();
       }
     } catch (error) {
@@ -235,15 +256,10 @@ const PromotionNewsManagement = () => {
     }
   };
 
-  // XỬ LÝ PHÂN TRANG (PAGINATION)
+  // ====================== UI HELPERS ======================
   const totalPages = Math.ceil(promotionsList.length / itemsPerPage);
-  // Cắt mảng lấy đúng 6 phần tử cho trang hiện tại
   const currentPromotions = promotionsList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
-  const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
-
-  // HÀM FORMAT GIAO DIỆN HIỂN THỊ CHUNG
   const formatDate = (isoString) => {
     if (!isoString) return '';
     const date = new Date(isoString);
@@ -359,7 +375,7 @@ const PromotionNewsManagement = () => {
                 <tbody className="divide-y divide-neutralCustom/10">
                   {isLoading ? (
                     <tr>
-                      <td colSpan="5" className="text-center py-8 text-neutralCustom">Đang tải dữ liệu khuyến mãi...</td>
+                      <td colSpan="6" className="text-center py-8 text-neutralCustom">Đang tải dữ liệu khuyến mãi...</td>
                     </tr>
                   ) : currentPromotions.length > 0 ? (
                     currentPromotions.map((promo) => {
@@ -406,14 +422,14 @@ const PromotionNewsManagement = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="5" className="text-center py-8 text-neutralCustom">Chưa có liệu khuyến mãi nào cả.</td>
+                      <td colSpan="6" className="text-center py-8 text-neutralCustom">Chưa có dữ liệu khuyến mãi nào cả.</td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
 
-            {/* Phân trang (Pagination) */}
+            {/* Phân trang */}
             {promotionsList.length > 0 && (
               <div className="p-4 bg-culinaryBg/30 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0">
                 <div className="flex gap-2">
@@ -427,7 +443,7 @@ const PromotionNewsManagement = () => {
             )}
           </div>
         ) : (
-          /* TAB 2: GTIN TỨC */
+          /* TAB 2: TIN TỨC */
           <div className="animate-fade-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-gray-900">Tin tức & Sự kiện gần đây</h3>
@@ -438,7 +454,7 @@ const PromotionNewsManagement = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-                {/* Nút thêm bài viết mới dạng Card (Luôn hiện ở đầu hoặc cuối) */}
+                {/* Nút thêm bài viết */}
                 <button onClick={handleOpenAddNewsModal} className="rounded-2xl border-2 border-dashed border-neutralCustom/30 flex flex-col items-center justify-center p-6 hover:bg-primary/5 hover:border-primary/40 transition-all group min-h-[260px] bg-white">
                   <div className="w-14 h-14 rounded-full bg-culinaryBg flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-3 shadow-sm border border-neutralCustom/10">
                     <span className="material-symbols-outlined text-2xl">add</span>
@@ -446,9 +462,8 @@ const PromotionNewsManagement = () => {
                   <p className="font-bold text-neutralCustom group-hover:text-primary transition-colors">Tạo bài viết mới</p>
                 </button>
 
-                {/* Lặp danh sách tin tức từ Database */}
+                {/* Danh sách tin tức */}
                 {newsList.map((news) => {
-                  // KIỂM TRA TRẠNG THÁI: Dùng is_published thay vì isDraft
                   const isDraft = news.is_published === false;
                   const statusLabel = isDraft ? 'Bản nháp' : 'Đã đăng';
 
@@ -456,34 +471,37 @@ const PromotionNewsManagement = () => {
                     <div
                       key={news.id}
                       onClick={() => handleViewNewsDetail(news)}
-                      className={`bg-white rounded-2xl overflow-hidden border border-neutralCustom/20 shadow-sm hover:shadow-md transition-shadow flex flex-col cursor-pointer ${isDraft ? 'opacity-90' : ''}`}>
+                      // 🌟 Thêm class cursor-pointer và group
+                      className={`bg-white rounded-2xl overflow-hidden border border-neutralCustom/20 shadow-sm hover:shadow-md transition-shadow flex flex-col cursor-pointer group ${isDraft ? 'opacity-90' : ''}`}>
                       <div className="relative h-40 bg-culinaryBg flex items-center justify-center">
-                        {/* LẤY ẢNH: Dùng image_url */}
                         {news.image_url ? (
+<<<<<<< HEAD
                           <img
                             src={`${news.image_url}?t=${Date.now()}`}
                             alt={news.title}
                             className="w-full h-full object-cover"
                           />
+=======
+                          <img src={news.image_url} alt={news.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+>>>>>>> b49913a0d13244b34ad5c1f1e1eeb8521597bfa5
                         ) : (
-                          <span className="material-symbols-outlined text-4xl text-neutralCustom/30">add_photo_alternate</span>
+                          <span className="material-symbols-outlined text-4xl text-neutralCustom/30 group-hover:scale-110 transition-transform">add_photo_alternate</span>
                         )}
-                        <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider text-white shadow-sm
+                        <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider text-white shadow-sm z-10
                           ${isDraft ? 'bg-neutralCustom' : 'bg-green-500'}
                         `}>
                           {statusLabel}
                         </span>
                       </div>
                       <div className="p-5 flex flex-col flex-1">
-                        {/* LẤY NGÀY: Dùng created_at */}
                         <p className="text-xs text-neutralCustom mb-1.5">{formatDate(news.created_at)}</p>
-                        <h5 className="font-bold text-gray-900 line-clamp-2 mb-4 text-sm flex-1" title={news.title}>{news.title}</h5>
+                        <h5 className="font-bold text-gray-900 line-clamp-2 mb-4 text-sm flex-1 group-hover:text-primary transition-colors" title={news.title}>{news.title}</h5>
                         <div className="flex justify-between items-center mt-auto border-t border-neutralCustom/10 pt-3">
                           <span className="text-xs text-neutralCustom font-medium flex items-center gap-1.5">
                             <span className="material-symbols-outlined text-[16px]">
                               {isDraft ? 'history_edu' : 'visibility'}
                             </span>
-                            {isDraft ? 'Đang soạn' : `1T lượt xem`}
+                            {isDraft ? 'Đang soạn' : `Lượt xem ẩn`}
                           </span>
 
                           <div className="flex items-center gap-1">
@@ -510,34 +528,43 @@ const PromotionNewsManagement = () => {
           </div>
         )}
       </main>
-
       {/* MODAL XEM CHI TIẾT TIN TỨC (VIEW-ONLY) */}
       {isNewsDetailOpen && selectedNews && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in pointer">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh]">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in cursor-pointer"
+          onClick={() => setIsNewsDetailOpen(false)} // 🌟 Bấm vào nền mờ để tắt modal
+        >
+          <div 
+            className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh] cursor-default"
+            onClick={(e) => e.stopPropagation()} // 🌟 Bấm vào khung trắng bên trong thì không bị tắt
+          >
 
             {/* Header: Ảnh hiển thị trọn vẹn (object-contain thay vì object-cover) */}
             <div className="w-full bg-gray-100 flex justify-center items-center relative shrink-0 border-b border-neutralCustom/10">
               {selectedNews.image_url ? (
+<<<<<<< HEAD
                 // 🌟 Dùng object-contain và max-h-80 để ảnh tự khớp mà không bao giờ bị cắt đầu cắt đuôi
                 <img
                   src={`${selectedNews.image_url}?t=${Date.now()}`}
                   alt={selectedNews.title}
                   className="max-w-full max-h-80 object-contain"
                 />
+=======
+                <img src={selectedNews.image_url} alt={selectedNews.title} className="max-w-full max-h-80 object-contain" />
+>>>>>>> b49913a0d13244b34ad5c1f1e1eeb8521597bfa5
               ) : (
                 <div className="w-full h-48 flex flex-col items-center justify-center text-neutralCustom/40">
                   <span className="material-symbols-outlined text-4xl mb-2">image</span>
                   <span className="text-sm font-medium">Không có ảnh bìa</span>
                 </div>
               )}
-              {/* Nút đóng góc trên */}
+              {/* Nút đóng */}
               <button onClick={() => setIsNewsDetailOpen(false)} className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors shadow-md">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            {/* Nội dung chi tiết cuộn được */}
+            {/* Nội dung chi tiết */}
             <div className="p-6 overflow-y-auto bg-white flex-1 custom-scrollbar">
               <div className="flex items-center gap-3 mb-3">
                 <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md text-white ${selectedNews.is_published === false ? 'bg-neutralCustom' : 'bg-green-500'}`}>
@@ -555,151 +582,10 @@ const PromotionNewsManagement = () => {
               </div>
             </div>
 
-            {/* Footer: Chỉ còn nút Đóng */}
+            {/* Footer */}
             <div className="p-5 border-t border-neutralCustom/20 bg-gray-50 flex justify-end shrink-0">
               <button onClick={() => setIsNewsDetailOpen(false)} className="px-8 py-2.5 rounded-xl font-bold text-sm text-gray-700 bg-white border border-neutralCustom/30 hover:bg-gray-100 transition-colors shadow-sm">
                 Đóng
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* MODAL FORM THÊM / SỬA KHUYẾN MÃI (POPUP) */}
-      {isPromoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh]">
-
-            <div className="p-5 border-b border-neutralCustom/20 flex items-center justify-between bg-culinaryBg shrink-0">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">{formData.id ? 'Sửa Khuyến Mãi' : 'Tạo Khuyến Mãi Mới'}</h3>
-                <p className="text-xs text-neutralCustom mt-1">Cấu hình chi tiết chương trình ưu đãi cho nhà hàng</p>
-              </div>
-              <button onClick={() => setIsPromoModalOpen(false)} className="p-2 hover:bg-neutralCustom/10 rounded-full text-neutralCustom transition-colors">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto space-y-5 bg-gray-50 flex-1 custom-scrollbar">
-
-              <div className="grid grid-cols-2 gap-5">
-                {/* Tên chương trình */}
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Tên chương trình <span className="text-red-500">*</span></label>
-                  <input
-                    type="text" placeholder="VD: Khai trương giảm 20%"
-                    value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900"
-                  />
-                </div>
-
-                {/* Mã CODE */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Mã Code (CODE) <span className="text-red-500">*</span></label>
-                  <input
-                    type="text" placeholder="VD: SUMMER20"
-                    value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-bold text-gray-900 uppercase"
-                  />
-                </div>
-
-                {/* Loại Khuyến mãi */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Loại Khuyến Mãi <span className="text-red-500">*</span></label>
-                  <select
-                    value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900 cursor-pointer"
-                  >
-                    <option value="VOUCHER">VOUCHER (Phiếu giảm giá)</option>
-                    <option value="BILL_CONDITION">BILL_CONDITION (Theo Hóa đơn)</option>
-                    <option value="GLOBAL">GLOBAL (Toàn cục)</option>
-                  </select>
-                </div>
-
-                {/* Loại Giảm & Mức giảm */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Loại Giảm</label>
-                  <select
-                    value={formData.discount_type} onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900 cursor-pointer"
-                  >
-                    <option value="AMOUNT">Theo số tiền (VNĐ)</option>
-                    <option value="PERCENTAGE">Theo phần trăm (%)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Mức Giảm <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <input
-                      type="number" min="0" placeholder={formData.discount_type === 'PERCENTAGE' ? 'Ví dụ: 10' : 'Ví dụ: 50000'}
-                      value={formData.discount_value} onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-bold text-primary pr-10"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutralCustom font-bold text-sm">
-                      {formData.discount_type === 'PERCENTAGE' ? '%' : 'đ'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Điều kiện hóa đơn */}
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Hóa đơn tối thiểu (Tùy chọn)</label>
-                  <div className="relative">
-                    <input
-                      type="number" min="0" placeholder="VD: 500000 (Để trống nếu không có yêu cầu)"
-                      value={formData.min_bill_value} onChange={(e) => setFormData({ ...formData, min_bill_value: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900 pr-10"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutralCustom font-bold text-sm">đ</span>
-                  </div>
-                </div>
-
-                {/* Ngày bắt đầu - Kết thúc */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Ngày bắt đầu <span className="text-red-500">*</span></label>
-                  <input
-                    type="datetime-local"
-                    value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900 cursor-text"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Ngày kết thúc <span className="text-red-500">*</span></label>
-                  <input
-                    type="datetime-local"
-                    value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900 cursor-text"
-                  />
-                </div>
-
-                {/* Active Checkbox */}
-                <div className="col-span-2 flex items-center gap-3 bg-white p-3 rounded-xl border border-neutralCustom/20">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer"
-                  />
-                  <label htmlFor="is_active" className="text-sm font-bold text-gray-900 cursor-pointer select-none">
-                    Kích hoạt chương trình ngay lập tức
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-5 border-t border-neutralCustom/20 bg-white flex justify-end gap-3 shrink-0">
-              <button onClick={() => setIsPromoModalOpen(false)} className="px-6 py-2.5 rounded-xl font-bold text-sm text-neutralCustom border border-neutralCustom/20 hover:bg-gray-50 transition-colors">
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleSavePromo}
-                disabled={isSaving}
-                className="px-8 py-2.5 rounded-xl font-bold text-sm text-white bg-primary hover:bg-secondary shadow-md hover:shadow-primary/30 disabled:opacity-50 transition-all flex items-center gap-2"
-              >
-                {isSaving ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
-                {isSaving ? 'Đang lưu...' : 'Lưu Khuyến Mãi'}
               </button>
             </div>
           </div>
@@ -708,7 +594,7 @@ const PromotionNewsManagement = () => {
 
       {/* MODAL FORM THÊM / SỬA KHUYẾN MÃI */}
       {isPromoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh]">
             <div className="p-5 border-b border-neutralCustom/20 flex items-center justify-between bg-culinaryBg shrink-0">
               <div>
@@ -785,11 +671,9 @@ const PromotionNewsManagement = () => {
         </div>
       )}
 
-      {/* ===================================================================== */}
-      {/* MODAL FORM THÊM / SỬA TIN TỨC (Giữ nguyên) */}
-      {/* ===================================================================== */}
+      {/* MODAL FORM THÊM / SỬA TIN TỨC */}
       {isNewsModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh]">
             <div className="p-5 border-b border-neutralCustom/20 flex items-center justify-between bg-culinaryBg shrink-0">
               <div>
