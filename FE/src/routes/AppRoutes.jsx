@@ -2,14 +2,14 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // --- IMPORT CÁC TRANG DÀNH CHO KHÁCH HÀNG ---
-import WelcomePage from '../features/customer/WelcomePage'; 
+import WelcomePage from '../features/customer/WelcomePage';
 import MenuPage from '../features/customer/MenuPage';
-import CartPage from '../features/customer/CartPage'; 
+import CartPage from '../features/customer/CartPage';
 import OrdersPage from '../features/customer/OrdersPage';
 import PaymentPage from '../features/customer/PaymentPage';
 
 // --- IMPORT TRANG ĐĂNG NHẬP & NỘI BỘ ---
-import Login from '../features/auth/Login'; 
+import Login from '../features/auth/Login';
 import TableManager from '../features/cashier/TableManager';
 import KitchenOrders from '../features/kitchen/KitchenOrders';
 
@@ -44,17 +44,28 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+const CustomerRoute = ({ children }) => {
+  const sessionId = localStorage.getItem('sessionId');
+
+  // Nếu trong máy hoàn toàn không có sessionId -> Đuổi về trang Welcome bắt quét mã/ấn nút
+  if (!sessionId) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
 
       <Route path="/" element={<WelcomePage />} />
-      <Route path="/menu" element={<MenuPage />} />
-      <Route path="/cart" element={<CartPage />} />     
-      <Route path="/orders" element={<OrdersPage />} /> 
-      <Route path="/payment" element={<PaymentPage />} />
-      
+      <Route path="/menu" element={<CustomerRoute><MenuPage /></CustomerRoute>} />
+      <Route path="/cart" element={<CustomerRoute><CartPage /></CustomerRoute>} />
+      <Route path="/orders" element={<CustomerRoute><OrdersPage /></CustomerRoute>} />
+      <Route path="/payment" element={<CustomerRoute><PaymentPage /></CustomerRoute>} />
+
       <Route path="/cashier" element={
         <ProtectedRoute allowedRoles={['cashier', 'admin', 'super_admin']}>
           <TableManager />

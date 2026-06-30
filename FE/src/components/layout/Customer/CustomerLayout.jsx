@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import CallService from './CallService';
 import { useCart } from '../../../context/CartContext';
 // Import thêm useLocation từ react-router-dom
@@ -13,6 +13,15 @@ const CustomerLayout = ({ children }) => {
   const isCartActive = location.pathname === '/cart';
   const { totalItems } = useCart(); // Lấy tổng số lượng món từ kho
 
+  const [tableNumber, setTableNumber] = useState('...');
+
+  useEffect(() => {
+    const storedTableId = localStorage.getItem('tableId');
+    if (storedTableId) {
+      setTableNumber(storedTableId);
+    }
+  }, [location.pathname]);
+
   return (
     <div className="bg-culinaryBg text-gray-900 min-h-screen pb-24 font-sans">
 
@@ -23,7 +32,7 @@ const CustomerLayout = ({ children }) => {
             restaurant
           </span>
           <div className="flex flex-col">
-            <h1 className="text-2xl font-semibold text-primary">Bàn 12</h1>
+            <h1 className="text-2xl font-semibold text-primary">Bàn {tableNumber}</h1>
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
               <span className="text-[10px] font-bold text-neutralCustom tracking-wider uppercase">
@@ -34,18 +43,16 @@ const CustomerLayout = ({ children }) => {
           <CallService />
         </div>
 
-        
+
         {/* Nút Giỏ hàng: Đổi màu và in đậm khi đang ở trang /cart */}
-        <button 
+        <button
           onClick={() => navigate('/cart')}
-          className={`relative transition-all duration-200 active:scale-95 p-2 rounded-full ${
-            isCartActive ? 'bg-primary/10' : 'hover:bg-culinaryBg'
-          }`}
-        >
-          <span 
-            className={`material-symbols-outlined ${
-              isCartActive ? 'text-primary' : 'text-neutralCustom'
+          className={`relative transition-all duration-200 active:scale-95 p-2 rounded-full ${isCartActive ? 'bg-primary/10' : 'hover:bg-culinaryBg'
             }`}
+        >
+          <span
+            className={`material-symbols-outlined ${isCartActive ? 'text-primary' : 'text-neutralCustom'
+              }`}
             style={isCartActive ? { fontVariationSettings: "'FILL' 1" } : {}}
           >
             shopping_cart
@@ -65,13 +72,12 @@ const CustomerLayout = ({ children }) => {
 
       {/* Footer (Bottom Navigation) */}
       <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-white rounded-t-xl border-t border-neutralCustom/20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-4">
-        
+
         {/* Nút Thực Đơn -> trỏ tới /menu */}
-        <NavLink 
-          to="/menu" 
-          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${
-            isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
-          }`}
+        <NavLink
+          to="/menu"
+          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
+            }`}
         >
           {({ isActive }) => (
             <>
@@ -82,11 +88,10 @@ const CustomerLayout = ({ children }) => {
         </NavLink>
 
         {/* Nút Đơn Hàng -> trỏ tới /orders */}
-        <NavLink 
-          to="/orders" 
-          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${
-            isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
-          }`}
+        <NavLink
+          to="/orders"
+          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
+            }`}
         >
           {({ isActive }) => (
             <>
@@ -97,11 +102,10 @@ const CustomerLayout = ({ children }) => {
         </NavLink>
 
         {/* Nút Thanh Toán -> trỏ tới /payment */}
-        <NavLink 
-          to="/payment" 
-          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${
-            isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
-          }`}
+        <NavLink
+          to="/payment"
+          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
+            }`}
         >
           {({ isActive }) => (
             <>
