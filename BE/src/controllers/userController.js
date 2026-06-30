@@ -10,7 +10,7 @@ export const getAllUser = async (req, res) => {
     try {
         const { data: users, error } = await supabase
             .from('users')
-            .select('id,username,fullname,role,is_active');
+            .select('id,username,fullname,role,is_active,permissions,email,phone_number');
 
         if (error) throw error;
         return res.status(200).json(users);
@@ -21,11 +21,13 @@ export const getAllUser = async (req, res) => {
 
 export const updateRoleUser = async (req, res) => {
     try {
-        const { id, role, is_active, permissions } = req.body;
+        const { id, role, is_active, permissions, fullname, email, phone_number } = req.body;
         const activeStatus = is_active === 'true' || is_active === true;
         const { data: updateRole, error: updateErr } = await supabase
             .from('users')
-            .update({ role: role, is_active: activeStatus, permissions: permissions })
+            .update({
+                role: role, is_active: activeStatus, permissions: permissions, fullname: fullname, email: email, phone_number: phone_number
+            })
             .eq('id', id)
         if (updateErr) throw updateErr;
         return res.status(200).json({ success: true, message: 'Cập nhật Role thành công' });
