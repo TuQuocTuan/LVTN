@@ -21,11 +21,11 @@ export const getAllUser = async (req, res) => {
 
 export const updateRoleUser = async (req, res) => {
     try {
-        const { id, role, is_active } = req.body;
+        const { id, role, is_active, permissions } = req.body;
         const activeStatus = is_active === 'true' || is_active === true;
         const { data: updateRole, error: updateErr } = await supabase
             .from('users')
-            .update({ role: role, is_active: activeStatus })
+            .update({ role: role, is_active: activeStatus, permissions: permissions })
             .eq('id', id)
         if (updateErr) throw updateErr;
         return res.status(200).json({ success: true, message: 'Cập nhật Role thành công' });
@@ -36,7 +36,7 @@ export const updateRoleUser = async (req, res) => {
 
 export const addUser = async (req, res) => {
     try {
-        const { username, password, fullname, role, is_active, created_at, email, phone_number } = req.body;
+        const { username, password, fullname, role, is_active, created_at, email, phone_number, permissions } = req.body;
         if (!username || !password || !fullname || !role || !email || !phone_number) {
             return res.status(400).json({ success: false, message: 'Thiếu thông tin User!' });
         }
@@ -64,6 +64,7 @@ export const addUser = async (req, res) => {
                 created_at: moment(created_at).tz("Asia/Ho_Chi_Minh").format('YYYY-MM-DD HH:mm:ss'),
                 email: email,
                 phone_number: phone_number,
+                permissions: permissions,
             })
             .select();
 

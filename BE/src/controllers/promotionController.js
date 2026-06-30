@@ -1,5 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
+import nodemailer from 'nodemailer';
+
 
 
 export const getCustomerVoucher = async (req, res) => {
@@ -235,6 +237,9 @@ export const addVoucherCustomer = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Chưa đủ điều kiện chi tiêu 5 triệu!' });
         }
 
+        let promotionId = null;
+        const upperCode = code.toUpperCase();
+
         let formatData = {
             code: code.toUpperCase(),
             name: name.toUpperCase(),
@@ -247,7 +252,18 @@ export const addVoucherCustomer = async (req, res) => {
             is_active: is_active !== undefined ? Boolean(is_active) : true,
         };
 
-        if (formatData.type === "VOUCHER") {
+        const { data: existingPromo, error: checkErr } = await supabase
+            .from('promotions')
+            .select('id')
+            .eq('code', upperCode)
+            .maybeSingle();
+
+        if (checkErr) throw checkErr;
+
+        if (existingPromo) {
+            promotionId = existingPromo.id;
+        }
+        else {
             const { data: addedPromo, error: addErr } = await supabase
                 .from('promotions')
                 .insert([formatData])
@@ -255,18 +271,86 @@ export const addVoucherCustomer = async (req, res) => {
                 .single();
 
             if (addErr) throw addErr;
-
-            const { data: addedPromoCustomer, error: addErrCustomer } = await supabase
-                .from('customer_vouchers')
-                .insert({
-                    customer_id: customer_id,
-                    promotion_id: addedPromo.id,
-                    is_used: false,
-                    created_at: moment().tz("Asia/Ho_Chi_Minh").toISOString(),
-                })
-                .select();
-            if (addErrCustomer) throw addErrCustomer;
+            promotionId = addedPromo.id;
         }
+
+        const { data: hasVoucher, error: checkVoucherErr } = await supabase
+            .from('customer_vouchers')
+            .select('id')
+            .eq('customer_id', customer_id)
+            .eq('promotion_id', promotionId)
+            .maybeSingle();
+
+        if (checkVoucherErr) throw checkVoucherErr;
+        if (hasVoucher) {
+            return res.status(400).json({ success: false, message: 'Khách hàng này đã sở hữu mã giảm giá này rồi!' });
+        }
+
+        const { data: addedPromoCustomer, error: addErrCustomer } = await supabase
+            .from('customer_vouchers')
+            .insert({
+                customer_id: customer_id,
+                promotion_id: promotionId,
+                is_used: false,
+                created_at: moment().tz("Asia/Ho_Chi_Minh").toISOString(),
+            })
+            .select();
+        if (addErrCustomer) throw addErrCustomer;
+
+        const { data: customer, error: fetchCusErr } = await supabase
+            .from('customers')
+            .select('name,email')
+            .eq('id', customer_id)
+            .single();
+        if (fetchCusErr) throw fetchCusErr;
+
+        try {
+            const transporter = nodemailer.createTransport({
+                service: 'Gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+
+            const mailOptions = {
+                from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
+                to: customer.email,
+                subject: '[Làng Mixi] Bạn đã được cấp voucher mới',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
+                        <h2 style="color: #ff6b00; text-align: center;">BẠN ĐÃ ĐƯỢC TẶNG 1 VOUCHER</h2>
+                        <p>Xin chào <b>${customer.name}</b>,</p>
+                        <p>Bạn đã được hệ thống <b>Làng Mixi</b> tặng 1 voucher.</p>
+                        
+                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
+                            <p style="margin: 5px 0;"><b>Mã Voucher:</b> <code style="font-size: 14px; color: #333;">${formatData.code}</code></p>
+                            <p style="margin: 5px 0;"><b>Loại Voucher:</b> <code style="font-size: 14px; color: #333;">${formatData.type}</code></p>
+                            <p style="margin: 5px 0;"><b>Loại Giảm giá:</b> <code style="font-size: 14px; color: #333;">${formatData.discount_type}</code></p>
+                            <p style="margin: 5px 0;"><b>Giá trị giảm giá:</b> <code style="font-size: 14px; color: #333;">${formatData.discount_value}</code></p>
+                            <p style="margin: 5px 0;"><b>Giá trị đơn hàng tối thiểu:</b> <code style="font-size: 14px; color: #333;">${formatData.min_bill_value ? formatData.min_bill_value.toLocaleString('vi-VN') + ' VND' : '0 VND'}</code></p>
+                            <p style="margin: 5px 0;"><b>Thời gian bắt đầu:</b> <code style="font-size: 14px; color: #333;">${formatData.start_date}</code></p>
+                            <p style="margin: 5px 0;"><b>Thời gian kết thúc:</b> <code style="font-size: 14px; color: #333;">${formatData.end_date}</code></p>
+                            <p style="margin: 5px 0;"><b>Trạng thái:</b> <code style="font-size: 14px; color: #333;">${formatData.is_active}</code></p>
+                        </div>
+
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
+                    </div>
+                `
+            };
+
+            await transporter.sendMail(mailOptions);
+            console.log(`Đã gửi mail voucher thành công cho: ${customer.email}`);
+
+        } catch (mailError) {
+            console.error("Lỗi gửi mail voucher:", mailError);
+            return res.status(200).json({
+                success: true,
+                message: 'Thêm khuyến mãi thành công nhưng hệ thống gửi Mail thông báo gặp sự cố!'
+            });
+        }
+
         return res.status(200).json({ success: true, message: 'Thêm khuyến mãi thành công!' });
     } catch (error) {
         console.error("Lỗi addPromotions:", error.message);
