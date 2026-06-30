@@ -135,7 +135,7 @@ const PromotionNewsManagement = () => {
       if (res.data.success) {
         alert(formData.id ? "Cập nhật khuyến mãi thành công!" : "Thêm khuyến mãi mới thành công!");
         setIsPromoModalOpen(false);
-        fetchPromotions(); 
+        fetchPromotions();
       }
     } catch (error) {
       alert(error.response?.data?.message || "Lỗi khi lưu dữ liệu!");
@@ -168,47 +168,47 @@ const PromotionNewsManagement = () => {
     const file = e.target.files[0];
     if (file) {
       setNewsFormData({ ...newsFormData, imageFile: file });
-      setImagePreview(URL.createObjectURL(file)); 
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
   const handleSaveNews = async () => {
     // 🌟 Ràng buộc 1: Thiếu text
     if (!newsFormData.title || !newsFormData.content) {
-        return alert("Vui lòng điền đủ Tiêu đề và Nội dung bài viết!");
+      return alert("Vui lòng điền đủ Tiêu đề và Nội dung bài viết!");
     }
-    
+
     // 🌟 Ràng buộc 2: Khớp lỗi Backend (Thêm mới bắt buộc phải có ảnh)
     if (!newsFormData.id && !newsFormData.imageFile) {
-        return alert("Vui lòng tải lên ảnh bìa cho bài viết mới!");
+      return alert("Vui lòng tải lên ảnh bìa cho bài viết mới!");
     }
 
     setIsSaving(true);
     try {
       const payload = new FormData();
       if (newsFormData.id) payload.append('id', newsFormData.id);
-      
+
       // 🌟 ĐÃ FIX: Truyền đủ 'title' cho Backend
       payload.append('title', newsFormData.title);
       payload.append('content', newsFormData.content);
       payload.append('is_published', newsFormData.is_published);
       if (newsFormData.promotion_id) payload.append('promotion_id', newsFormData.promotion_id);
-      
+
       // 🌟 ĐÃ FIX: Khớp chính xác với upload.single('image') của uploadMiddleware
-      if (newsFormData.imageFile) payload.append('image', newsFormData.imageFile); 
+      if (newsFormData.imageFile) payload.append('image', newsFormData.imageFile);
 
       // 🌟 ĐÃ FIX: Chuyển URL và Method động khớp 100% với newsRoute.js
       let res;
       if (newsFormData.id) {
-          // Gọi route update (Method: PUT)
-          res = await axios.put(`${import.meta.env.VITE_API_URL}/news/update`, payload, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-          });
+        // Gọi route update (Method: PUT)
+        res = await axios.put(`${import.meta.env.VITE_API_URL}/news/update`, payload, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       } else {
-          // Gọi route add (Method: POST)
-          res = await axios.post(`${import.meta.env.VITE_API_URL}/news/add`, payload, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-          });
+        // Gọi route add (Method: POST)
+        res = await axios.post(`${import.meta.env.VITE_API_URL}/news/add`, payload, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       }
 
       if (res.data.success) {
@@ -235,7 +235,7 @@ const PromotionNewsManagement = () => {
       content: news.content,
       promotion_id: news.promotion_id || '',
       is_published: news.is_published,
-      imageFile: null 
+      imageFile: null
     });
     setImagePreview(news.image_url || null);
     setIsNewsDetailOpen(false);
@@ -248,7 +248,7 @@ const PromotionNewsManagement = () => {
       const res = await axios.delete(`${import.meta.env.VITE_API_URL}/news/delete/${id}`);
       if (res.data.success) {
         alert("Xóa tin tức thành công!");
-        setIsNewsDetailOpen(false); 
+        setIsNewsDetailOpen(false);
         fetchNews();
       }
     } catch (error) {
@@ -475,15 +475,7 @@ const PromotionNewsManagement = () => {
                       className={`bg-white rounded-2xl overflow-hidden border border-neutralCustom/20 shadow-sm hover:shadow-md transition-shadow flex flex-col cursor-pointer group ${isDraft ? 'opacity-90' : ''}`}>
                       <div className="relative h-40 bg-culinaryBg flex items-center justify-center">
                         {news.image_url ? (
-<<<<<<< HEAD
-                          <img
-                            src={`${news.image_url}?t=${Date.now()}`}
-                            alt={news.title}
-                            className="w-full h-full object-cover"
-                          />
-=======
                           <img src={news.image_url} alt={news.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
->>>>>>> b49913a0d13244b34ad5c1f1e1eeb8521597bfa5
                         ) : (
                           <span className="material-symbols-outlined text-4xl text-neutralCustom/30 group-hover:scale-110 transition-transform">add_photo_alternate</span>
                         )}
@@ -530,11 +522,11 @@ const PromotionNewsManagement = () => {
       </main>
       {/* MODAL XEM CHI TIẾT TIN TỨC (VIEW-ONLY) */}
       {isNewsDetailOpen && selectedNews && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in cursor-pointer"
           onClick={() => setIsNewsDetailOpen(false)} // 🌟 Bấm vào nền mờ để tắt modal
         >
-          <div 
+          <div
             className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh] cursor-default"
             onClick={(e) => e.stopPropagation()} // 🌟 Bấm vào khung trắng bên trong thì không bị tắt
           >
@@ -542,16 +534,7 @@ const PromotionNewsManagement = () => {
             {/* Header: Ảnh hiển thị trọn vẹn (object-contain thay vì object-cover) */}
             <div className="w-full bg-gray-100 flex justify-center items-center relative shrink-0 border-b border-neutralCustom/10">
               {selectedNews.image_url ? (
-<<<<<<< HEAD
-                // 🌟 Dùng object-contain và max-h-80 để ảnh tự khớp mà không bao giờ bị cắt đầu cắt đuôi
-                <img
-                  src={`${selectedNews.image_url}?t=${Date.now()}`}
-                  alt={selectedNews.title}
-                  className="max-w-full max-h-80 object-contain"
-                />
-=======
                 <img src={selectedNews.image_url} alt={selectedNews.title} className="max-w-full max-h-80 object-contain" />
->>>>>>> b49913a0d13244b34ad5c1f1e1eeb8521597bfa5
               ) : (
                 <div className="w-full h-48 flex flex-col items-center justify-center text-neutralCustom/40">
                   <span className="material-symbols-outlined text-4xl mb-2">image</span>

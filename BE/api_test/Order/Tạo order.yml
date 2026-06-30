@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "session_id": "63eec913-a79f-4f48-ab97-d9b229feba3c",
+        "session_id": "0cc9e6f4-d9a3-4adf-85a7-c08c4f4fdb68",
         "items": [
           {
             "dish_id": 1,

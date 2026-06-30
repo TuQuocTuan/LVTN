@@ -9,14 +9,7 @@ export const getRecipeByDish = async (req, res) => {
         const { dish_id } = req.params;
         const { data, error } = await supabase
             .from('recipes')
-            .select(`
-                id,
-                amount_required,
-                ingredients(
-                name,
-                unit
-               )
-            `)
+            .select('*')
             .eq('dish_id', dish_id);
 
         if (error) throw error;
@@ -36,7 +29,7 @@ export const getRecipelist = async (req, res) => {
     try {
         const { data: recipe, error: recipeErr } = await supabase
             .from('recipes')
-            .select('id,dishes(name),ingredients(name,quantity,unit)');
+            .select('id,dishes(name),ingredients(name,quantity,unit,steps)');
         if (recipeErr) throw recipeErr;
         res.status(200).json({ success: true, data: recipe });
     } catch (error) {
@@ -77,7 +70,7 @@ export const searchRecipe = async (req, res) => {
 //Thêm công thức
 export const addRecipes = async (req, res) => {
     try {
-        const { dish_id, ingredients } = req.body;
+        const { dish_id, ingredients, steps } = req.body;
         if (!dish_id || !ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
             return res.status(400).json({ success: false, message: 'Vui lòng nhập đủ thông tin!' })
         }
@@ -97,7 +90,8 @@ export const addRecipes = async (req, res) => {
         const addData = ingredients.map(ingredient => ({
             dish_id: Number(dish_id),
             ingredient_id: Number(ingredient.ingredient_id),
-            amount_required: Number(ingredient.amount_required)
+            amount_required: Number(ingredient.amount_required),
+            steps: steps
         }))
 
         const { data: newRecipes, error: newRecipesError } = await supabase
@@ -111,7 +105,8 @@ export const addRecipes = async (req, res) => {
             dish_id: Number(dish_id),
             ingredient_id: Number(ingredient.ingredient_id),
             amount_required: Number(ingredient.amount_required),
-            version: 1
+            version: 1,
+            steps: steps
         }))
 
         const { error: versionError } = await supabase
@@ -130,7 +125,7 @@ export const addRecipes = async (req, res) => {
 //Sửa công thức
 export const updateRecipes = async (req, res) => {
     try {
-        const { dish_id, ingredients } = req.body;
+        const { dish_id, ingredients, steps } = req.body;
         if (!dish_id || !ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
             return res.status(400).json({ success: false, message: 'Vui lòng nhập đủ thông tin!' })
         }
@@ -145,7 +140,8 @@ export const updateRecipes = async (req, res) => {
         const updateData = ingredients.map(item => ({
             dish_id: Number(dish_id),
             ingredient_id: Number(item.ingredient_id),
-            amount_required: Number(item.amount_required)
+            amount_required: Number(item.amount_required),
+            steps: steps
         }))
 
 
@@ -176,7 +172,8 @@ export const updateRecipes = async (req, res) => {
                 dish_id: item.dish_id,
                 ingredient_id: item.ingredient_id,
                 amount_required: item.amount_required,
-                version: nextVersion
+                version: nextVersion,
+                steps: steps
             }));
 
             const { error: insertHistoryErr } = await supabase
@@ -252,7 +249,7 @@ export const getRecipeByVersion = async (req, res) => {
 
         const { data: history_recipe, error: recipeErr } = await supabase
             .from('recipe_histories')
-            .select('id, amount_required, dishes(name), ingredients(name, unit)')
+            .select('id, amount_required, dishes(name), ingredients(name, unit),steps')
             .eq('dish_id', Number(dish_id))
             .eq('version', Number(version));
 

@@ -14,7 +14,8 @@ http:
         "ingredients": [
           { "ingredient_id": 2, "amount_required": 200.00 },
           { "ingredient_id": 3, "amount_required": 50.00 }
-        ]
+        ],
+        "steps":"ăn ngủ chơi"
       }
   auth: inherit
 

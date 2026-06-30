@@ -48,7 +48,7 @@ export const openTable = async (req, res) => {
 //Mở menu(customer)
 export const openMenuCustomer = async (req, res) => {
     try {
-        const { table_id, phone_number, name, } = req.body;
+        const { table_id, old_session } = req.body;
 
         if (!table_id) {
             return res.status(400).json({ success: false, message: 'Thiếu mã bàn!' });
@@ -70,53 +70,19 @@ export const openMenuCustomer = async (req, res) => {
             });
         }
 
-        let customerId = null;
-
-        if (phone_number) {
-            const { data: existingCustomer, error: findErr } = await supabase
-                .from('customers')
-                .select('id')
-                .eq('phone_number', phone_number)
-                .maybeSingle();
-
-            if (findErr) throw findErr;
-
-            if (existingCustomer) {
-                customerId = existingCustomer.id;
-            } else {
-                const { data: newCustomer, error: createErr } = await supabase
-                    .from('customers')
-                    .insert([{ phone_number, name: name || 'Khách vãng lai' }])
-                    .select()
-                    .single();
-
-                if (createErr) throw createErr;
-                customerId = newCustomer.id;
-            }
-        } else {
-            const { data: guestCustomer, error: guestErr } = await supabase
-                .from('customers')
-                .insert([{ name: name || 'Khách vãng lai không SĐT' }])
-                .select()
-                .single();
-
-            if (guestErr) throw guestErr;
-            customerId = guestCustomer.id;
+        if (old_session && old_session !== session.id) {
+            return res.status(403).json({
+                success: false,
+                is_expired_session: true,
+                message: 'Lượt ăn cũ của bạn đã kết thúc!'
+            });
         }
-
-        const { error: updateSessionErr } = await supabase
-            .from('dining_sessions')
-            .update({ customer_id: customerId })
-            .eq('id', session.id);
-
-        if (updateSessionErr) throw updateSessionErr;
 
         return res.json({
             success: true,
             message: 'Vao ban xem thuc don thanh cong!',
             session_id: session.id,
             table_id,
-            creator_id: customerId
         });
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });

@@ -10,11 +10,12 @@ http:
     type: json
     data: |-
       {
-        "dish_id": 1,
+        "dish_id": 2,
         "ingredients": [
-          { "ingredient_id": 1, "amount_required": 200.00 },
-          { "ingredient_id": 3, "amount_required": 549 }
-        ]
+          { "ingredient_id": 2, "amount_required": 200.00 },
+          { "ingredient_id": 3, "amount_required": 50.00 }
+        ],
+        "steps":"ăn\rngủ\rchoi stardew valley"
       }
   auth: inherit
 

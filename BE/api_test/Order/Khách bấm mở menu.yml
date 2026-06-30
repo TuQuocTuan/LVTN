@@ -10,12 +10,10 @@ http:
     type: json
     data: |-
       {
-        "table_id" : 6,
-        "session_id": "63eec913-a79f-4f48-ab97-d9b229feba3c",
+        "table_id" : 2,
+        "session_id": "751a469e-0a75-492f-8f78-e99a7f794d30",
         "customer_id": "cc3fbd02-da92-4924-81c5-8eb655c1070e",
-        "phone_number": "0896415447",
-        "name": "Quốc Tuấn",
-        "is_preview": true
+        "old_session": ""
       }
   auth: inherit
 
