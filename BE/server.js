@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import dishRoutes from './src/routes/dishRoutes.js';
