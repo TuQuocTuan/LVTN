@@ -11,7 +11,7 @@ export const login = async (req, res) => {
 
         const { data: user, error: fetchErr } = await supabase
             .from('users')
-            .select('id, username, fullname, role, password_hash')
+            .select('id, username, fullname, role, password_hash, permissions')
             .eq('username', username)
             .eq('is_active', true)
             .maybeSingle();

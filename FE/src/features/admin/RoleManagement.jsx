@@ -31,7 +31,7 @@ const RoleManagement = () => {
       items: [
         { id: 'manage_menu', name: 'Quản lý Menu', desc: 'Thêm xoá sửa món', icon: 'menu_book' },
         { id: 'view_reports', name: 'Xem báo cáo doanh thu', desc: 'Xem thống kê, lợi nhuận, hóa đơn', icon: 'bar_chart' },
-        { id: 'manage_ingredients', name: 'Quản lý nguyên vật liệu', desc: 'Thêm, sửa nguyên vật liệu', icon: 'inventory' },
+        { id: 'manage_ingredients', name: 'Quản lý nguyên vật liệu', desc: 'Thêm, xoá, sửa nguyên vật liệu', icon: 'inventory' },
         { id: 'manage_news', name: 'Ưu đãi & Tin tức', desc: 'Quản lý bài viết tin tức', icon: 'campaign' },
       ]
     },
@@ -39,14 +39,14 @@ const RoleManagement = () => {
       title: 'Nhóm Quyền Đầu Bếp (Chef)',
       items: [
         { id: 'view_recipes', name: 'Xem công thức', desc: 'Xem bảng định lượng công thức', icon: 'soup_kitchen' },
-        { id: 'process_orders', name: 'Xử lý Order', desc: 'Xem danh sách order và báo món', icon: 'room_service' },
+        { id: 'process_orders', name: 'Xử lý Order', desc: 'Xem danh sách order và thao tác trạng thái món ăn', icon: 'room_service' },
       ]
     },
     {
       title: 'Nhóm Quyền Thu Ngân (Cashier)',
       items: [
         { id: 'checkout', name: 'Tính tiền & In hóa đơn', desc: 'Xử lý thanh toán', icon: 'point_of_sale' },
-        { id: 'manage_tables', name: 'Quản lý bàn', desc: 'Mở bàn, ghép bàn, chuyển bàn', icon: 'table_restaurant' },
+        { id: 'manage_tables', name: 'Quản lý bàn', desc: 'Mở bàn, đóng bàn', icon: 'table_restaurant' },
         { id: 'view_reviews', name: 'Xem đánh giá', desc: 'Đọc phản hồi khách hàng', icon: 'reviews' },
       ]
     },
@@ -250,18 +250,38 @@ const RoleManagement = () => {
     }
   };
 
-  const handleDeleteUser = async (id, role) => {
-    if (role?.toLowerCase() === 'super_admin') return alert("Không thể khóa tài khoản Super Admin!");
-    if (window.confirm("Hệ thống sẽ vô hiệu hóa (khóa) tài khoản này. Bạn có chắc chắn?")) {
+  const handleToggleLockUser = async (emp) => {
+    if (emp.role?.toLowerCase() === 'super_admin') return alert("Không thể thao tác trên tài khoản Super Admin!");
+
+    const confirmMessage = emp.is_active
+      ? `Bạn có chắc chắn muốn KHÓA tài khoản của "${emp.fullname}"?`
+      : `Bạn có chắc chắn muốn MỞ KHÓA tài khoản của "${emp.fullname}"?`;
+
+    if (window.confirm(confirmMessage)) {
       try {
-        // Đã sửa thành PUT theo đúng Router Backend của bạn
-        const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/delete/${id}`);
-        if (res.data.success) {
-          alert("Khóa tài khoản thành công!");
-          fetchUsers();
+        if (emp.is_active) {
+          // Trường hợp KHÓA: Gọi API delete để soft lock (Backend sẽ đổi is_active = false)
+          const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/delete/${emp.id}`);
+          if (res.data.success) {
+            alert("Đã khóa tài khoản thành công!");
+            fetchUsers();
+          }
+        } else {
+          // Trường hợp MỞ KHÓA: Gọi API update truyền is_active = true
+          const payload = {
+            id: emp.id,
+            role: emp.role,
+            is_active: true,
+            permissions: typeof emp.permissions === 'string' ? emp.permissions : JSON.stringify(emp.permissions || {})
+          };
+          const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
+          if (res.data.success) {
+            alert("Đã mở khóa tài khoản thành công!");
+            fetchUsers();
+          }
         }
       } catch (error) {
-        alert("Lỗi khi vô hiệu hóa user!");
+        alert("Lỗi khi cập nhật trạng thái hoạt động tài khoản!");
       }
     }
   };
@@ -323,8 +343,20 @@ const RoleManagement = () => {
 
                             <div className="flex items-center gap-3">
                               <div className="flex gap-1.5">
-                                <button onClick={(e) => { e.stopPropagation(); setIsEditInfoModalOpen(true); setEditInfoForm(emp); }} className="text-gray-500 hover:text-gray-700"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-                                <button onClick={(e) => { e.stopPropagation(); handleDeleteUser(emp.id, emp.role); }} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined text-[18px]">{emp.is_active ? 'lock' : 'delete'}</span></button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setIsEditInfoModalOpen(true); setEditInfoForm(emp); }}
+                                  className="text-gray-500 hover:text-gray-700"
+                                >
+                                  <span className="material-symbols-outlined text-[18px]">edit</span></button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleToggleLockUser(emp); }}
+                                  className={`transition-colors ${emp.is_active ? 'text-red-400 hover:text-red-600' : 'text-green-500 hover:text-green-700'}`}
+                                  title={emp.is_active ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                                >
+                                  <span className="material-symbols-outlined text-[18px]">
+                                    {emp.is_active ? 'lock' : 'lock_open'}
+                                  </span>
+                                </button>
                               </div>
                               <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${roleColors[emp.role] || 'bg-gray-100'}`}>{emp.role}</span>
                             </div>

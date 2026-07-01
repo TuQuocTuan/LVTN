@@ -26,7 +26,37 @@ const TableManager = () => {
   const [voucherCode, setVoucherCode] = useState('');
   const [customerVouchers, setCustomerVouchers] = useState([]);
 
+  // State lưu trữ vai trò và quyền hạn của tài khoản đang đăng nhập
+  const [userRole, setUserRole] = useState('');
+  const [userPermissions, setUserPermissions] = useState({});
+
   const audio = new Audio('/Chinese Meme Ringtone Download.mp3');
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role?.toString().trim().toLowerCase());
+
+        let perms = {};
+        if (typeof user.permissions === 'string') {
+          perms = JSON.parse(user.permissions);
+        } else if (typeof user.permissions === 'object' && user.permissions !== null) {
+          perms = user.permissions;
+        }
+        setUserPermissions(perms);
+      } catch (e) {
+        console.error("Lỗi đọc thông tin phân quyền user trong TableManager:", e);
+      }
+    }
+  }, []);
+
+  // Hàm kiểm tra quyền thao tác (Super Admin mặc định được làm mọi thứ)
+  const hasPermission = (permissionKey) => {
+    if (userRole === 'super_admin') return true;
+    return !!userPermissions[permissionKey];
+  };
 
   // Lấy danh sách bàn từ API
   const fetchTables = async () => {
@@ -147,8 +177,6 @@ const TableManager = () => {
       }
 
     }, 800);
-
-    // 🌟 3. Dọn dẹp bộ đếm nếu người dùng gõ tiếp ký tự mới
     return () => clearTimeout(delayDebounceFn);
 
   }, [phoneNumber, email]);
@@ -185,6 +213,11 @@ const TableManager = () => {
 
   // Gọi API Mở Bàn Mới
   const handleOpenTable = async (tableId) => {
+    // Kiểm tra quyền mở bàn trước khi thực hiện
+    if (!hasPermission('manage_tables')) {
+      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền thực hiện mở bàn mới!");
+    }
+
     try {
       const response = await axios.post(`${API_BASE_URL}/sessions/serving`, { table_id: tableId });
       const data = response.data;
@@ -204,6 +237,10 @@ const TableManager = () => {
 
   // CHỨC NĂNG ĐÓNG BÀN (Huỷ không thu tiền)
   const handleCloseTable = async (tableId) => {
+    if (!hasPermission('manage_tables')) {
+      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền đóng/hủy bàn!");
+    }
+
     if (!window.confirm("Bạn có chắc chắn muốn đóng bàn này mà không tính tiền không?")) return;
 
     try {
@@ -226,6 +263,10 @@ const TableManager = () => {
   // CHỨC NĂNG THANH TOÁN (Trực tuyến & Tiền mặt)
   const handleCheckout = async (paymentMethod) => {
     if (!selectedTable?.sessionId) return;
+
+    if (!hasPermission('checkout')) {
+      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền thanh toán hóa đơn này!");
+    }
 
     if (!billData || !billData.allOrders || billData.allOrders.length === 0) {
       return alert("Bàn này chưa gọi món ăn nào!");
@@ -445,13 +486,20 @@ const TableManager = () => {
                   <p className="text-sm text-neutralCustom/70 mt-1">Chưa có phiên ăn nào được mở tại bàn này.</p>
                 </div>
                 <div className="p-5 bg-culinaryBg border-t border-neutralCustom/20 shrink-0">
-                  <button
-                    onClick={() => handleOpenTable(selectedTable.id)}
-                    className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all flex items-center justify-center gap-2"
-                  >
-                    <span className="material-symbols-outlined">add_circle</span>
-                    MỞ BÀN MỚI
-                  </button>
+                  {/* KIỂM TRA QUYỀN: ẨN / HIỆN HOẶC BÁO LỖI KHI MỞ BÀN MỚI */}
+                  {hasPermission('manage_tables') ? (
+                    <button
+                      onClick={() => handleOpenTable(selectedTable.id)}
+                      className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base shadow-md hover:bg-secondary transition-all flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined">add_circle</span>
+                      MỞ BÀN MỚI
+                    </button>
+                  ) : (
+                    <div className="text-center text-sm text-red-600 bg-red-50 py-4 px-5 rounded-xl font-bold border border-red-200">
+                      Tài khoản của bạn không được cấp quyền [Mở bàn mới]
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -503,18 +551,23 @@ const TableManager = () => {
                         // 2. Sau khi có mảng gộp độc lập hoàn toàn, mới tiến hành render UI
                         return groupedDishes.map((item, idx) => (
                           <div key={idx} className={`flex justify-between items-center text-xs p-2.5 rounded-xl border transition-all mb-2
-                              ${item.status === 'pending' ? 'bg-amber-50/60 border-amber-200' : 'bg-culinaryBg/30 border-neutralCustom/10'}`}
+                              ${item.status === 'pending' ? 'bg-amber-50/60 border-amber-200' : ''}
+                              ${item.status === 'cancelled' ? 'bg-gray-100/80 border-gray-200 opacity-80' : ''}
+                              ${item.status !== 'pending' && item.status !== 'cancelled' ? 'bg-culinaryBg/30 border-neutralCustom/10' : ''}`}
                           >
                             <div>
-                              <p className="font-bold text-gray-900">
+                              <p className={`font-bold ${item.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                                 {item.name}
                                 {item.status === 'pending' && (
                                   <span className="ml-2 text-[9px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-medium animate-pulse">Đang chế biến</span>
                                 )}
+                                {item.status === 'cancelled' && (
+                                  <span className="ml-2 text-[9px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-medium">Món bị hủy</span>
+                                )}
                               </p>
-                              {item.note && <p className="text-[10px] text-orange-600 italic mt-0.5">📌 {item.note}</p>}
+                              {item.note && <p className={`text-[10px] italic mt-0.5 ${item.status === 'cancelled' ? 'text-gray-400' : 'text-orange-600'}`}>📌 {item.note}</p>}
                             </div>
-                            <span className="bg-primary/10 text-primary font-black px-2 py-0.5 rounded-md">x{item.quantity}</span>
+                            <span className={`font-black px-2 py-0.5 rounded-md ${item.status === 'cancelled' ? 'bg-gray-200 text-gray-500' : 'bg-primary/10 text-primary'}`}>x{item.quantity}</span>
                           </div>
                         ));
                       })()}
@@ -573,18 +626,18 @@ const TableManager = () => {
                       </div>
 
                       {billData.voucherName && billData.voucherName !== "Không áp dụng" && (
-                            <div className="flex flex-col items-end mt-1.5 space-y-1">
-                              {billData.voucherName.split(/\+|,/).map((promoName, idx) => {
-                                const name = promoName.trim();
-                                if (!name) return null;
-                                return (
-                                  <span key={idx} className="text-[10.5px] italic opacity-90 leading-tight bg-green-50 px-2 py-1 rounded-md border border-green-100">
-                                    accepted {name}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          )}
+                        <div className="flex flex-col items-end mt-1.5 space-y-1">
+                          {billData.voucherName.split(/\+|,/).map((promoName, idx) => {
+                            const name = promoName.trim();
+                            if (!name) return null;
+                            return (
+                              <span key={idx} className="text-[10.5px] italic opacity-90 leading-tight bg-green-50 px-2 py-1 rounded-md border border-green-100">
+                                accepted {name}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
 
                       <div className="flex justify-between text-gray-900 font-black text-base border-t border-neutralCustom/10 pt-2 mt-2">
                         <span>Tạm tính (Gồm VAT 10%):</span>
@@ -598,24 +651,47 @@ const TableManager = () => {
                 <div className="p-5 bg-culinaryBg border-t border-neutralCustom/20 shrink-0">
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2">
+                      {/* NÚT TIỀN MẶT: Khóa nếu không có quyền 'checkout' */}
                       <button
                         onClick={() => handleCheckout('CASH')}
-                        className="w-full bg-primary text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-secondary transition-all"
+                        disabled={!hasPermission('checkout')}
+                        className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-md transition-all
+                          ${hasPermission('checkout')
+                            ? 'bg-primary text-white hover:bg-secondary'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'}`}
                       >
                         TIỀN MẶT
                       </button>
+
+                      {/* NÚT VN PAY: Khóa nếu không có quyền 'checkout' */}
                       <button
                         onClick={() => handleCheckout('VNPAY')}
-                        className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition-all flex items-center justify-center gap-1.5"
+                        disabled={!hasPermission('checkout')}
+                        className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-1.5
+                          ${hasPermission('checkout')
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'}`}
                       >
                         <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
                         VN PAY
                       </button>
                     </div>
 
+                    {/* Hiển thị dòng thông báo nhắc nhở nhẹ nếu bị tắt quyền checkout */}
+                    {!hasPermission('checkout') && (
+                      <p className="text-[11px] text-red-500 font-bold text-center italic mt-1.5">
+                        ⚠️ Tài khoản của bạn đã bị giới hạn quyền thanh toán (Checkout).
+                      </p>
+                    )}
+
+                    {/* NÚT HỦY PHIÊN/ĐÓNG BÀN: Khóa nếu không có quyền 'manage_tables' */}
                     <button
                       onClick={() => handleCloseTable(selectedTable.id)}
-                      className="w-full border-2 border-primary text-primary py-3 rounded-xl font-bold text-sm hover:bg-primary/10 transition-all bg-white"
+                      disabled={!hasPermission('manage_tables')}
+                      className={`w-full py-3 rounded-xl font-bold text-sm transition-all border-2 bg-white
+                        ${hasPermission('manage_tables')
+                          ? 'border-primary text-primary hover:bg-primary/10'
+                          : 'border-gray-300 text-gray-400 cursor-not-allowed opacity-60'}`}
                     >
                       ĐÓNG BÀN (HỦY PHIÊN)
                     </button>

@@ -1,14 +1,12 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-// --- IMPORT CÁC TRANG DÀNH CHO KHÁCH HÀNG ---
 import WelcomePage from '../features/customer/WelcomePage';
 import MenuPage from '../features/customer/MenuPage';
 import CartPage from '../features/customer/CartPage';
 import OrdersPage from '../features/customer/OrdersPage';
 import PaymentPage from '../features/customer/PaymentPage';
 
-// --- IMPORT TRANG ĐĂNG NHẬP & NỘI BỘ ---
 import Login from '../features/auth/Login';
 import TableManager from '../features/cashier/TableManager';
 import KitchenOrders from '../features/kitchen/KitchenOrders';
@@ -20,7 +18,7 @@ import RecipeManagement from '../features/admin/RecipeManagement';
 import IngredientManagement from '../features/admin/IngredientManagement';
 import PromotionNewsManagement from '../features/admin/PromotionNewsManagement';
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
+const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
   let user = null;
@@ -31,14 +29,44 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     console.error("Lỗi đọc thông tin user:", e);
   }
 
+  // Nếu chưa đăng nhập, bắt buộc quay lại trang login
   if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  const userRole = user.role?.toLowerCase();
+  const userRole = user.role?.toString().trim().toLowerCase();
+
+  if (userRole === 'super_admin') return children;
+
+  // Kiểm tra vai trò chính (allowedRoles)
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    alert("Bạn không có quyền truy cập vào trang này!");
+    alert("Tài khoản của bạn không có quyền truy cập vào trang này!");
+
+    // Nếu là nhân sự nội bộ (admin, chef, cashier) cố tình truy cập link cấm, đẩy về dashboard nội bộ chứ không đẩy ra login
+    if (['admin', 'chef', 'cashier'].includes(userRole)) {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
     return <Navigate to="/login" replace />;
+  }
+
+  // Kiểm tra quyền chi tiết (Permissions Checkbox)
+  if (requiredPermission) {
+    let userPermissions = {};
+    try {
+      if (typeof user.permissions === 'string') {
+        userPermissions = JSON.parse(user.permissions || '{}');
+      } else if (typeof user.permissions === 'object' && user.permissions !== null) {
+        userPermissions = user.permissions;
+      }
+    } catch (e) {
+      console.error("Lỗi đọc chi tiết quyền:", e);
+    }
+
+    // Nếu quyền tương ứng bị tắt (false hoặc không tồn tại), tiến hành chặn truy cập
+    if (!userPermissions[requiredPermission]) {
+      alert("Tài khoản của bạn không được cấp quyền sử dụng tính năng này!");
+      return <Navigate to="/admin/dashboard" replace />;
+    }
   }
 
   return children;
@@ -78,12 +106,43 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
 
-      <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/role-management" element={<ProtectedRoute allowedRoles={['super_admin']}><RoleManagement /></ProtectedRoute>} />
-      <Route path="/admin/dish-management" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><DishManagement /></ProtectedRoute>} />
-      <Route path="/admin/recipe-management/:dishId" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><RecipeManagement /></ProtectedRoute>} />
-      <Route path="/admin/ingredient-management" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><IngredientManagement /></ProtectedRoute>} />
-      <Route path="/admin/promotion-management" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><PromotionNewsManagement /></ProtectedRoute>} />
+      {/* ĐỒNG BỘ PHÂN QUYỀN CHI TIẾT THEO CHECKBOX VÀ VAI TRÒ */}
+      <Route path="/admin/dashboard" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="view_reports">
+          <AdminDashboard />
+        </ProtectedRoute>
+      } />
+
+      {/* Trang quản lý nhân sự: Chỉ cho phép duy nhất vai trò là super_admin được vào */}
+      <Route path="/admin/role-management" element={
+        <ProtectedRoute allowedRoles={['super_admin']}>
+          <RoleManagement />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/admin/dish-management" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_menu">
+          <DishManagement />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/admin/recipe-management/:dishId" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="view_recipes">
+          <RecipeManagement />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/admin/ingredient-management" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_ingredients">
+          <IngredientManagement />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/admin/promotion-management" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_news">
+          <PromotionNewsManagement />
+        </ProtectedRoute>
+      } />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
