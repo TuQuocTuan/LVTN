@@ -324,7 +324,7 @@ const RoleManagement = () => {
                             <div className="flex items-center gap-3">
                               <div className="flex gap-1.5">
                                 <button onClick={(e) => { e.stopPropagation(); setIsEditInfoModalOpen(true); setEditInfoForm(emp); }} className="text-gray-500 hover:text-gray-700"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-                                <button onClick={(e) => { e.stopPropagation(); }} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined text-[18px]">{emp.is_active ? 'lock' : 'delete'}</span></button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteUser(emp.id, emp.role); }} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined text-[18px]">{emp.is_active ? 'lock' : 'delete'}</span></button>
                               </div>
                               <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${roleColors[emp.role] || 'bg-gray-100'}`}>{emp.role}</span>
                             </div>
