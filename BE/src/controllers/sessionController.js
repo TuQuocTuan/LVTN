@@ -48,24 +48,39 @@ export const openTable = async (req, res) => {
 //Mở menu(customer)
 export const openMenuCustomer = async (req, res) => {
     try {
-        const { table_id, old_session } = req.body;
+        const { table_key, old_session } = req.body;
 
-        if (!table_id) {
+        if (!table_key) {
             return res.status(400).json({ success: false, message: 'Thiếu mã bàn!' });
         }
-        const { data: session, error } = await supabase
+
+        const { data: table, error: tableErr } = await supabase
+            .from('tables')
+            .select('id')
+            .eq('table_key', table_key)
+            .single();
+
+        if (tableErr || !table) {
+            return res.status(404).json({ success: false, message: 'Mã QR bàn không hợp lệ!' });
+        }
+        console.log("👉 Dữ liệu bốc từ table_key:", {
+            id_tim_thay: table?.id,
+            kieu_du_lieu: typeof table?.id
+        });
+        const { data: session, error: sessionErr } = await supabase
             .from('dining_sessions')
             .select('id')
-            .eq('table_id', table_id)
+            .eq('table_id', Number(table.id))
             .eq('status', 'serving')
             .maybeSingle();
+        console.log("👉 Kết quả tìm Session:", { session, sessionErr });
 
-        if (error) throw error;
+        if (sessionErr) throw sessionErr;
 
         if (!session) {
             return res.status(400).json({
                 success: false,
-                table_id: table_id,
+                table_id: table.id,
                 message: 'Bàn chưa được mở!!!!!'
             });
         }
@@ -82,7 +97,7 @@ export const openMenuCustomer = async (req, res) => {
             success: true,
             message: 'Vao ban xem thuc don thanh cong!',
             session_id: session.id,
-            table_id,
+            table_id: table.id,
         });
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });
