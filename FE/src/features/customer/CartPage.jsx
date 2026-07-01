@@ -37,7 +37,7 @@ const CartPage = () => {
     try {
       setSubmitStatus('loading');
       const sessionId = localStorage.getItem('sessionId');
-      const tableId = localStorage.getItem('table_id');
+      const tableId = localStorage.getItem('tableId');
       const creatorId = localStorage.getItem('creatorId');
 
       if (!sessionId || !tableId) {

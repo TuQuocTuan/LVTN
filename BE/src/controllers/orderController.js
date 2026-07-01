@@ -82,7 +82,7 @@ export const kiemtraTonkho = async (items) => {
 //Hàm tạo Order
 export const createOrder = async (req, res) => {
     try {
-        const { session_id, items } = req.body;
+        const { session_id, items, table_id } = req.body;
 
         if (!session_id) {
             return res.status(400).json({ success: false, message: 'Thiếu mã phiên ăn (session_id)!' });
@@ -91,11 +91,14 @@ export const createOrder = async (req, res) => {
         const { data: activeSession, error: sessionErr } = await supabase
             .from('dining_sessions')
             .select('id, status')
-            .eq('table_id', table_id)
+            .eq('table_id', Number(table_id))
             .eq('status', 'serving')
             .maybeSingle();
 
-        if (sessionErr) throw sessionErr;
+        if (sessionErr) {
+            console.error("Lỗi kết nối Supabase:", sessionErr);
+            return res.status(500).json({ success: false, error: "Lỗi hệ thống khi kiểm tra bàn!" });
+        }
 
         if (!activeSession || activeSession.id !== session_id) {
             return res.status(403).json({
