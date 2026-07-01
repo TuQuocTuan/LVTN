@@ -17,7 +17,7 @@ const CartPage = () => {
     handleRemove,
     handleNoteChange,
     clearCart,
-    handleSetQuantity 
+    handleSetQuantity
   } = useCart();
 
   // QUẢN LÝ TIẾN TRÌNH & POPUP
@@ -37,10 +37,11 @@ const CartPage = () => {
     try {
       setSubmitStatus('loading');
       const sessionId = localStorage.getItem('sessionId');
+      const tableId = localStorage.getItem('table_id');
       const creatorId = localStorage.getItem('creatorId');
 
-      if (!sessionId) {
-        alert("Lỗi: Không tìm thấy phiên ăn. Vui lòng quét lại mã QR!");
+      if (!sessionId || !tableId) {
+        alert("Lỗi: Không tìm thấy phiên ăn hoặc mã bàn. Vui lòng quét lại mã QR!");
         setSubmitStatus('idle');
         return;
       }
@@ -55,6 +56,7 @@ const CartPage = () => {
 
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/orders`, {
         session_id: sessionId,
+        table_id: tableId,
         customer_id: creatorId,
         items: itemsToOrder
       });
@@ -70,6 +72,18 @@ const CartPage = () => {
         }, 1500);
       }
     } catch (error) {
+      if (error.response && error.response.status === 403 && error.response.data.is_expired_session) {
+        alert('🚨 Lượt ăn cũ của bạn đã kết thúc hoặc bàn đã chuyển sang phiên mới! Vui lòng quét lại mã QR.');
+
+        // Dọn sạch dữ liệu phiên cũ đang bị kẹt
+        localStorage.removeItem('sessionId');
+        clearCart();
+
+        setSubmitStatus('idle');
+        navigate('/'); // Đá khách ra màn hình quét mã/chọn bàn
+        return;
+      }
+
       // KHO KHÔNG ĐỦ SỐ LƯỢNG
       if (error.response && error.response.data && error.response.data.code === 'INSUFFICIENT_STOCK') {
         // Nạp mảng danh sách lỗi vào state
@@ -148,10 +162,10 @@ const CartPage = () => {
       {/* POPUP MODAL */}
       {isStockModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          
+
           {/* Hộp nội dung chính giữa */}
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-neutralCustom/10 text-center animate-scale-up relative">
-            
+
             {/* Icon cảnh báo đỏ nổi bật */}
             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100 shadow-sm">
               <span className="material-symbols-outlined text-3xl">inventory_2</span>
