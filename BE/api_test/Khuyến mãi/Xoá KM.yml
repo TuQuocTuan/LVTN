@@ -4,23 +4,11 @@ info:
   seq: 5
 
 http:
-  method: POST
-  url: http://localhost:5000/api/promotions/update
+  method: DELETE
+  url: http://localhost:5000/api/promotions/delete/223e0a96-5e7c-4471-bfcf-36c29b09042c
   body:
     type: json
-    data: |-
-      {
-        "id": "223e0a96-5e7c-4471-bfcf-36c29b09042c",
-        "code": "J",
-        "name": "QK",
-        "type": "global",
-        "discount_type": "amount",
-        "discount_value": 50000,
-        "min_bill_value": 200000,
-        "start_date": "2026-06-12",
-        "end_date": "2026-06-30",
-        "is_active": true
-      }
+    data: ""
   auth: inherit
 
 settings:

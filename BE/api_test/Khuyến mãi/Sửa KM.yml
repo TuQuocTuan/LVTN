@@ -5,13 +5,14 @@ info:
 
 http:
   method: POST
-  url: http://localhost:5000/api/promotions/add
+  url: http://localhost:5000/api/promotions/update
   body:
     type: json
     data: |-
       {
-        "code": "D",
-        "name": "EF",
+        "id": "223e0a96-5e7c-4471-bfcf-36c29b09042c",
+        "code": "J",
+        "name": "QK",
         "type": "global",
         "discount_type": "amount",
         "discount_value": 50000,
