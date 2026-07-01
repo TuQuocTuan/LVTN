@@ -1,16 +1,17 @@
 info:
-  name: Mở bàn
+  name: Login
   type: http
   seq: 1
 
 http:
   method: POST
-  url: http://localhost:5000/api/sessions/serving
+  url: http://localhost:5000/api/auth/login
   body:
     type: json
     data: |-
       {
-        "table_id": 2
+        "username":"adminT",
+        "password":"1234"
       }
   auth: inherit
 

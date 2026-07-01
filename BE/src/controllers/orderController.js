@@ -5,11 +5,84 @@
 import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
 import { createVnPayUrl } from '../controllers/paymentController.js';
+import { kiemtraMinStock } from './dishController.js';
+import e from 'express';
+
+export const kiemtraTonkho = async (items) => {
+    try {
+        const dishIDs = items.map(item => Number(item.dish_id))
+
+        const { data: recipes, error: fetchErr } = await supabase
+            .from('recipes')
+            .select('dish_id,amount_required,ingredient_id')
+            .in('dish_id', dishIDs);
+        if (fetchErr) throw fetchErr;
+
+        const ingredientIDs = recipes.map(r => r.ingredient_id);
+        const { data: ingredients, error: fetchInErr } = await supabase
+            .from('ingredients')
+            .select('id, name, quantity, min_stock')
+            .in('id', ingredientIDs)
+        if (fetchInErr) throw fetchInErr;
+
+        const ingredientMap = {};
+        ingredients.forEach(i => {
+            ingredientMap[i.id] = {
+                name: i.name,
+                quantity: Number(i.quantity || 0)
+            };
+        });
+
+        const thongtinMonAn = {};
+
+        for (const item of items) {
+            const currentDishRecipes = recipes.filter(r => Number(r.dish_id) === Number(item.dish_id));
+            let SoMonToiDa = Number(item.quantity);
+
+            for (const recipe of currentDishRecipes) {
+                const ingre = ingredientMap[recipe.ingredient_id];
+                const soluongcancho1mon = Number(recipe.amount_required);
+
+                const soluongIngreMax = Math.floor(ingre.quantity / soluongcancho1mon);
+                if (soluongIngreMax < SoMonToiDa) {
+                    SoMonToiDa = soluongIngreMax;
+                }
+                thongtinMonAn[item.dish_id] = {
+                    requested: Number(item.quantity),
+                    maxAvailable: SoMonToiDa,
+                }
+            }
+        }
+
+        const danhsachDatLo = [];
+        for (const dishId in thongtinMonAn) {
+            const info = thongtinMonAn[dishId];
+            if (info.maxAvailable < info.requested) {
+                danhsachDatLo.push({
+                    dish_id: Number(dishId),
+                    maxAvailable: info.maxAvailable
+                })
+            }
+        }
+
+        if (danhsachDatLo.length > 0) {
+            return {
+                success: false,
+                danhsachDatLo: danhsachDatLo,
+                message: "Một số món ăn không đủ số lượng trong kho!"
+            };
+        }
+        return { success: true };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
 
 //Hàm tạo Order
 export const createOrder = async (req, res) => {
     try {
-        const { session_id, items, customer_id } = req.body;
+        const { session_id, items } = req.body;
 
         if (!session_id) {
             return res.status(400).json({ success: false, message: 'Thiếu mã phiên ăn (session_id)!' });
@@ -17,6 +90,32 @@ export const createOrder = async (req, res) => {
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Danh sách món ăn không hợp lệ!' });
+        }
+
+        const checkKho = await kiemtraTonkho(items);
+        if (checkKho.success === false) {
+            const dishesToClose = checkKho.danhsachDatLo
+                .filter(err => err.maxAvailable === 0)
+                .map(err => err.dish_id);
+
+            if (dishesToClose.length > 0) {
+                await supabase
+                    .from('dishes')
+                    .update({ status: 'out_of_stock' })
+                    .in('id', dishesToClose);
+
+                await supabase.channel('restaurant-notifications').send({
+                    type: 'broadcast',
+                    event: 'dish_out_of_stock',
+                    payload: { dishes: dishesToClose.map(id => ({ id })), status: 'out_of_stock' }
+                });
+            }
+            return res.status(400).json({
+                success: false,
+                code: "INSUFFICIENT_STOCK",
+                danhsachDatLo: checkKho.danhsachDatLo,
+                message: "Kho không đủ số lượng đáp ứng đơn hàng."
+            });
         }
 
         let calculatedSubTotal = 0;
@@ -36,6 +135,7 @@ export const createOrder = async (req, res) => {
             .single();
 
         if (orderErr) throw orderErr;
+
 
         const detailItems = items.map(item => ({
             order_id: order.id,
@@ -166,6 +266,23 @@ export const calculateDiscount = async (sub_total, voucher_code, customerId) => 
 };
 
 
+const getOrderBySessionId = async (session_id) => {
+    try {
+        let arrayOrder = [];
+        const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('session_id', session_id);
+        if (error) throw error;
+        if (data && data.length > 0) {
+            arrayOrder.push(...data);
+        }
+        return arrayOrder;
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
 //Hàm xử lý thanh toán cuối cùng: cập nhật thông tin khách hàng, đổi trạng thái voucher, đóng phiên ăn
 const handleFinalPayment = async (req, session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId, financialData) => {
     let customerId = null;
@@ -193,12 +310,22 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             .eq('id', session_id);
     }
 
-    if (client_voucher_id && appliedPromotionId) {
+
+    const activeOrders = await getOrderBySessionId(session_id);
+
+    const pendingOrder = activeOrders.filter(order => order.status === 'pending');
+
+    if (pendingOrder.length > 0) {
         await supabase
-            .from('customer_vouchers')
-            .update({ is_used: true, used_at: new Date().toISOString() })
-            .eq('id', client_voucher_id);
+            .from('orders')
+            .update({ status: 'cancelled' })
+            .eq('session_id', session_id)
+            .eq('status', 'pending');
     }
+
+    console.log("Customer ID lấy được:", customerId);
+    console.log("Applied Promotion ID lấy được:", appliedPromotionId);
+
 
     const { data: sessionData, error: sessionErr } = await supabase
         .from('dining_sessions')
@@ -246,6 +373,13 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
         }]);
 
     if (billErr) throw billErr;
+
+    if (customerId && appliedPromotionId) {
+        await supabase
+            .from('customer_vouchers')
+            .update({ is_used: true, used_at: new Date().toISOString() })
+            .eq('customer_id', customerId);
+    }
 
     return {
         payment_type: 'OFFLINE',
@@ -422,12 +556,13 @@ export const getPendingOrders = async (req, res) => {
     }
 }
 
+
+
 //Hàm cập nhật trạng thái đơn
 export const updateOrderStatus = async (req, res) => {
     try {
         const { order_id } = req.body;
 
-        // 1. SỬA: Thêm cột dish_id vào select của order_details
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .update({ status: 'completed' })
@@ -441,7 +576,6 @@ export const updateOrderStatus = async (req, res) => {
 
         const currentOrder = order[0];
 
-        // 2. Vòng lặp duyệt qua từng chi tiết món ăn
         for (const orderDetail of currentOrder.order_details) {
             const { data: recipeItems, error: recipeErr } = await supabase
                 .from('recipes')
@@ -475,6 +609,7 @@ export const updateOrderStatus = async (req, res) => {
                 }
             }
         }
+        await kiemtraMinStock();
         return res.json({ success: true, order: currentOrder });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });

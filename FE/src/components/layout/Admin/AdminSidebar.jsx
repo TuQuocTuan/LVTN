@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const AdminSidebar = ({ currentTab }) => {
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        // Làm sạch dữ liệu role (giống như trong AppRoutes)
+        setUserRole(user.role?.toString().trim().toLowerCase());
+      } catch (e) {
+        console.error("Lỗi parse user trong sidebar", e);
+      }
+    }
+  }, []);
+
   // Cấu hình danh sách menu để dễ quản lý và render bằng vòng lặp .map
   const menuItems = [
     { id: 'dashboard', label: 'Thống kê doanh thu', icon: 'bar_chart', path: '/admin/dashboard' },
     { id: 'inventory', label: 'Quản lý nguyên vật liệu', icon: 'inventory', path: '/admin/ingredient-management' },
     { id: 'dish', label: 'Quản lý món ăn', icon: 'restaurant_menu', path: '/admin/dish-management' },
-    { id: 'user', label: 'Quản lý nhân sự', icon: 'manage_accounts', path: '/admin/role-management' },
+    { id: 'user', label: 'Quản lý nhân sự', icon: 'manage_accounts', path: '/admin/role-management', requiredRole: 'super_admin' },
     { id: 'promotion', label: 'Ưu đãi & Tin tức', icon: 'campaign', path: '/admin/promotion-management' },
   ];
 
@@ -20,6 +35,11 @@ const AdminSidebar = ({ currentTab }) => {
       
       <nav className="flex flex-col gap-2 flex-grow">
         {menuItems.map((item) => {
+          // KIỂM TRA: Nếu menu yêu cầu quyền mà role của user không khớp thì ẩn (trả về null)
+          if (item.requiredRole && item.requiredRole !== userRole) {
+            return null;
+          }
+
           const isActive = currentTab === item.id;
           return (
             <Link

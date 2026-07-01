@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,30 +15,28 @@ const WelcomePage = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  const queryParams = new URLSearchParams(window.location.search);
+  const table_id = Number(queryParams.get('table_id'));
   // Hàm xử lý khi bấm nút "Bắt đầu gọi món"
   const handleStartOrdering = async () => {
     setIsLoading(true);
     setError('');
 
+    const oldSessionId = localStorage.getItem('sessionId') || "";
+
     try {
       // Gọi API open-menu
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/sessions/open-menu`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          table_id: 6 // Mã bàn (hiện tại bạn đang fix cứng là 6, sau này có thể lấy từ URL param)
-        })
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/sessions/open-menu`, {
+        table_id: table_id,      // Mã bàn động lấy từ URL
+        old_session: oldSessionId
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         // NẾU THÀNH CÔNG: Lưu dữ liệu Backend trả về vào két sắt (bỏ lưu name và phone)
         localStorage.setItem('sessionId', data.session_id); // Dùng để gọi món sau này
-        localStorage.setItem('creatorId', data.creator_id); // Dùng để biết ai là người gọi
-
+        localStorage.setItem('tableId', table_id);
         // Chuyển hướng sang trang Menu
         navigate('/menu');
       } else {
@@ -46,7 +45,21 @@ const WelcomePage = () => {
       }
     } catch (err) {
       console.error("Lỗi gọi API:", err);
-      setError('Không thể kết nối đến máy chủ. Vui lòng gọi phục vụ!');
+
+      // 🎯 BẮT QUY TRÌNH CHỐNG PHÁ CHÍ MẠNG: Khách cũ ở nhà bấm lại link
+      if (err.response && err.response.status === 403 && err.response.data.is_expired_session) {
+        // 1. Xóa sạch dấu vết phiên ăn cũ đã kết thúc ra khỏi máy ông này
+        localStorage.removeItem('sessionId');
+
+        // 2. Hiển thị thông báo lỗi của Backend gửi về
+        setError(err.response.data.message);
+      } else if (err.response && err.response.data && err.response.data.message) {
+        // Lỗi bàn chưa được mở (400) hoặc các lỗi có message khác từ BE
+        setError(err.response.data.message);
+      } else {
+        // Lỗi rớt mạng hoặc sập nguồn server
+        setError('Không thể kết nối đến máy chủ. Vui lòng gọi phục vụ!');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +103,7 @@ const WelcomePage = () => {
 
           <div className="w-full glass-card border border-neutralCustom/20 rounded-xl p-8 mb-10 text-center shadow-lg">
             <div className="text-xs font-bold text-neutralCustom mb-2">VỊ TRÍ CHỖ NGỒI</div>
-            <div className="font-bold text-primary text-6xl md:text-7xl mb-1">Bàn số 6</div>
+            <div className="font-bold text-primary text-6xl md:text-7xl mb-1">Bàn số {table_id}</div>
             <div className="w-12 h-1 bg-primary mx-auto rounded-full mt-4"></div>
           </div>
 

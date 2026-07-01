@@ -1,0 +1,23 @@
+info:
+  name: Sửa role
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: http://localhost:5000/api/user/update
+  body:
+    type: json
+    data: |-
+      {
+        "id": "495cb538-be0d-4367-8895-40e11b215fac",
+        "role": "admin",
+        "is_active": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

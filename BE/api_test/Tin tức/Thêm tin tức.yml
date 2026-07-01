@@ -21,7 +21,7 @@ http:
       - name: image
         type: file
         value:
-          - C:\Users\ADMIN\Desktop\do-mixi-tu-bo-thuoc-la-dien-tu-thumb.jpg
+          - C:\Users\ADMIN\Desktop\149368547_1115557168884291_3501855100418102550_n.jpg
       - name: is_published
         type: text
         value: "true"

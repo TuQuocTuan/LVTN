@@ -1,16 +1,17 @@
 info:
-  name: Mở bàn
+  name: Đổi pass user
   type: http
-  seq: 1
+  seq: 5
 
 http:
-  method: POST
-  url: http://localhost:5000/api/sessions/serving
+  method: PUT
+  url: http://localhost:5000/api/user/change
   body:
     type: json
     data: |-
       {
-        "table_id": 2
+        "id":"9180de74-1ba7-4996-8848-f5dbb90fd0a5",
+        "password": "12345"
       }
   auth: inherit
 

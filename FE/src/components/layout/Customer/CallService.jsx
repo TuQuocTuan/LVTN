@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../config/supabase';
+import { initBroadcastChannel } from '../../../utils/realtimeHelper';
 
 const CallService = ({ tableName = "Bàn 2" }) => {
   const [showModal, setShowModal] = useState(false);
@@ -7,25 +8,20 @@ const CallService = ({ tableName = "Bàn 2" }) => {
   const [called, setCalled] = useState(false);
   const [channel, setChannel] = useState(null);
 
-  // Khởi tạo kết nối tới Channel khi component mount
+  // Khởi tạo kênh gửi tín hiệu gọi phục vụ
   useEffect(() => {
-    const notifyChannel = supabase.channel('restaurant-notifications');
-    // Đăng ký tham gia channel
-    notifyChannel.subscribe((status) => {});
-    
+    const notifyChannel = initBroadcastChannel('restaurant-notifications');
     setChannel(notifyChannel);
 
-    return () => {
-      supabase.removeChannel(notifyChannel);
-    };
+    return () => supabase.removeChannel(notifyChannel); // Cleanup
   }, []);
 
+  // HÀM XỬ LÝ GỌI PHỤC VỤ
   const handleCall = async () => {
     setIsCalling(true);
 
     if (channel) {
-      // Thêm await để chờ kết quả trả về từ Supabase
-      const status = await channel.send({
+      await channel.send({
         type: 'broadcast',
         event: 'call_staff',
         payload: { 

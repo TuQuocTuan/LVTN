@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
+import axios from 'axios';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -12,12 +13,8 @@ const OrdersPage = () => {
 
       try {
         // GỌI ĐÚNG API GET LẤY LỊCH SỬ ĐƠN HÀNG TỪ CONTROLLER getOrderBySession
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/orders/${sessionId}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${sessionId}`);
+        const data = response.data;
 
         if (data.success) {
           // Xử lý linh hoạt: backend có thể trả về 'detailed_orders' hoặc 'data'
@@ -81,7 +78,9 @@ const OrdersPage = () => {
             <div key={order.id} className="bg-white border border-neutralCustom/20 rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-3 mb-3">
                 <div>
-                  <h3 className="font-bold text-gray-900">Đơn #{index + 1}</h3>
+                  <h3 className="font-bold text-gray-900">
+                    Đơn #{index + 1} <span className="text-sm font-normal text-primary ml-1">#{String(order.id).slice(0, 4)}</span>
+                  </h3>
                   <span className="text-xs text-neutralCustom">
                     {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>

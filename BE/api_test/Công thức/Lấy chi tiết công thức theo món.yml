@@ -5,13 +5,13 @@ info:
 
 http:
   method: GET
-  url: http://localhost:5000/api/recipes/by-version?dish_id=1&version=2
+  url: http://localhost:5000/api/recipes/by-version?dish_id=2&version=7
   params:
     - name: dish_id
-      value: "1"
+      value: "2"
       type: query
     - name: version
-      value: "2"
+      value: "7"
       type: query
   body:
     type: json

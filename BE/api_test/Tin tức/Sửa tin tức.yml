@@ -1,0 +1,37 @@
+info:
+  name: Sửa tin tức
+  type: http
+  seq: 10
+
+http:
+  method: PUT
+  url: http://localhost:5000/api/news/update
+  body:
+    type: multipart-form
+    data:
+      - name: id
+        type: text
+        value: "5"
+      - name: title
+        type: text
+        value: A
+      - name: content
+        type: text
+        value: ABCD
+      - name: is_published
+        type: text
+        value: fall
+      - name: promotion_id
+        type: text
+        value: 71cb3d9a-4f6e-411d-a00d-06cc3c715353
+      - name: image
+        type: file
+        value:
+          - C:\Users\ADMIN\Desktop\414689316_1787039418402726_302605886828110385_n.jpg
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -5,14 +5,14 @@ import { useCart } from '../../context/CartContext'; // Import chìa khóa kết
 
 const MenuPage = () => {
   // 1. Rút dữ liệu và hàm thao tác từ CartContext ra thay vì tự viết
-  const { 
-    menuItems, 
-    categories, 
-    isLoading, 
-    handleIncrease, 
-    handleDecrease 
+  const {
+    menuItems,
+    categories,
+    isLoading,
+    handleIncrease,
+    handleDecrease
   } = useCart();
-  
+
   // State quản lý Tab đang được chọn trên giao diện
   const [activeCategory, setActiveCategory] = useState('');
 
@@ -42,9 +42,8 @@ const MenuPage = () => {
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`flex-shrink-0 text-xs font-bold uppercase pb-1 border-b-2 transition-colors ${
-                  activeCategory === category ? 'border-primary text-primary' : 'border-transparent text-neutralCustom'
-                }`}
+                className={`flex-shrink-0 text-xs font-bold uppercase pb-1 border-b-2 transition-colors ${activeCategory === category ? 'border-primary text-primary' : 'border-transparent text-neutralCustom'
+                  }`}
               >
                 {category}
               </button>
@@ -55,11 +54,11 @@ const MenuPage = () => {
           <section className="px-4 grid grid-cols-2 gap-4 pb-8">
             {displayedItems.length > 0 ? (
               displayedItems.map((item) => (
-                <MenuItemCard 
-                  key={item.id} 
-                  item={item} 
-                  onIncrease={handleIncrease} 
-                  onDecrease={handleDecrease} 
+                <MenuItemCard
+                  key={item.id}
+                  item={item}
+                  onIncrease={handleIncrease}
+                  onDecrease={handleDecrease}
                 />
               ))
             ) : (

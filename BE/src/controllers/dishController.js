@@ -11,12 +11,60 @@ import { supabase } from '../config/supabase.js';
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 export const uploadMiddleware = upload.single('image');
 
+export const kiemtraMinStock = async () => {
+    try {
+        const { data: dishes, error: fetchErr } = await supabase
+            .from('dishes')
+            .select('id,name')
+            .eq('status', 'available');
+        if (fetchErr) throw fetchErr;
+
+        const dishesOutOfStock = [];
+
+        for (const d of dishes) {
+            const { data: recipes, error: fetchErr } = await supabase
+                .from('recipes')
+                .select('ingredient_id')
+                .eq('dish_id', d.id)
+            if (fetchErr) throw fetchErr;
+
+            const IngredientIds = recipes.map(r => r.ingredient_id);
+
+            const { data: ingredients, error: fetchInErr } = await supabase
+                .from('ingredients')
+                .select('name,quantity,min_stock')
+                .in('id', IngredientIds)
+
+            const chamNguongAnToan = ingredients.filter(i => i.quantity <= i.min_stock || 0);
+
+            if (chamNguongAnToan.length > 0) {
+                dishesOutOfStock.push({ id: d.id, name: d.name });
+                await supabase
+                    .from('dishes')
+                    .update({ status: 'out_of_stock' })
+                    .eq('id', d.id);
+                console.log(`[MinStock] Đã tự động đóng món [${d.name}] do chạm ngưỡng an toàn.`);
+
+                await supabase.channel('restaurant-notifications').send({
+                    type: 'broadcast',
+                    event: 'dish_out_of_stock',
+                    payload: { dish_id: d.id, name: d.name, status: 'out_of_stock' }
+                });
+            }
+        }
+        return dishesOutOfStock;
+    } catch (error) {
+        console.error('Lỗi kiểm tra tồn kho:', error);
+        return [];
+    }
+}
 //Hàm lấy món ăn
 export const getDishes = async (req, res) => {
     try {
+        await kiemtraMinStock();
         const { data, error } = await supabase
             .from('dishes')
-            .select('id, name, price, image_url, status, categories(name)');
+            .select('id, name, price, description, image_url, status, categories(name)');
         if (error) throw error;
         res.status(200).json({ success: true, data });
     }
@@ -92,6 +140,7 @@ export const addDish = async (req, res) => {
                 price: Number(price),
                 instructions: [instructions],
                 image_url: imageUrl,
+                status: 'available',
             })
             .select()
             .single();

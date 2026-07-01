@@ -1,0 +1,15 @@
+info:
+  name: Xoá tin tức
+  type: http
+  seq: 8
+
+http:
+  method: DELETE
+  url: http://localhost:5000/api/news/delete/4
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

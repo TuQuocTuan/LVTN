@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../config/supabase';
+import { listenDatabaseChanges } from '../utils/realtimeHelper';
 
 const CartContext = createContext();
 
@@ -59,6 +61,34 @@ export const CartProvider = ({ children }) => {
     fetchMenuData();
   }, []);
 
+  useEffect(() => {
+    // Gọi hàm helper của bạn: (channelName, tableName, eventType, callback)
+    const channel = listenDatabaseChanges('menu-public-realtime', 'dishes', 'UPDATE', (payload) => {
+
+      const updatedDish = payload.new;
+
+      setMenuItems(prev => prev.map(item => {
+        if (item.id === updatedDish.id) {
+          const isNowAvailable = updatedDish.status === 'available';
+
+          return {
+            ...item,
+            isAvailable: isNowAvailable,
+            // Tự động ép giỏ hàng về 0 nếu món đó vừa bị chuyển thành "out_of_stock"
+            quantity: isNowAvailable ? item.quantity : 0,
+            note: isNowAvailable ? item.note : ''
+          };
+        }
+        return item;
+      }));
+    });
+
+    // Dọn dẹp channel khi khách thoát trang Menu
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // --- CÁC HÀM ĐIỀU KHIỂN GIỎ HÀNG TOÀN CỤC ---
   const handleIncrease = (id) => {
     setMenuItems(prev => prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item));
@@ -80,6 +110,10 @@ export const CartProvider = ({ children }) => {
     setMenuItems(prev => prev.map(item => ({ ...item, quantity: 0, note: '' })));
   };
 
+  const handleSetQuantity = (id, quantity) => {
+    setMenuItems(prev => prev.map(item => item.id === id ? { ...item, quantity: quantity } : item));
+  };
+
   // Lọc tự động: Món nào có số lượng lớn hơn 0 thì chính là item nằm trong giỏ hàng
   const cartItems = menuItems.filter(item => item.quantity > 0);
 
@@ -97,7 +131,8 @@ export const CartProvider = ({ children }) => {
       handleDecrease,
       handleRemove,
       handleNoteChange,
-      clearCart
+      clearCart,
+      handleSetQuantity
     }}>
       {children}
     </CartContext.Provider>

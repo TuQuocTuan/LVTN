@@ -10,19 +10,13 @@ http:
     type: json
     data: |-
       {
-        "session_id": "417881ef-d14f-4eee-8cdd-17f64a1d449b",
-        "total_amount": 299000,
+        "session_id": "0cc9e6f4-d9a3-4adf-85a7-c08c4f4fdb68",
         "items": [
           {
-            "dish_id": 1, 
-            "quantity": 1,
-            "price": 169000,
-            "note": "Không hành"
-          },
-          {
-            "dish_id": 2,
+            "dish_id": 1,
             "quantity": 2,
-            "price": 65000
+            "price": 120000,
+            "note": "Ăn tại bàn"
           }
         ]
       }

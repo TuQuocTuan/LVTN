@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { supabase } from '../../config/supabase';
 import StaffHeader from '../../components/layout/Staff/StaffHeader';
+import { listenDatabaseChanges } from '../../utils/realtimeHelper';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; 
 
@@ -17,7 +18,7 @@ const KitchenDashboard = () => {
   // Xử lý âm thanh thông báo
   const audio = new Audio('/Chinese Meme Ringtone Download.mp3');
 
-  // 1. Hàm lấy danh sách order đang chờ
+  //  Hàm lấy danh sách order đang chờ
   const fetchPendingOrders = async () => {
     try {
       const response = await axios.get(`${API_URL}/orders/pendingOrders`);
@@ -29,42 +30,27 @@ const KitchenDashboard = () => {
     }
   };
 
-  // Gọi API lấy dữ liệu lần đầu và lắng nghe Realtime
+  // Lắng nghe Realtime Bếp
   useEffect(() => {
     fetchPendingOrders();
     
-    const orderSubscription = supabase
-      .channel('kitchen-realtime')
-      .on(
-        'postgres_changes',
-        { 
-          event: 'INSERT',
-          schema: 'public', 
-          table: 'orders' 
-        },
-        (payload) => {
-          audio.play().catch(err => console.log("Lỗi phát âm thanh:", err));
-          const newNotification = {
-            tableName: `Mã đơn #${String(payload.new.id).slice(0,4)}`, 
-            time: new Date().toLocaleTimeString(),
-            type: 'new_order',
-            message: 'Vừa có order mới cần chế biến!'
-          };
-          setNotifications(prev => [newNotification, ...prev]);
-        
-          setTimeout(() => {
-            fetchPendingOrders(); 
-          }, 500);
-        }
-      )
-      .subscribe();
+    const channel = listenDatabaseChanges('kitchen-realtime', 'orders', 'INSERT', (payload) => {
+      audio.play().catch(err => console.log(err));
+      
+      const newNotification = {
+        tableName: `Mã đơn #${String(payload.new.id).slice(0,4)}`, 
+        time: new Date().toLocaleTimeString(),
+        type: 'new_order',
+        message: 'Vừa có order mới cần chế biến!'
+      };
+      setNotifications(prev => [newNotification, ...prev]);
+      setTimeout(() => fetchPendingOrders(), 500);
+    });
 
-    return () => {
-      supabase.removeChannel(orderSubscription);
-    };
+    return () => supabase.removeChannel(channel); // Cleanup
   }, []);
 
-  // 3. Hàm xem công thức món ăn
+  // Hàm xem công thức món ăn
   const handleViewRecipe = async (dishId, dishName) => {
     if (!dishId) {
       alert("Thiếu ID món ăn để xem công thức!");
@@ -88,7 +74,7 @@ const KitchenDashboard = () => {
 
   const toggleRecipe = () => setIsRecipeOpen(!isRecipeOpen);
 
-  // 4. Hàm hoàn thành đơn hàng
+  // Hàm hoàn thành đơn hàng
   const handleCompleteOrder = async (orderId) => {
     try {
       setLoading(true);
@@ -97,7 +83,6 @@ const KitchenDashboard = () => {
       });
 
       if (response.data.success) {
-        console.log("Đã hoàn thành order và trừ nguyên liệu thành công:", orderId);
         fetchPendingOrders();
       } else {
         alert("Lỗi từ server: " + response.data.message);
@@ -110,9 +95,31 @@ const KitchenDashboard = () => {
     }
   };
 
+  // Hàm huỷ đơn hàng
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm("Bếp đã hết nguyên liệu hoặc muốn từ chối làm order này?")) return;
+    
+    try {
+      setLoading(true);
+      const response = await axios.post(`${API_URL}/orders/cancelOrder`, {
+        order_id: orderId
+      });
+
+      if (response.data.success) {
+        fetchPendingOrders();
+      } else {
+        alert("Lỗi từ server: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Lỗi khi hủy đơn:", error);
+      alert("Không thể kết nối đến máy chủ để hủy đơn!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-culinaryBg text-neutralCustom font-sans overflow-hidden flex">
-      {/* Đã sửa lỗi class ml- */}
       <main className="flex-1 relative">
 
         {/* Header */}
@@ -132,14 +139,26 @@ const KitchenDashboard = () => {
           {orders.length === 0 && <p className="text-gray-500 italic col-span-full">Hiện tại không có order nào đang chờ...</p>}
           
           {orders.map((order) => (
-            <div key={order.id} className="bg-white border border-neutralCustom/20 rounded-xl shadow-sm overflow-hidden border-t-4 border-t-tertiary">
-              <div className="p-5 flex justify-between items-center bg-culinaryBg">
+            <div key={order.id} className="bg-white border border-neutralCustom/20 rounded-xl shadow-sm overflow-hidden border-t-4 border-t-tertiary flex flex-col">
+              
+              {/* HEADER GỒM TIÊU ĐỀ VÀ NÚT HỦY GÓC TRÊN PHẢI */}
+              <div className="p-5 flex justify-between items-start bg-culinaryBg">
                 <div>
                   <p className="text-[10px] font-bold text-neutralCustom uppercase">
                     {order.dining_sessions?.tables?.name || 'Mang đi'} • #{String(order.id).slice(0,4)}
                   </p>
                   <h3 className="font-bold text-lg text-gray-900">Order mới</h3>
                 </div>
+
+                <button 
+                  onClick={() => handleCancelOrder(order.id)}
+                  disabled={loading}
+                  className="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-lg font-bold text-xs border border-orange-200 hover:bg-orange-100 transition-colors disabled:opacity-50 flex items-center gap-1 shadow-sm"
+                  title="Hủy toàn bộ đơn này"
+                >
+                  <span className="material-symbols-outlined text-[14px]">cancel</span>
+                  HỦY
+                </button>
               </div>
               
               <div className="p-5 space-y-3">
@@ -153,6 +172,7 @@ const KitchenDashboard = () => {
                         {detail.note && <span className="text-xs text-red-500 italic font-normal">*{detail.note}</span>}
                       </div>
                     </div>
+                    
                     <button 
                       onClick={() => handleViewRecipe(detail.dish_id, detail.dishes?.name)}
                       className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"

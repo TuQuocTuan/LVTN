@@ -1,0 +1,15 @@
+info:
+  name: Xoá User
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://localhost:5000/api/user/delete/b289d478-c3d8-41b4-bdf8-264d1df65726
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
