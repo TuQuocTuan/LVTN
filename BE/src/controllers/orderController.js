@@ -639,13 +639,35 @@ export const updateOrderStatus = async (req, res) => {
 export const cancelOrderStatus = async (req, res) => {
     try {
         const { order_id } = req.body;
-        const { data: order, error: orderErr } = await supabase
-            .from('orders')
-            .update({ status: 'cancelled' })
-            .select(`status,id,session_id,order_details(quantity, dishes(name),note),dining_sessions (tables(name))`)
-            .eq('id', order_id)
-        if (orderErr) throw orderErr;
-        return res.json({ success: true, order });
+
+        const [orderUpdate, detailsUpdate] = await Promise.all([
+            supabase
+                .from('orders')
+                .update({ status: 'cancelled' })
+                .eq('id', order_id)
+                .select(`status, id, session_id, dining_sessions (tables(name))`)
+                .single(),
+
+            supabase
+                .from('order_details')
+                .update({ status: 'cancelled' })
+                .eq('order_id', order_id)
+        ]);
+
+        if (orderUpdate.error) throw orderUpdate.error;
+        if (detailsUpdate.error) throw detailsUpdate.error;
+
+        const { data: orderDetails } = await supabase
+            .from('order_details')
+            .select(`quantity, note, dishes(name)`)
+            .eq('order_id', order_id);
+
+        const finalOrder = {
+            ...orderUpdate.data,
+            order_details: orderDetails
+        };
+
+        return res.json({ success: true, order: finalOrder });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
