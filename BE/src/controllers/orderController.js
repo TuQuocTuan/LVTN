@@ -88,6 +88,23 @@ export const createOrder = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Thiếu mã phiên ăn (session_id)!' });
         }
 
+        const { data: activeSession, error: sessionErr } = await supabase
+            .from('dining_sessions')
+            .select('id, status')
+            .eq('table_id', table_id)
+            .eq('status', 'serving')
+            .maybeSingle();
+
+        if (sessionErr) throw sessionErr;
+
+        if (!activeSession || activeSession.id !== session_id) {
+            return res.status(403).json({
+                success: false,
+                is_expired_session: true,
+                message: 'Lượt ăn cũ của bạn đã kết thúc. Vui lòng quét lại mã QR để vào phiên mới!'
+            });
+        }
+
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Danh sách món ăn không hợp lệ!' });
         }
