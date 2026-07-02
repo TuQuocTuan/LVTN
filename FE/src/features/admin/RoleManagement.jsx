@@ -30,9 +30,12 @@ const RoleManagement = () => {
       title: 'Nhóm Quyền Quản Trị (Admin)',
       items: [
         { id: 'manage_menu', name: 'Quản lý Menu', desc: 'Thêm xoá sửa món', icon: 'menu_book' },
-        { id: 'view_reports', name: 'Xem báo cáo doanh thu', desc: 'Xem thống kê, lợi nhuận, hóa đơn', icon: 'bar_chart' },
-        { id: 'manage_ingredients', name: 'Quản lý nguyên vật liệu', desc: 'Thêm, xoá, sửa nguyên vật liệu', icon: 'inventory' },
-        { id: 'manage_news', name: 'Ưu đãi & Tin tức', desc: 'Quản lý bài viết tin tức', icon: 'campaign' },
+        { id: 'view_reports', name: 'Xem báo cáo doanh thu', desc: 'Xem thống kê, lợi nhuận, hóa đơn,...', icon: 'bar_chart' },
+        { id: 'manage_ingredients', name: 'Quản lý nguyên vật liệu', desc: 'Thêm, xoá, sửa nguyên vật liệu,...', icon: 'inventory' },
+        { id: 'promotions', name: 'Ưu đãi & Tặng quà', desc: 'Quản lý các khuyến mãi,...', icon: 'campaign' },
+        { id: 'manage_news', name: 'Quản lý tin tức', desc: 'Quản lý các bài viết, tin tức,...', icon: 'news' },
+        { id: 'manage_shift', name: 'Quản lý lịch làm', desc: 'Quản lý ca làm việc của nhân viên,...', icon: 'shift' },
+        { id: 'manage_review', name: 'Quản lý đánh giá khách hàng', desc: 'Quản lý và phản hồi các đánh giá của khách hàng,...', icon: 'comment' },
       ]
     },
     {

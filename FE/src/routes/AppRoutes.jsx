@@ -6,6 +6,7 @@ import MenuPage from '../features/customer/MenuPage';
 import CartPage from '../features/customer/CartPage';
 import OrdersPage from '../features/customer/OrdersPage';
 import PaymentPage from '../features/customer/PaymentPage';
+import CustomerReview from '../features/customer/CustomerReview';
 
 import Login from '../features/auth/Login';
 import TableManager from '../features/cashier/TableManager';
@@ -16,7 +17,10 @@ import RoleManagement from '../features/admin/RoleManagement';
 import DishManagement from '../features/admin/DishManagement';
 import RecipeManagement from '../features/admin/RecipeManagement';
 import IngredientManagement from '../features/admin/IngredientManagement';
-import PromotionNewsManagement from '../features/admin/PromotionNewsManagement';
+import PromotionManagement from '../features/admin/PromotionManagement';
+import NewsManagement from '../features/admin/NewsManagement';
+import ShiftManagement from '../features/admin/ShiftManagement';
+import ReviewManagement from '../features/admin/ReviewManagement';
 
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const token = localStorage.getItem('token');
@@ -93,6 +97,7 @@ const AppRoutes = () => {
       <Route path="/cart" element={<CustomerRoute><CartPage /></CustomerRoute>} />
       <Route path="/orders" element={<CustomerRoute><OrdersPage /></CustomerRoute>} />
       <Route path="/payment" element={<CustomerRoute><PaymentPage /></CustomerRoute>} />
+      <Route path="/review" element={<CustomerRoute><CustomerReview /></CustomerRoute>} />
 
       <Route path="/cashier" element={
         <ProtectedRoute allowedRoles={['cashier', 'admin', 'super_admin']}>
@@ -113,7 +118,6 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
 
-      {/* Trang quản lý nhân sự: Chỉ cho phép duy nhất vai trò là super_admin được vào */}
       <Route path="/admin/role-management" element={
         <ProtectedRoute allowedRoles={['super_admin']}>
           <RoleManagement />
@@ -139,10 +143,28 @@ const AppRoutes = () => {
       } />
 
       <Route path="/admin/promotion-management" element={
-        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_news">
-          <PromotionNewsManagement />
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="promotions">
+          <PromotionManagement />
         </ProtectedRoute>
       } />
+
+      <Route path="/admin/news-management" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_news">
+          <NewsManagement />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/admin/shift-management" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_shift">
+          <ShiftManagement />
+        </ProtectedRoute>
+      } />  
+
+      <Route path="/admin/review-management" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_review">
+          <ReviewManagement />
+        </ProtectedRoute>
+      } />  
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
