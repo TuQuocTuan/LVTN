@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const AdminHeader = ({ searchPlaceholder = "Tìm kiếm..." }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,11 +27,29 @@ const AdminHeader = ({ searchPlaceholder = "Tìm kiếm..." }) => {
     }
   };
 
-  const handleLogout = () => {
-    if(window.confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?")) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      navigate('/login');
+  const handleLogout = async () => {
+    // 🎯 1. Thêm async vào đây
+    if (window.confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?")) {
+      try {
+        // 2. Bốc thông tin user đang lưu trong máy ra trước khi xoá
+        const savedUser = JSON.parse(localStorage.getItem('user')) || {};
+
+        console.log("Dữ liệu chuẩn bị LOGOUT gửi lên BE:", savedUser);
+
+        await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+          user_id: savedUser.id || savedUser._id, // Đề phòng trường hợp dùng _id của MongoDB/Supabase tùy biến
+          username: savedUser.username || 'unknown'
+        });
+
+        console.log("Đã gọi API logout thành công!");
+      } catch (err) {
+        console.error("Lỗi ghi nhận LOGOUT xuống server:", err);
+      } finally {
+        // 4. Cho dù API chạy thành công hay lỗi mạng, vẫn xoá sạch máy và đá user ra ngoài
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
     }
   };
 
@@ -43,9 +62,9 @@ const AdminHeader = ({ searchPlaceholder = "Tìm kiếm..." }) => {
             <p className="text-sm font-bold leading-none text-gray-900">{userInfo.fullname}</p>
             <p className="text-[10px] text-neutralCustom uppercase tracking-widest mt-1 font-semibold text-primary">{userInfo.role}</p>
           </div>
-          
+
           {/* Nút Avatar Icon */}
-          <button 
+          <button
             onClick={() => setIsOpen(!isOpen)}
             className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white border-2 border-primary/20 hover:opacity-80 transition-opacity shadow-sm"
           >
@@ -55,7 +74,7 @@ const AdminHeader = ({ searchPlaceholder = "Tìm kiếm..." }) => {
           {/* Dropdown Menu */}
           {isOpen && (
             <div className="absolute right-0 top-[110%] mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-50 flex flex-col animate-fade-in">
-              <button 
+              <button
                 className="px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 text-left transition-colors"
                 onClick={handleLogout}
               >

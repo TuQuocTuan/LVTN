@@ -10,8 +10,8 @@ http:
     type: json
     data: |-
       {
-        "phone_number": "0896415447",
-        "email": "tuan@test.com"
+        "phone_number": "0832071653",
+        "email": "bigbang159vn@gmail.com"
       }
   auth: inherit
 

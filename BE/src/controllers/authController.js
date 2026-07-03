@@ -34,6 +34,16 @@ export const login = async (req, res) => {
             { expiresIn: '1d' }
         );
 
+        await supabase
+            .from('user_logs')
+            .insert([
+                {
+                    user_id: user.id,
+                    username: user.username,
+                    action: 'LOGIN'
+                }
+            ]);
+
         return res.status(200).json({
             success: true,
             message: 'Đăng nhập thành công!',
@@ -50,6 +60,17 @@ export const login = async (req, res) => {
 
 
 export const logout = async (req, res) => {
+    const { user_id, username } = req.body;
+    await supabase
+        .from('user_logs')
+        .insert([
+            {
+                user_id: user_id,
+                username: username,
+                action: 'LOGOUT'
+            }
+        ]);
+
     return res.status(200).json({
         success: true,
         message: 'Đăng xuất thành công!'
