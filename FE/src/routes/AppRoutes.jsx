@@ -7,6 +7,7 @@ import CartPage from '../features/customer/CartPage';
 import OrdersPage from '../features/customer/OrdersPage';
 import PaymentPage from '../features/customer/PaymentPage';
 import CustomerReview from '../features/customer/CustomerReview';
+import AboutPage from '../features/customer/AboutPage';
 
 import Login from '../features/auth/Login';
 import TableManager from '../features/cashier/TableManager';
@@ -92,6 +93,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
 
+      <Route path="/about" element={<AboutPage />} />
       <Route path="/" element={<WelcomePage />} />
       <Route path="/menu" element={<CustomerRoute><MenuPage /></CustomerRoute>} />
       <Route path="/cart" element={<CustomerRoute><CartPage /></CustomerRoute>} />
@@ -158,13 +160,13 @@ const AppRoutes = () => {
         <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_shift">
           <ShiftManagement />
         </ProtectedRoute>
-      } />  
+      } />
 
       <Route path="/admin/review-management" element={
         <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_review">
           <ReviewManagement />
         </ProtectedRoute>
-      } />  
+      } />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
