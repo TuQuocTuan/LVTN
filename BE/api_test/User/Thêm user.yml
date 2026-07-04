@@ -10,12 +10,12 @@ http:
     type: json
     data: |-
       {
-        "username" : "adminQ",
+        "username" : "cashier02",
         "password": "1234",
         "fullname": "ABC",
-        "role": "admin",
-        "email": "quyh2tttt@gmail.com",
-        "phone_number": "0911234134"
+        "role": "cashier",
+        "email": "tuan@test.com",
+        "phone_number": "0911212314"
       }
   auth: inherit
 
