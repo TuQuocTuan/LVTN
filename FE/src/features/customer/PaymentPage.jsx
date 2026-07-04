@@ -3,6 +3,7 @@ import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 // Import supabase client để gọi thông báo realtime cho thu ngân
 import { supabase } from '../../config/supabase'; 
 import { initBroadcastChannel } from '../../utils/realtimeHelper';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -11,6 +12,7 @@ const PaymentPage = () => {
   // Lấy thông tin bàn và phiên ăn hiện tại từ localStorage (Hoặc context/Redux của bạn)
   const sessionId = localStorage.getItem('sessionId'); 
   const tableName = localStorage.getItem('table_name') || 'Bàn của bạn';
+  const { t } = useLanguage();
 
   // State lưu dữ liệu hóa đơn thật từ API
   const [billData, setBillData] = useState(null);
@@ -97,7 +99,7 @@ const PaymentPage = () => {
     return (
       <CustomerLayout>
         <div className="flex justify-center items-center h-[70vh]">
-          <p className="text-neutralCustom">Đang tải hóa đơn...</p>
+          <p className="text-neutralCustom">{t('loadingOrders')}</p>
         </div>
       </CustomerLayout>
     );
@@ -108,7 +110,7 @@ const PaymentPage = () => {
       <CustomerLayout>
         <div className="flex justify-center items-center h-[70vh] flex-col gap-2">
           <span className="material-symbols-outlined text-5xl text-neutralCustom/50">receipt_long</span>
-          <p className="text-neutralCustom">Không tìm thấy hóa đơn nào.</p>
+          <p className="text-neutralCustom">{t('emptyOrders')}</p>
         </div>
       </CustomerLayout>
     );
@@ -120,19 +122,19 @@ const PaymentPage = () => {
         {/* Tiêu đề trang */}
         <div className="flex items-center gap-2 mb-6">
           <span className="material-symbols-outlined text-primary text-3xl">receipt_long</span>
-          <h2 className="text-xl font-bold text-gray-900">Hóa đơn tạm tính</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t('previewBillTitle')}</h2>
         </div>
 
         {/* THÔNG TIN BÀN & TRẠNG THÁI */}
         <div className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 flex justify-between items-center">
           <div>
-            <p className="text-xs text-neutralCustom font-bold uppercase tracking-wider">Vị trí</p>
+            <p className="text-xs text-neutralCustom font-bold uppercase tracking-wider">{t('seatingPosition')}</p>
             <p className="text-lg font-bold text-gray-900">{tableName}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-neutralCustom font-bold uppercase tracking-wider">Trạng thái</p>
+            <p className="text-xs text-neutralCustom font-bold uppercase tracking-wider">{t('paymentStatus')}</p>
             <span className={`text-sm font-bold ${paymentCalled ? 'text-green-600' : 'text-primary'}`}>
-              {paymentCalled ? 'Đang chờ thu ngân...' : 'Đang phục vụ'}
+              {paymentCalled ? t('statusWaiting') : t('statusServing')}
             </span>
           </div>
         </div>
@@ -151,7 +153,7 @@ const PaymentPage = () => {
                   </span>
                   <div>
                     <p className="font-bold text-gray-900 text-sm break-words">{dishName}</p>
-                    <p className="text-xs text-neutralCustom">{detail.price.toLocaleString()}đ / món</p>
+                    <p className="text-xs text-neutralCustom">{detail.price.toLocaleString()}đ / {t('perDish')}</p>
                   </div>
                 </div>
                 <p className="font-bold text-gray-900 text-sm">
@@ -165,25 +167,25 @@ const PaymentPage = () => {
         {/* TỔNG KẾT TIỀN BẠC THỰC TẾ TỪ API */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-neutralCustom">Tạm tính</span>
+            <span className="text-neutralCustom">{t('subTotal')}</span>
             <span className="font-bold text-gray-900">{billData.sub_total?.toLocaleString()}đ</span>
           </div>
           
           {/* Chỉ hiện dòng giảm giá nếu có áp dụng khuyến mãi */}
           {billData.discount_amount > 0 && (
             <div className="flex justify-between text-sm text-green-600">
-              <span>Khuyến mãi ({billData.voucher_name})</span>
+              <span>{t('discountLabel')} ({billData.voucher_name})</span>
               <span className="font-bold">-{billData.discount_amount.toLocaleString()}đ</span>
             </div>
           )}
 
           <div className="flex justify-between text-sm">
-            <span className="text-neutralCustom">Thuế VAT (10%)</span>
+            <span className="text-neutralCustom">{t('vatRateLabel')}</span>
             <span className="font-bold text-gray-900">{billData.vat_amount?.toLocaleString()}đ</span>
           </div>
           
           <div className="border-t border-dashed border-gray-200 pt-3 flex justify-between items-center">
-            <span className="font-bold text-gray-900 text-lg">Tổng cộng</span>
+            <span className="font-bold text-gray-900 text-lg">{t('finalAmount')}</span>
             <span className="font-bold text-primary text-2xl">{billData.tongtien?.toLocaleString()}đ</span>
           </div>
         </div>
@@ -202,7 +204,7 @@ const PaymentPage = () => {
             <span className="material-symbols-outlined">
               {paymentCalled ? 'check_circle' : 'payments'}
             </span>
-            {paymentCalled ? 'Đã báo thu ngân' : 'Yêu cầu thanh toán'}
+            {paymentCalled ? t('btnRequested') : t('btnRequestPayment')}
           </button>
         </div>
 
@@ -214,22 +216,22 @@ const PaymentPage = () => {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="material-symbols-outlined text-primary text-4xl">payments</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Xác nhận thanh toán?</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{t('confirmPaymentTitle')}</h3>
               <p className="text-sm text-neutralCustom mb-6">
-                Nhân viên sẽ mang hóa đơn đến bàn và hỗ trợ bạn thanh toán.
+                {t('confirmPaymentDesc')}
               </p>
               <div className="flex gap-3">
                 <button 
                   onClick={() => setShowConfirm(false)}
                   className="flex-1 py-3 text-sm font-bold text-neutralCustom bg-gray-100 rounded-xl"
                 >
-                  Hủy
+                  {t('btnNo')}
                 </button>
                 <button 
                   onClick={handleCallPayment}
                   className="flex-1 py-3 text-sm font-bold text-white bg-primary rounded-xl flex items-center justify-center"
                 >
-                  {isCallingPayment ? 'Đang gửi...' : 'Xác nhận'}
+                  {isCallingPayment ? '...' : t('btnYes')}
                 </button>
               </div>
             </div>
@@ -237,7 +239,7 @@ const PaymentPage = () => {
         )}
 
         <p className="text-center text-xs text-neutralCustom mt-8 italic">
-          Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi!
+          {t('footerThankYou')}
         </p>
       </div>
     </CustomerLayout>

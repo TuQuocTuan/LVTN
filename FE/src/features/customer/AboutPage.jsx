@@ -20,17 +20,16 @@ const AboutPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [lookupError, setLookupError] = useState('');
 
-  // --- STATES PHÂN TRANG (PAGINATION) ---
+  // --- STATES PHÂN TRANG ---
   const [dishesCurrentPage, setDishesCurrentPage] = useState(1);
-  const dishesPerPage = 8; // Tối đa 8 món nướng mỗi trang
+  const dishesPerPage = 8;
 
   const [newsCurrentPage, setNewsCurrentPage] = useState(1);
-  const newsPerPage = 4; // Tối đa 4 tin tức mỗi trang
+  const newsPerPage = 4;
 
   // --- STATES MODAL CHI TIẾT TIN TỨC ---
   const [activeNewsDetail, setActiveNewsDetail] = useState(null);
 
-  // Lấy URL API từ file cấu hình môi trường .env hoặc dùng localhost làm dự phòng
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
@@ -39,7 +38,7 @@ const AboutPage = () => {
     fetchPromotionsList();
   }, []);
 
-  // 1. Gọi API lấy danh sách món ăn thật từ Backend
+  // Gọi API lấy danh sách món ăn
   const fetchFeaturedDishes = async () => {
     setIsLoadingDishes(true);
     try {
@@ -66,7 +65,7 @@ const AboutPage = () => {
     }
   };
 
-  // 2. Gọi API lấy danh sách tin tức đã xuất bản từ Backend
+  // Gọi API lấy danh sách tin tức đã xuất bản
   const fetchPublishedNews = async () => {
     setIsLoadingNews(true);
     try {
@@ -83,7 +82,7 @@ const AboutPage = () => {
     }
   };
 
-  // 3. Gọi API lấy danh sách Khuyến mãi để đồng bộ thông tin Voucher đính kèm tin tức
+  // Gọi API lấy danh sách Khuyến mãi để đồng bộ thông tin Voucher đính kèm tin tức
   const fetchPromotionsList = async () => {
     try {
       const response = await axios.get(`${API_URL}/promotions/list`);
@@ -109,7 +108,6 @@ const AboutPage = () => {
     setHasSearched(false);
 
     try {
-      // Gửi request POST lên đúng route Backend: /promotions/customer-voucher
       const response = await axios.post(`${API_URL}/promotions/customer-voucher`, {
         phone_number: phoneNumber.trim(),
         email: email.trim()
@@ -159,7 +157,7 @@ const AboutPage = () => {
   return (
     <div className="bg-stone-50 text-gray-800 font-sans min-h-screen selection:bg-orange-600 selection:text-white">
       
-      {/* 🌟 1. BANNER HERO COVER (PHONG CÁCH QUÁN NƯỚNG BBQ CHUYÊN NGHIỆP) */}
+      {/* BANNER HERO COVER (PHONG CÁCH QUÁN NƯỚNG BBQ CHUYÊN NGHIỆP) */}
       <section className="relative h-[480px] bg-stone-900 flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-40">
           <img 
@@ -185,7 +183,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* 🌟 2. CÂU CHUYỆN THƯƠNG HIỆU */}
+      {/* CÂU CHUYỆN THƯƠNG HIỆU */}
       <section className="py-24 px-4 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
         <div className="relative rounded-3xl overflow-hidden shadow-xl border border-stone-200">
           <img 
@@ -210,7 +208,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* 🌟 3. ĐẶC SẮC THỰC ĐƠN (PHÂN TRANG & TAB DỰA TRÊN API THẬT) */}
+      {/* ĐẶC SẮC THỰC ĐƠN (PHÂN TRANG & TAB DỰA TRÊN API THẬT) */}
       <section id="menu" className="bg-white py-24 border-y border-stone-200/50">
         <div className="max-w-5xl mx-auto px-4">
           <div className="text-center max-w-xl mx-auto mb-16">
@@ -316,7 +314,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* 🌟 4. BẢNG TIN & SỰ KIỆN (HIỂN THỊ VOUCHER ĐÍNH KÈM Ở DẠNG TĨNH) */}
+      {/* BẢNG TIN & SỰ KIỆN */}
       <section className="py-24 max-w-5xl mx-auto px-4">
         <div className="text-center max-w-xl mx-auto mb-16">
           <span className="text-orange-500 font-bold text-xs uppercase tracking-widest">Tin tức & Sự kiện Làng Mixi</span>
@@ -424,7 +422,7 @@ const AboutPage = () => {
         )}
       </section>
 
-      {/* 🌟 5. CỔNG TRA CỨU VOUCHER THÔNG MINH (YÊU CẦU SĐT & EMAIL, HIỂN THỊ VOUCHER TĨNH) */}
+      {/* CỔNG TRA CỨU VOUCHER THÔNG MINH */}
       <section id="lookup" className="bg-gradient-to-b from-white to-stone-50/50 py-24 border-t border-stone-200/60">
         <div className="max-w-xl mx-auto px-4">
           <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-xl border border-stone-200/70 text-center relative overflow-hidden">
@@ -476,7 +474,7 @@ const AboutPage = () => {
               <p className="text-xs text-red-500 font-bold mb-3">{lookupError}</p>
             )}
 
-            {/* --- KẾT QUẢ TRA CỨU VOUCHER TRỰC QUAN & TĨNH (STATIC DESIGN - NO COPY BUTTON) --- */}
+            {/* --- KẾT QUẢ TRA CỨU VOUCHER --- */}
             {hasSearched && (
               <div className="mt-8 border-t border-dashed border-stone-200 pt-6 animate-fade-in text-left">
                 {searchResult && searchResult.length > 0 ? (
@@ -517,7 +515,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* 🌟 6. DETAILED NEWS POP-UP MODAL (CÓ CHỨA VOUCHER ĐÍNH KÈM Ở DẠNG TĨNH) */}
+      {/* DETAILED NEWS POP-UP MODAL */}
       {activeNewsDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-sm animate-fade-in" onClick={() => setActiveNewsDetail(null)}>
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
@@ -591,7 +589,7 @@ const AboutPage = () => {
         </div>
       )}
 
-      {/* 🌟 7. FOOTER LÀNG MIXI BBQ */}
+      {/* FOOTER */}
       <footer className="bg-stone-950 text-stone-400 text-xs sm:text-sm py-16 border-t border-stone-800">
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-12 items-start">
           <div>

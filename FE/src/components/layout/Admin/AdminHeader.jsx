@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// import axios from 'axios';
 
 const AdminHeader = ({ searchPlaceholder = "Tìm kiếm..." }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,10 +36,10 @@ const AdminHeader = ({ searchPlaceholder = "Tìm kiếm..." }) => {
 
         console.log("Dữ liệu chuẩn bị LOGOUT gửi lên BE:", savedUser);
 
-        await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {
-          user_id: savedUser.id || savedUser._id, // Đề phòng trường hợp dùng _id của MongoDB/Supabase tùy biến
-          username: savedUser.username || 'unknown'
-        });
+        // await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+        //   user_id: savedUser.id || savedUser._id, // Đề phòng trường hợp dùng _id của MongoDB/Supabase tùy biến
+        //   username: savedUser.username || 'unknown'
+        // });
 
         console.log("Đã gọi API logout thành công!");
       } catch (err) {

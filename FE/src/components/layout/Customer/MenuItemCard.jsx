@@ -1,17 +1,19 @@
 import React from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const MenuItemCard = ({ item, onIncrease, onDecrease }) => {
+  const { t } = useLanguage();
+
   return (
     <div
-      className={`bg-white rounded-xl overflow-hidden shadow-sm border border-neutralCustom/20 flex flex-col transition-all active:scale-[0.98] ${
-        !item.isAvailable ? 'opacity-60 grayscale-[0.5] relative' : ''
-      }`}
+      className={`bg-white rounded-xl overflow-hidden shadow-sm border border-neutralCustom/20 flex flex-col transition-all active:scale-[0.98] ${!item.isAvailable ? 'opacity-60 grayscale-[0.5] relative' : ''
+        }`}
     >
       {/* Lớp phủ khi hết hàng */}
       {!item.isAvailable && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <span className="bg-gray-900/80 text-white px-3 py-1 rounded-full text-xs font-bold uppercase">
-            Hết hàng
+            {t('outOfStock')}
           </span>
         </div>
       )}
@@ -40,16 +42,16 @@ const MenuItemCard = ({ item, onIncrease, onDecrease }) => {
         {/* LOGIC HIỂN THỊ NÚT THÔNG MINH */}
         {item.isAvailable ? (
           item.quantity === 0 ? (
-            // 1. Nếu chưa chọn món -> Hiện nút "Đặt món"
+            // Nếu chưa chọn món -> Hiện nút "Đặt món"
             <button
               onClick={() => onIncrease(item.id)}
               className="mt-auto w-full py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white font-bold rounded-lg transition-colors flex justify-center items-center gap-1 text-sm shadow-sm"
             >
               <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
-              Đặt món
+              {t('orderBtn')}
             </button>
           ) : (
-            // 2. Nếu đã bấm đặt -> Hiện thanh tăng giảm số lượng
+            // Nếu đã bấm đặt -> Hiện thanh tăng giảm số lượng
             <div className="mt-auto flex items-center justify-between bg-orange-50 border border-primary/20 rounded-lg p-1">
               <button
                 onClick={() => onDecrease(item.id)}
@@ -69,7 +71,7 @@ const MenuItemCard = ({ item, onIncrease, onDecrease }) => {
         ) : (
           <div className="mt-auto flex items-center justify-center py-2 bg-gray-100 rounded-lg">
             <span className="text-xs font-bold uppercase text-neutralCustom">
-              Tạm ngưng
+              {t('paused')}
             </span>
           </div>
         )}
