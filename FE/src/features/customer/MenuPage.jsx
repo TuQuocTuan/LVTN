@@ -1,29 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 import MenuItemCard from '../../components/layout/Customer/MenuItemCard';
-import { useCart } from '../../context/CartContext'; // Import chìa khóa kết nối kho chung
+import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const MenuPage = () => {
-  // 1. Rút dữ liệu và hàm thao tác từ CartContext ra thay vì tự viết
-  const {
-    menuItems,
-    categories,
-    isLoading,
-    handleIncrease,
-    handleDecrease
-  } = useCart();
+  // Rút dữ liệu và hàm thao tác từ CartContext ra thay vì tự viết
+  const { menuItems, categories, isLoading, handleIncrease, handleDecrease } = useCart();
+  const { t } = useLanguage();
 
   // State quản lý Tab đang được chọn trên giao diện
   const [activeCategory, setActiveCategory] = useState('');
 
-  // 2. Tự động chọn Tab danh mục đầu tiên (MÓN CHÍNH) khi dữ liệu tải xong
+  // Tự động chọn Tab danh mục đầu tiên (MÓN CHÍNH) khi dữ liệu tải xong
   useEffect(() => {
     if (categories && categories.length > 0 && !activeCategory) {
       setActiveCategory(categories[0]);
     }
   }, [categories, activeCategory]);
 
-  // 3. Lọc danh sách món ăn theo danh mục đang xem
+  // Lọc danh sách món ăn theo danh mục đang xem
   const displayedItems = menuItems.filter(item => item.category === activeCategory);
 
   return (
@@ -32,7 +28,7 @@ const MenuPage = () => {
         // Giao diện chờ tải dữ liệu
         <div className="flex flex-col items-center justify-center h-64 mt-20">
           <span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">progress_activity</span>
-          <p className="text-neutralCustom font-bold text-sm animate-pulse">Đang tải thực đơn...</p>
+          <p className="text-neutralCustom font-bold text-sm animate-pulse">{t('loadingMenuPage')}</p>
         </div>
       ) : (
         <>
@@ -63,7 +59,7 @@ const MenuPage = () => {
               ))
             ) : (
               <p className="col-span-2 text-center text-neutralCustom mt-10 text-sm">
-                Chưa có món ăn nào trong danh mục này.
+                {t('emptyMenu')}
               </p>
             )}
           </section>
