@@ -1,0 +1,21 @@
+info:
+  name: Doanh thu theo ngày/tuần/tháng/năm
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5000/api/dashboard/revenue
+  body:
+    type: json
+    data: |-
+      {
+        "range":"year"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

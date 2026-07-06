@@ -41,3 +41,54 @@ export const getDoanhThuDashboard = async (req, res) => {
         });
     }
 }
+
+export const tungngaytrongTuan = async (req, res) => {
+    try {
+        const mocthoigian = new Date();
+        mocthoigian.setHours(0, 0, 0, 0);
+
+        while (mocthoigian.getDay() !== 1) {
+            mocthoigian.setDate(mocthoigian.getDate() - 1);
+        }
+
+        const { data: bills, error: fetchErr } = await supabase
+            .from('bills')
+            .select('total_amount, created_at')
+            .gte('created_at', mocthoigian.toISOString());
+
+        if (fetchErr) throw fetchErr;
+
+        let danhsachTuan = [
+            { day_name: "Thứ Hai", total: 0 },
+            { day_name: "Thứ Ba", total: 0 },
+            { day_name: "Thứ Tư", total: 0 },
+            { day_name: "Thứ Năm", total: 0 },
+            { day_name: "Thứ Sáu", total: 0 },
+            { day_name: "Thứ Bảy", total: 0 },
+            { day_name: "Chủ Nhật", total: 0 }
+        ]
+
+        bills?.forEach(bill => {
+            const billDate = new Date(bill.created_at);
+            const dayIndex = billDate.getDay();
+
+            let i = dayIndex - 1;
+            if (dayIndex === 0) {
+                i = 6;
+            }
+
+            if (danhsachTuan[i]) {
+                danhsachTuan[i].total += Number(bill.total_amount || 0);
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            start_week_date: mocthoigian.toLocaleDateString('vi-VN'),
+            data: danhsachTuan
+        });
+    } catch (error) {
+        console.error("Lỗi tính doanh thu tuần:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
