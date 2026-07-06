@@ -4,26 +4,26 @@ import AdminHeader from '../../components/layout/Admin/AdminHeader';
 import axios from 'axios';
 
 const AdminDashboard = () => {
-  // --- STATES QUẢN LÝ RESPONSIVE TRÊN MOBILE/TABLET ---
+  /* STREAMING_CHUNK: Quản lý trạng thái mở sidebar trên di động và loading dữ liệu */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Quản lý đóng/mở Sidebar trượt trên điện thoại
-
-  // --- STATES QUẢN LÝ DỮ LIỆU THẬT ---
   const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState('week'); // Khoảng thời gian lọc: day (Hôm nay), week (Tuần này), month (Tháng này), year (Năm nay)
-  const [liveRevenue, setLiveRevenue] = useState(0); // Tổng doanh thu thật lấy từ API của bạn
-
-  // State theo dõi điểm di chuột trên biểu đồ để hiển thị Tooltip động
+  const [range, setRange] = useState('week'); // Khoảng thời gian lọc: day, week, month, year
+  const [liveRevenue, setLiveRevenue] = useState(0); // Tổng doanh thu thật bốc từ API
+  
+  // Dữ liệu đồ thị cột thực tế được render tự động từ API tuần của Tuấn
+  const [weeklyData, setWeeklyData] = useState([]);
   const [hoveredBarIndex, setHoveredIndex] = useState(null);
 
-  // Tự động tải Doanh thu thật từ Backend mỗi khi thay đổi khoảng thời gian
+  /* STREAMING_CHUNK: Gọi các API doanh thu thực tế khi thay đổi khoảng thời gian bộ lọc */
   useEffect(() => {
     fetchRealRevenue();
+    fetchWeeklyChartData();
   }, [range]);
 
+  // Giao dịch gọi API lấy tổng doanh thu theo khoảng thời gian chọn lọc
   const fetchRealRevenue = async () => {
     setLoading(true);
     try {
-      // Gọi đúng API hoạt động thực tế của Backend: POST /api/dashboard/revenue
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/revenue`, { range });
       if (response.data && response.data.success) {
         setLiveRevenue(Number(response.data.tongdoanhthu || 0));
@@ -36,10 +36,43 @@ const AdminDashboard = () => {
     }
   };
 
-  // Tính toán Lợi nhuận tạm tính 35% doanh thu
+  /* STREAMING_CHUNK: Lấy dữ liệu doanh thu từng ngày trong tuần từ API */
+  const fetchWeeklyChartData = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/dashboard/revenue-week`);
+      if (response.data && response.data.success && response.data.data) {
+        const rawData = response.data.data;
+        const maxVal = Math.max(...rawData.map(item => item.total)) || 1;
+
+        // Chuyển đổi dữ liệu thô từ database thành các điểm cột cân xứng
+        const computedData = rawData.map((item, idx) => {
+          // Tính toán phần trăm chiều cao cho cột doanh thu thật
+          const revPercent = maxVal > 0 ? (item.total / maxVal) * 85 : 0;
+          // Lợi nhuận tạm tính 35% của ngày đó
+          const profit = Math.round(item.total * 0.35);
+          const profPercent = maxVal > 0 ? (profit / maxVal) * 85 : 0;
+
+          return {
+            day: item.day_name,
+            revenue: item.total,
+            profit: profit,
+            revenueHeight: item.total > 0 ? `${Math.max(revPercent, 6)}%` : '4%',
+            profitHeight: profit > 0 ? `${Math.max(profPercent, 3)}%` : '2%',
+            highlight: item.total === maxVal && maxVal > 0
+          };
+        });
+
+        setWeeklyData(computedData);
+      }
+    } catch (error) {
+      console.error("Gặp sự cố khi đồng bộ API tuần của Tuấn:", error);
+      setWeeklyData([]);
+    }
+  };
+
   const liveProfit = Math.round(liveRevenue * 0.35);
 
-  // Danh sách metrics tinh giản thành 3 cột Bento cân đối, cao cấp
+  /* STREAMING_CHUNK: Thiết lập mảng chỉ số Bento Metrics tích hợp biểu đồ Sparklines mini */
   const metrics = [
     { 
       id: 1, 
@@ -49,7 +82,7 @@ const AdminDashboard = () => {
       isUp: true, 
       icon: 'payments', 
       color: 'primary',
-      sparkline: [30, 45, 35, 60, 55, 70, 85] // Biểu đồ sóng mini
+      sparkline: [30, 45, 35, 60, 55, 70, 85]
     },
     { 
       id: 2, 
@@ -73,22 +106,105 @@ const AdminDashboard = () => {
     },
   ];
 
-  // Dữ liệu đồ thị sóng thực tế (Mỗi mốc có doanh thu và tọa độ vẽ spline)
-  const chartData = [
-    { day: 'Thứ 2', revenue: 52000000, profit: 18200000, cx: 50, cy: 190 },
-    { day: 'Thứ 3', revenue: 68000000, profit: 23800000, cx: 170, cy: 150 },
-    { day: 'Thứ 4', revenue: 58000000, profit: 20300000, cx: 290, cy: 175 },
-    { day: 'Thứ 5', revenue: 75000000, profit: 26250000, cx: 410, cy: 130 },
-    { day: 'Thứ 6', revenue: 92000000, profit: 32200000, cx: 530, cy: 95 },
-    { day: 'Thứ 7', revenue: 115000000, profit: 80500000, cx: 650, cy: 75, highlight: true },
-    { day: 'Chủ nhật', revenueHeight: '85%', profitHeight: '75%', revenue: 105000000, profit: 73500000, cx: 770, cy: 45, highlight: true }
-  ];
-
-  // Món ăn bán chạy nhất tại cơ sở (Hình ảnh rõ nét chống vỡ)
   const topDishes = [
     { name: 'Salad Cá Hồi Áp Chảo', sales: '342 đ/h', percentage: 92, image: 'https://images.unsplash.com/photo-1560963689-02e820bfceb5?w=200&h=200&fit=crop' },
     { name: 'Steak Thăn Ngoại Bò Mỹ', sales: '215 đ/h', percentage: 75, image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=150&h=150&fit=crop' },
   ];
+
+  /* STREAMING_CHUNK: Nâng cấp thiết kế Excel (tăng font-size lên 15px, tăng padding và độ rộng ô) */
+  const handleExportExcel = () => {
+    // Chỉnh sửa giao diện bên trong bảng tính Excel: To ra, chữ rõ ràng hơn
+    const styles = `
+      <style>
+        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+        td, th { padding: 14px 20px; border: 1px solid #cbd5e1; font-size: 15px; } /* Tăng font-size lên 15px, padding rộng rãi */
+        .title-row { font-size: 22px; font-weight: bold; color: #ff6b00; padding: 18px 0; text-align: left; } /* Tiêu đề to 22px */
+        .meta-label { background-color: #f8fafc; font-weight: bold; color: #475569; width: 240px; font-size: 15px; }
+        .meta-val { color: #0f172a; font-weight: bold; font-size: 15px; }
+        .header-row { background-color: #ff6b00; color: #ffffff; font-weight: bold; text-align: center; font-size: 15px; }
+        .row-even { background-color: #ffffff; }
+        .row-odd { background-color: #fdfaf6; }
+        .number-cell { text-align: right; font-family: Consolas, monospace; font-size: 15px; }
+        .grand-total { background-color: #ffedd5; font-weight: bold; color: #ea580c; font-size: 16px; }
+        .spacer { border: none; height: 20px; }
+      </style>
+    `;
+
+    // Thiết kế cấu trúc bảng Excel chuyên nghiệp có tổ chức phân vùng rõ rệt
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        ${styles}
+      </head>
+      <body>
+        <table>
+          <tr>
+            <td colspan="3" class="title-row">BÁO CÁO DOANH THU HOẠT ĐỘNG - LÀNG MIXI BBQ</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Thời điểm xuất báo cáo:</td>
+            <td colspan="2" class="meta-val">${new Date().toLocaleString('vi-VN')}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Bộ lọc khoảng thời gian:</td>
+            <td colspan="2" class="meta-val">${range === 'day' ? 'Hôm nay' : range === 'week' ? 'Tuần này' : range === 'month' ? 'Tháng này' : 'Năm nay'}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Tổng doanh thu lũy kế:</td>
+            <td colspan="2" class="meta-val" style="color: #ff6b00;">${liveRevenue.toLocaleString('vi-VN')} đ</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Lợi nhuận tạm tính (35%):</td>
+            <td colspan="2" class="meta-val" style="color: #2b6cb0;">${liveProfit.toLocaleString('vi-VN')} đ</td>
+          </tr>
+          <tr class="spacer"><td colspan="3" class="spacer"></td></tr>
+          <tr>
+            <td colspan="3" style="font-weight: bold; font-size: 15px; color: #1e293b; padding-bottom: 8px;">CHI TIẾT PHÂN TÍCH DOANH SỐ THEO NGÀY TRONG TUẦN</td>
+          </tr>
+          <tr class="header-row">
+            <td>Thứ</td>
+            <td>Doanh thu thật (đ)</td>
+            <td>Lợi nhuận ròng tạm tính 35% (đ)</td>
+          </tr>
+    `;
+
+    // Nạp dữ liệu các hàng trong tuần với màu so le đẹp mắt
+    weeklyData.forEach((row, index) => {
+      const rowClass = index % 2 === 0 ? 'row-even' : 'row-odd';
+      html += `
+        <tr class="${rowClass}">
+          <td style="font-weight: bold; color: #334155;">${row.day}</td>
+          <td class="number-cell">${Number(row.revenue).toLocaleString('vi-VN')} đ</td>
+          <td class="number-cell">${Number(row.profit).toLocaleString('vi-VN')} đ</td>
+        </tr>
+      `;
+    });
+
+    // Tính toán và thêm dòng tổng hợp lũy kế cuối Excel
+    const totalRev = weeklyData.reduce((acc, curr) => acc + curr.revenue, 0);
+    const totalProf = weeklyData.reduce((acc, curr) => acc + curr.profit, 0);
+    html += `
+          <tr class="grand-total">
+            <td>TỔNG CỘNG TUẦN</td>
+            <td class="number-cell">${totalRev.toLocaleString('vi-VN')} đ</td>
+            <td class="number-cell">${totalProf.toLocaleString('vi-VN')} đ</td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    // Xuất file .xls chuẩn chỉnh mã hóa UTF-8 BOM chống vỡ tiếng Việt
+    const blob = new Blob(["\uFEFF" + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Bao_cao_tai_chinh_${range}_${new Date().toISOString().slice(0, 10)}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const getColorClasses = (colorName) => {
     switch(colorName) {
@@ -103,16 +219,11 @@ const AdminDashboard = () => {
     <div className={`
       bg-culinaryBg text-gray-900 font-sans min-h-screen flex overflow-x-hidden relative
       
-      /* 🌟 1. ĐỊNH DẠNG IN ẤN */
-      print:bg-white
-      [&_aside]:print:hidden [&_header]:print:hidden [&_nav]:print:hidden [&_select]:print:hidden [&_button]:print:hidden [&_.no-print]:print:hidden
-      [&_main]:print:ml-0 [&_main]:print:p-0 [&_main]:print:w-full
-
-      /* 🌟 2. HỖ TRỢ ĐA THIẾT BỊ CHO SIDEBAR CON (Screen < 1024px) */
+      /* RESPONSIVE CHO SIDEBAR CON (Screen < 1024px) */
       [&_aside]:max-lg:-translate-x-full [&_aside]:max-lg:transition-transform [&_aside]:max-lg:duration-300 [&_aside]:max-lg:ease-in-out [&_aside]:max-lg:z-50
       ${isSidebarOpen ? '[&_aside]:max-lg:translate-x-0' : ''}
 
-      /* 🌟 3. HỖ TRỢ ĐA THIẾT BỊ CHO HEADER CON (Screen < 1024px) */
+      /* HỖ TRỢ ĐA THIẾT BỊ CHO HEADER CON (Screen < 1024px) */
       [&_header]:max-lg:w-full [&_header]:max-lg:left-0 [&_header]:max-lg:px-4
     `}>
 
@@ -145,7 +256,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           
-          {/* Cặp nút select và In hóa đơn thẳng hàng h-[42px] */}
+          {/* Cặp nút select và Xuất Excel thẳng hàng h-[42px] */}
           <div className="flex items-center gap-2.5 w-full sm:w-auto self-stretch sm:self-auto shrink-0 justify-end flex-nowrap">
             <select 
               value={range}
@@ -158,18 +269,18 @@ const AdminDashboard = () => {
               <option value="year">Năm nay</option>
             </select>
             
+            {/* NÚT XUẤT FILE EXCEL: MÀU XANH LÁ SOLID, HOVER ĐẬM, KHÔNG TRONG SUỐT */}
             <button 
-              onClick={() => window.print()}
-              className="flex items-center justify-center gap-2 px-5 bg-primary text-white rounded-xl font-bold hover:bg-secondary transition-all shadow-md active:scale-95 text-xs sm:text-sm h-[42px] whitespace-nowrap"
+              onClick={handleExportExcel}
+              className="flex items-center justify-center gap-2 px-5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 text-xs sm:text-sm h-[42px] whitespace-nowrap"
             >
-              <span className="material-symbols-outlined text-[20px]">print</span>
-              <span>In hóa đơn</span>
+              <span className="material-symbols-outlined text-[20px]">download_for_offline</span>
+              <span>Xuất file Excel</span>
             </button>
           </div>
         </section>
 
-        {/* */}
-        {/* Bento Grid Metrics: Chia thành 3 cột Bento cân đối, sang trọng */}
+        {/* Bento Grid Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {metrics.map((metric) => (
             <div key={metric.id} className="bg-white p-5 rounded-2xl border border-neutralCustom/15 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden">
@@ -186,13 +297,13 @@ const AdminDashboard = () => {
                   <p className="text-neutralCustom text-[10px] font-bold uppercase tracking-widest">{metric.title}</p>
                   <h3 className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{metric.value}</h3>
                 </div>
-                {/* Sparkline sóng mini góc phải */}
+                {/* Sparkline sóng mini */}
                 <div className="w-16 h-8 opacity-80">
                   <svg className="w-full h-full" viewBox="0 0 70 30">
                     <path
                       d={`M ${metric.sparkline.map((val, idx) => `${idx * 11},${30 - (val / 100) * 25}`).join(' L ')}`}
                       fill="none"
-                      stroke={metric.isUp ? "#30d158" : "#ff453a"}
+                      stroke={metric.isUp ? "#16a34a" : "#dc2626"}
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -203,132 +314,84 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* */}
-        {/* 🌟 BIỂU ĐỒ XU HƯỚNG DOANH THU: THIẾT KẾ DẠNG SÓNG GRADIENT CỰC KỲ SANG TRỌNG */}
+        {/* BIỂU ĐỒ XU HƯỚNG DOANH THU: ĐÃ THAY ĐỔI THÀNH BIỂU ĐỒ CỘT KÉP (REVENUE & PROFIT) SIÊU ĐẸP */}
         <div className="bg-white p-6 rounded-2xl border border-neutralCustom/15 shadow-sm flex flex-col justify-between relative">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-[17px] font-bold text-gray-900">Xu hướng doanh thu</h3>
-              <p className="text-neutralCustom text-[11px] mt-0.5">Biểu đồ biểu diễn dòng tiền luân chuyển 7 ngày gần đây nhất</p>
+              <p className="text-neutralCustom text-[11px] mt-0.5">Biểu đồ biểu diễn dòng tiền tuần này của Làng Mixi</p>
             </div>
             <div className="flex gap-4 text-xs font-bold text-neutralCustom">
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-primary"></span> Doanh thu</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-primary"></span> Doanh thu thật</span>
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#fca5a5]"></span> Lợi nhuận ròng</span>
             </div>
           </div>
           
-          {/* Biểu đồ Sóng Spline Area SVG */}
-          <div className="relative h-64 w-full flex items-end">
-            <svg className="w-full h-full" viewBox="0 0 820 220" preserveAspectRatio="none">
-              <defs>
-                {/* Khai báo Gradient chuyển sắc cho Doanh thu */}
-                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ff6b00" stopOpacity="0.25"/>
-                  <stop offset="100%" stopColor="#ff6b00" stopOpacity="0.0"/>
-                </linearGradient>
-                {/* Khai báo Gradient chuyển sắc cho Lợi nhuận */}
-                <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#fca5a5" stopOpacity="0.15"/>
-                  <stop offset="100%" stopColor="#fca5a5" stopOpacity="0.0"/>
-                </linearGradient>
-              </defs>
+          {/* Biểu đồ cột kép 3D-like thích ứng bề ngang */}
+          <div className="relative h-64 w-full flex items-end justify-between px-2 sm:px-6 mt-4">
+            {/* Đường lưới mỏng */}
+            <div className="absolute inset-0 border-b border-neutralCustom/10 pointer-events-none"></div>
+            <div className="absolute inset-x-0 bottom-1/4 border-b border-neutralCustom/10 pointer-events-none"></div>
+            <div className="absolute inset-x-0 bottom-1/2 border-b border-neutralCustom/10 pointer-events-none"></div>
+            <div className="absolute inset-x-0 bottom-3/4 border-b border-neutralCustom/10 pointer-events-none"></div>
 
-              {/* Đường lưới kẻ ngang */}
-              <line x1="0" y1="220" x2="820" y2="220" stroke="#f1f5f9" strokeWidth="1" />
-              <line x1="0" y1="165" x2="820" y2="165" stroke="#f1f5f9" strokeWidth="1" />
-              <line x1="0" y1="110" x2="820" y2="110" stroke="#f1f5f9" strokeWidth="1" />
-              <line x1="0" y1="55" x2="820" y2="55" stroke="#f1f5f9" strokeWidth="1" />
-              
-              {/* 1. Mảng Lợi nhuận tạm tính (Area dưới mờ hơn) */}
-              <path 
-                d="M 50,220 L 50,150 Q 110,135 170,120 Q 230,135 290,145 Q 350,115 410,100 Q 470,90 530,85 Q 590,70 650,60 Q 710,65 770,75 L 770,220 Z" 
-                fill="url(#profitGrad)"
-              />
-              <path 
-                d="M 50,150 Q 110,135 170,120 Q 230,135 290,145 Q 350,115 410,100 Q 470,90 530,85 Q 590,70 650,60 Q 710,65 770,75" 
-                fill="none" 
-                stroke="#fca5a5" 
-                strokeWidth="2.5" 
-                strokeLinecap="round"
-              />
+            {weeklyData.length > 0 ? (
+              weeklyData.map((data, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex flex-col justify-end items-center h-full relative group cursor-pointer"
+                  style={{ width: `${100 / weeklyData.length}%` }} // Phân tách đều bằng 100/7
+                  onMouseEnter={() => setHoveredIndex(idx)} 
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
+                  {/* Nhóm cột kép (Doanh thu & Lợi nhuận nằm sát nhau) */}
+                  <div className="flex items-end justify-center gap-1.5 sm:gap-2 h-full w-full relative pb-1">
+                    {/* Cột Lợi nhuận ròng tạm tính 35% (Màu hồng cam thanh lịch) */}
+                    <div 
+                      className="w-2.5 sm:w-4 bg-[#fca5a5]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300"
+                      style={{ height: data.profitHeight }}
+                    ></div>
+                    {/* Cột Doanh thu thật (Màu cam đậm rực rỡ) */}
+                    <div 
+                      className={`w-2.5 sm:w-4 rounded-t-md transition-all duration-300 ${
+                        data.highlight ? 'bg-primary shadow-lg scale-x-105' : 'bg-primary/75 hover:bg-primary'
+                      }`}
+                      style={{ height: data.revenueHeight }}
+                    ></div>
+                  </div>
 
-              {/* 2. Mảng Doanh thu (Area chính cam rực rỡ) */}
-              <path 
-                d="M 50,220 L 50,110 Q 110,85 170,70 Q 230,95 290,105 Q 350,75 410,50 Q 470,45 530,40 Q 590,25 650,20 Q 710,25 770,30 L 770,220 Z" 
-                fill="url(#revenueGrad)"
-              />
-              <path 
-                d="M 50,110 Q 110,85 170,70 Q 230,95 290,105 Q 350,75 410,50 Q 470,45 530,40 Q 590,25 650,20 Q 710,25 770,30" 
-                fill="none" 
-                stroke="#ff6b00" 
-                strokeWidth="3.5" 
-                strokeLinecap="round"
-              />
-
-              {/* Đường dóng dọc khi hover chuột vào từng cột điểm mốc */}
-              {hoveredBarIndex !== null && (
-                <line 
-                  x1={chartData[hoveredBarIndex].cx || (50 + hoveredBarIndex * 120)} 
-                  y1="10" 
-                  x2={chartData[hoveredBarIndex].cx || (50 + hoveredBarIndex * 120)} 
-                  y2="220" 
-                  stroke="#ff6b00" 
-                  strokeWidth="1" 
-                  strokeDasharray="4 4"
-                />
-              )}
-
-              {/* Các điểm mốc tròn phát sáng (Anchor Dots) */}
-              {chartData.map((data, idx) => {
-                const x = data.cx || (50 + idx * 120);
-                // Giả định tọa độ y tương thích tỉ lệ
-                const yPositions = [110, 70, 105, 50, 40, 20, 30];
-                const y = yPositions[idx];
-                
-                return (
-                  <g key={idx} className="cursor-pointer" onMouseEnter={() => setHoveredIndex(idx)} onMouseLeave={() => setHoveredIndex(null)}>
-                    {/* Vòng hào quang phát sáng ngoài khi hover */}
-                    {hoveredBarIndex === idx && (
-                      <circle cx={x} cy={y} r="10" fill="#ff6b00" fillOpacity="0.15" />
-                    )}
-                    <circle 
-                      cx={x} 
-                      cy={y} 
-                      r={hoveredBarIndex === idx ? "6" : "4"} 
-                      fill="#ffffff" 
-                      stroke="#ff6b00" 
-                      strokeWidth={hoveredBarIndex === idx ? "3" : "2"} 
-                    />
-                  </g>
-                );
-              })}
-            </svg>
-
-            {/* 🌟 Hộp thoại thông tin nổi tương tác thời gian thực khi rê chuột qua đồ thị */}
-            {hoveredBarIndex !== null && (
-              <div 
-                className="absolute bg-gray-950 text-white rounded-xl p-3 shadow-xl pointer-events-none text-xs flex flex-col gap-1 border border-white/10 animate-fade-in"
-                style={{ 
-                  left: `${(chartData[hoveredBarIndex].cx || (50 + hoveredBarIndex * 120)) / 820 * 90}%`,
-                  bottom: '80px',
-                  transform: 'translateX(-50%)'
-                }}
-              >
-                <p className="font-black text-[10px] text-gray-400 uppercase tracking-widest">{chartData[hoveredBarIndex].day}</p>
-                <p className="flex justify-between gap-5 font-semibold mt-1">Doanh thu: <b className="text-primary">{chartData[hoveredBarIndex].revenue ? chartData[hoveredBarIndex].revenue.toLocaleString('vi-VN') + 'đ' : chartData[hoveredBarIndex].value}</b></p>
-                <p className="flex justify-between gap-5 font-semibold text-gray-300">Lợi nhuận ròng: <b>{chartData[hoveredBarIndex].profit ? chartData[hoveredBarIndex].profit.toLocaleString('vi-VN') + 'đ' : '---'}</b></p>
+                  {/* Tooltip hiển thị số tiền thật khi hover */}
+                  {hoveredBarIndex === idx && (
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-950 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg shadow-xl pointer-events-none z-20 whitespace-nowrap">
+                      DT: {Number(data.revenue).toLocaleString('vi-VN')}đ
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gray-950 rotate-45"></div>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-neutralCustom/25 rounded-2xl p-6 bg-gray-50/50">
+                <span className="material-symbols-outlined text-4xl text-neutralCustom/40 mb-2">bar_chart</span>
+                <p className="text-xs text-neutralCustom font-bold">Chưa có dữ liệu doanh thu tuần này</p>
               </div>
             )}
           </div>
           
-          {/* Trục X nhãn các ngày dưới chân biểu đồ */}
-          <div className="flex justify-between mt-5 text-neutralCustom text-xs font-bold uppercase tracking-wider px-4">
-            {chartData.map((d, idx) => <span key={idx} className="truncate max-sm:max-w-[42px]">{d.day}</span>)}
+          {/* ĐỒNG BỘ TOÁN HỌC TRỤC X: Phân chia chiều rộng và padding giống hệt biểu đồ cột để thẳng hàng tăm tắp */}
+          <div className="flex w-full mt-5 text-neutralCustom text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 sm:px-6">
+            {weeklyData.map((d, idx) => (
+              <span 
+                key={idx} 
+                className="text-center truncate" 
+                style={{ width: `${100 / weeklyData.length}%` }} // Đồng bộ width 100/7
+              >
+                {d.day}
+              </span>
+            ))}
           </div>
         </div>
 
-        {/* */}
-        {/* 🌟 MÓN ĂN BÁN CHẠY NHẤT: THIẾT KẾ GRID CARD THOÁNG ĐÃNG CHỐNG TRÀN */}
+        {/* MÓN ĂN BÁN CHẠY NHẤT: THIẾT KẾ GRID CARD THOÁNG ĐÃNG */}
         <div className="bg-white p-6 rounded-2xl border border-neutralCustom/15 shadow-sm flex flex-col">
           <h3 className="text-lg font-bold text-gray-900 mb-1">Món ăn bán chạy hàng đầu</h3>
           <p className="text-neutralCustom text-xs uppercase tracking-wider font-bold mb-6">Xếp hạng theo số lượng phần ăn xuất quầy</p>
@@ -336,7 +399,6 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {topDishes.map((dish, idx) => (
               <div key={idx} className="flex items-center gap-5 bg-culinaryBg/20 p-4 rounded-2xl border border-neutralCustom/10">
-                {/* Bo tròn ảnh hoàn mỹ bằng rounded-xl và chống biến dạng bằng object-cover */}
                 <img className="w-16 h-16 rounded-xl object-cover shadow-sm border border-neutralCustom/10 shrink-0" src={dish.image} alt={dish.name}/>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-2">
