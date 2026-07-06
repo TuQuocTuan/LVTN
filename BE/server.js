@@ -15,6 +15,8 @@ import newsRoutes from './src/routes/newsRoute.js';
 import userRoutes from './src/routes/userRoutes.js';
 import authRoutes from './src/routes/authRoutes.js';
 import dashboardRoutes from './src/routes/dashboardRoutes.js';
+import billRoutes from './src/routes/billRoutes.js';
+
 const app = express();
 
 app.use(cors({
@@ -41,5 +43,7 @@ app.use('/api/news', newsRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/bills', billRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`BBQ Server chuẩn kiến trúc đang chạy tại cổng ${PORT}`));

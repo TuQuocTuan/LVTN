@@ -298,6 +298,28 @@ const TableManager = () => {
       if (data.success) {
         if (paymentMethod === 'CASH') {
           alert(`Thanh toán thành công!\nSố tiền thu: ${data.tongtien.toLocaleString('vi-VN')} đ`);
+
+          console.log("Link in nhận từ BE:", data.print_url);
+          //TỰ ĐỘNG IN BILL: Kiểm tra nếu BE trả về đường link in thì tự bật tab mới để in
+          if (data.html_bill) {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            // Ghi thẳng nội dung HTML vào iframe mà không cần gọi URL nào hết
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(data.html_bill);
+            doc.close();
+
+            // Kích hoạt lệnh in
+            setTimeout(() => {
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+              setTimeout(() => document.body.removeChild(iframe), 2000);
+            }, 500);
+          }
+
           handleCloseModal();
           fetchTables();
         } else if (paymentMethod === 'VNPAY') {

@@ -3,6 +3,7 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 dotenv.config();
 import { supabase } from '../config/supabase.js';
+import htmlPdf from 'html-pdf-node';
 
 export const getDoanhThuDashboard = async (req, res) => {
     try {
