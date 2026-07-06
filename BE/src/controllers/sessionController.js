@@ -63,17 +63,13 @@ export const openMenuCustomer = async (req, res) => {
         if (tableErr || !table) {
             return res.status(404).json({ success: false, message: 'Mã QR bàn không hợp lệ!' });
         }
-        console.log("👉 Dữ liệu bốc từ table_key:", {
-            id_tim_thay: table?.id,
-            kieu_du_lieu: typeof table?.id
-        });
+
         const { data: session, error: sessionErr } = await supabase
             .from('dining_sessions')
             .select('id')
             .eq('table_id', Number(table.id))
             .eq('status', 'serving')
             .maybeSingle();
-        console.log("👉 Kết quả tìm Session:", { session, sessionErr });
 
         if (sessionErr) throw sessionErr;
 

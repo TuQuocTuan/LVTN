@@ -344,10 +344,6 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             .eq('status', 'pending');
     }
 
-    console.log("Customer ID lấy được:", customerId);
-    console.log("Applied Promotion ID lấy được:", appliedPromotionId);
-
-
     const { data: sessionData, error: sessionErr } = await supabase
         .from('dining_sessions')
         .select('*, users (fullname)')
