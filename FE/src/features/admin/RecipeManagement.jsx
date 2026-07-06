@@ -392,13 +392,6 @@ const RecipeManagement = () => {
       )}
 
       <main className="ml-64 pt-24 p-8 w-full flex flex-col h-screen transition-all duration-300">
-        
-        {/* 🌟 TIÊU ĐỀ TRANG IN ĐỘC QUYỀN (Chỉ hiển thị trên giấy A4 khi nhấn nút In C.Thức) */}
-        <div className="hidden print:block text-center border-b-4 border-double border-primary pb-4 mb-8">
-          <h1 className="text-3xl font-extrabold text-primary uppercase tracking-wider">LÀNG MIXI BBQ</h1>
-          <p className="text-sm text-neutralCustom font-black tracking-widest mt-1">HỆ THỐNG CÔNG THỨC CHẾ BIẾN ĐỘC QUYỀN</p>
-        </div>
-
         {/* === HEADER TRANG === */}
         <div className="mb-8 flex-shrink-0">
           <div onClick={() => navigate('/admin/dish-management')} className="flex items-center gap-2 text-neutralCustom mb-4 hover:text-primary cursor-pointer transition-colors w-fit no-print">
@@ -435,7 +428,6 @@ const RecipeManagement = () => {
                 </div>
               )}
 
-              {/* 🌟 NÚT XUẤT FILE WORD (.DOC) CHUYÊN NGHIỆP */}
               <button 
                 onClick={handleExportWord}
                 className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all shadow-md text-sm cursor-pointer"
@@ -517,9 +509,7 @@ const RecipeManagement = () => {
         </div>
       </main>
 
-      {/* ===================================================================== */}
-      {/* 🌟 MODAL 1: BẢNG CHỈNH SỬA ĐỊNH LƯỢNG NGUYÊN LIỆU (POPUP) */}
-      {/* ===================================================================== */}
+      {/* BẢNG CHỈNH SỬA ĐỊNH LƯỢNG NGUYÊN LIỆU (POPUP) */}
       {isEditIngModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
@@ -585,9 +575,7 @@ const RecipeManagement = () => {
         </div>
       )}
 
-      {/* ===================================================================== */}
-      {/* 🌟 MODAL 2: BẢNG CHỈNH SỬA CÁC BƯỚC THỰC HIỆN (POPUP) */}
-      {/* ===================================================================== */}
+      {/* BẢNG CHỈNH SỬA CÁC BƯỚC THỰC HIỆN (POPUP) */}
       {isEditStepModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
