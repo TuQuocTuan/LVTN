@@ -26,6 +26,9 @@ const TableManager = () => {
   const [voucherCode, setVoucherCode] = useState('');
   const [customerVouchers, setCustomerVouchers] = useState([]);
 
+  const [showPrintVnpayBtn, setShowPrintVnpayBtn] = useState(false);
+  const [vnpayHtmlBill, setVnpayHtmlBill] = useState('');
+
   // State lưu trữ vai trò và quyền hạn của tài khoản đang đăng nhập
   const [userRole, setUserRole] = useState('');
   const [userPermissions, setUserPermissions] = useState({});
@@ -261,6 +264,24 @@ const TableManager = () => {
   };
 
 
+  const openSilentPrint = (htmlContent) => {
+    if (!htmlContent) return;
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+    }, 500);
+  };
+
 
   // CHỨC NĂNG THANH TOÁN (Trực tuyến & Tiền mặt)
   const handleCheckout = async (paymentMethod) => {
@@ -333,21 +354,25 @@ const TableManager = () => {
           //   alert("Không sinh được link VNPAY: " + data.message);
           // }
           try {
-            const vnpayResponse = await axios.post('https://state-bobbing-faculty.ngrok-free.dev/api/payments/vnpay', {
+            const vnpayResponse = await axios.post(`https://state-bobbing-faculty.ngrok-free.dev/api/payments/vnpay`, {
               session_id: selectedTable.sessionId,
               amount: billData.grandTotal // Tổng tiền đã gồm VAT 10%
+            }, {
+              // Thêm header này để ép Ngrok không chặn API nữa
+              headers: {
+                'ngrok-skip-browser-warning': 'true',
+                'Content-Type': 'application/json'
+              }
             });
             const vnpayData = vnpayResponse.data;
 
             if (vnpayData.success && vnpayData.payment_url) {
               // Mở link cổng thanh toán tại tab hiện tại để thu ngân lấy QR cho khách quét
               window.open(vnpayData.payment_url, '_blank');
-              if (data.html_bill) {
-                openSilentPrint(data.html_bill);
-              }
 
-              handleCloseModal();
-              fetchTables();
+              setVnpayHtmlBill(data.html_bill);
+              setShowPrintVnpayBtn(true);
+
             } else {
               alert("Không sinh được link VNPAY qua Ngrok: " + vnpayData.message);
             }
@@ -382,6 +407,9 @@ const TableManager = () => {
     if (activeFilter === 'vip') return table.isVip;
     return true;
   });
+
+
+
 
   return (
     <div className="bg-culinaryBg text-neutralCustom font-sans min-h-screen flex">
@@ -705,6 +733,26 @@ const TableManager = () => {
                         VN PAY
                       </button>
                     </div>
+
+                    {showPrintVnpayBtn && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-center shadow-inner animation-fade-in">
+                        <p className="text-yellow-700 font-bold text-xs mb-2 animate-pulse">⏰ Đang chờ khách quét mã VNPAY...</p>
+                        <button
+                          onClick={() => {
+                            if (vnpayHtmlBill) {
+                              openSilentPrint(vnpayHtmlBill); // Kích hoạt lệnh in hóa đơn K80 tại chỗ
+                            }
+                            setShowPrintVnpayBtn(false); // Ẩn nút đi
+                            setVnpayHtmlBill(''); // Reset bộ nhớ tạm html
+                            handleCloseModal(); // Đóng bảng chi tiết bàn
+                            fetchTables(); // Cập nhật lại sơ đồ bàn trống
+                          }}
+                          className="w-full bg-green-600 text-white font-bold py-2.5 px-4 rounded-lg text-sm hover:bg-green-700 shadow transition-all"
+                        >
+                          KHÁCH ĐÃ CHUYỂN KHOẢN - IN BILL
+                        </button>
+                      </div>
+                    )}
 
                     {/* Hiển thị dòng thông báo nhắc nhở nhẹ nếu bị tắt quyền checkout */}
                     {!hasPermission('checkout') && (
