@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: ""
+  url: http://localhost:5000/api/bills/72
   auth: inherit
 
 settings:

@@ -260,6 +260,8 @@ const TableManager = () => {
     }
   };
 
+
+
   // CHỨC NĂNG THANH TOÁN (Trực tuyến & Tiền mặt)
   const handleCheckout = async (paymentMethod) => {
     if (!selectedTable?.sessionId) return;
@@ -339,8 +341,13 @@ const TableManager = () => {
 
             if (vnpayData.success && vnpayData.payment_url) {
               // Mở link cổng thanh toán tại tab hiện tại để thu ngân lấy QR cho khách quét
-              window.location.href = vnpayData.payment_url;
+              window.open(vnpayData.payment_url, '_blank');
+              if (data.html_bill) {
+                openSilentPrint(data.html_bill);
+              }
+
               handleCloseModal();
+              fetchTables();
             } else {
               alert("Không sinh được link VNPAY qua Ngrok: " + vnpayData.message);
             }
