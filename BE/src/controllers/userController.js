@@ -206,9 +206,20 @@ export const changePassword = async (req, res) => {
 
 export const quanlythoigianlam1ca = async (req, res) => {
     try {
+
+        const { data: cashiers, error: fetchErr } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'cashier')
+            .eq('is_active', true);
+        if (fetchErr) throw fetchErr;
+
+        const cashierIDs = cashiers.map(cashier => cashier.id);
+
         const { data: shift } = await supabase
             .from('user_logs')
             .select('user_id,action,created_at')
+            .in('user_id', cashierIDs)
             .order('created_at', { ascending: true });
 
         if (!shift) return res.status(404).json({ success: false, message: 'Ca không tồn tại' });

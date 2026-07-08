@@ -10,11 +10,13 @@ http:
     type: json
     data: |-
       {
-        "session_id": "2d941ee7-c22f-462b-b493-b00e502134f9",
+        "session_id": "7ca42374-1f6d-4fbd-9dad-14d5e35d182d",
         "customer_id": "cc3fbd02-da92-4924-81c5-8eb655c1070e",
-        "order_id": 201,
+        "order_id": 210,
         "reviews": [
-          { "dish_id": 13, "rating": 1, "comment": "Món này ngon xuất sắc!" }
+          { "dish_id": 13, "rating": 3, "comment": "Món này ngon xuất sắc!",
+            "dish_id": 4, "rating": 4, "comment": "Món này ngon xuất sắc!"
+          }
         ]
       }
   auth: inherit

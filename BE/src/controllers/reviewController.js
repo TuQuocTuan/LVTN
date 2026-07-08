@@ -89,11 +89,15 @@ export const addReview = async (req, res) => {
                             currentScore -= 0.5;
                         } else if (rating === 2) {
                             currentScore -= 0.25;
+                        } else if (rating === 3) {
+                            currentScore = currentScore;
+                        } else if (rating === 4) {
+                            currentScore += 0.1;
+                        } else if (rating === 5) {
+                            currentScore += 0.25;
                         }
                     }
-                    else {
-                        currentScore += 0.25;
-                    }
+
                     if (currentScore >= 100) currentScore = 100.00;
                     if (currentScore < 0) currentScore = 0.0;
 
