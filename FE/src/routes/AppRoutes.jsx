@@ -99,7 +99,7 @@ const AppRoutes = () => {
       <Route path="/cart" element={<CustomerRoute><CartPage /></CustomerRoute>} />
       <Route path="/orders" element={<CustomerRoute><OrdersPage /></CustomerRoute>} />
       <Route path="/payment" element={<CustomerRoute><PaymentPage /></CustomerRoute>} />
-      <Route path="/review" element={<CustomerRoute><CustomerReview /></CustomerRoute>} />
+      <Route path="/review" element={<CustomerReview />} />
 
       <Route path="/cashier" element={
         <ProtectedRoute allowedRoles={['cashier', 'admin', 'super_admin']}>
