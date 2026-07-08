@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 import CartItem from '../../components/layout/Customer/CartItem';
-import { useCart } from '../../context/CartContext'; // Import chìa khóa lấy kho chung
+import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 
 const CartPage = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // Bốc toàn bộ dữ liệu giỏ hàng sống từ kho chung ra dùng
   const {
@@ -37,7 +39,7 @@ const CartPage = () => {
     try {
       setSubmitStatus('loading');
       const sessionId = localStorage.getItem('sessionId');
-      const tableId = localStorage.getItem('table_id');
+      const tableId = localStorage.getItem('tableId');
       const creatorId = localStorage.getItem('creatorId');
 
       if (!sessionId || !tableId) {
@@ -109,7 +111,7 @@ const CartPage = () => {
   return (
     <CustomerLayout>
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Giỏ hàng của bạn</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('cartTitle')}</h2>
         <span className="text-xs font-bold text-neutralCustom bg-white border border-neutralCustom/20 px-3 py-1 rounded-full shadow-sm">
           {totalItems} Món
         </span>
@@ -130,17 +132,17 @@ const CartPage = () => {
         ) : (
           <div className="text-center py-10">
             <span className="material-symbols-outlined text-6xl text-neutralCustom/50 mb-2">production_quantity_limits</span>
-            <p className="text-neutralCustom font-semibold">Giỏ hàng của bạn đang trống</p>
+            <p className="text-neutralCustom font-semibold">{t('emptyCart')}</p>
           </div>
         )}
       </div>
 
       <div className="fixed bottom-16 left-0 w-full bg-white/90 backdrop-blur-md px-4 pt-6 pb-4 border-t border-neutralCustom/20 z-40 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
         <div className="space-y-2 mb-4">
-          <div className="flex justify-between text-sm text-neutralCustom"><span>Tạm tính</span><span>{subTotal.toLocaleString('vi-VN')}đ</span></div>
-          <div className="flex justify-between text-sm text-neutralCustom"><span>Thuế VAT (10%)</span><span>{vat.toLocaleString('vi-VN')}đ</span></div>
+          <div className="flex justify-between text-sm text-neutralCustom"><span>{t('subTotal')}</span><span>{subTotal.toLocaleString('vi-VN')}đ</span></div>
+          <div className="flex justify-between text-sm text-neutralCustom"><span>{t('vatLabel')}</span><span>{vat.toLocaleString('vi-VN')}đ</span></div>
           <div className="flex justify-between items-center pt-2 border-t border-neutralCustom/20">
-            <span className="text-lg font-bold text-gray-900">Tổng cộng</span>
+            <span className="text-lg font-bold text-gray-900">{t('total')}</span>
             <span className="text-xl font-bold text-primary">{finalTotal.toLocaleString('vi-VN')}đ</span>
           </div>
         </div>
@@ -153,9 +155,9 @@ const CartPage = () => {
             ${cartItems.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
           `}
         >
-          {submitStatus === 'idle' && <><span className="material-symbols-outlined">restaurant_menu</span>Gửi yêu cầu nấu</>}
-          {submitStatus === 'loading' && <><span className="material-symbols-outlined animate-spin">progress_activity</span>Đang gửi...</>}
-          {submitStatus === 'success' && <><span className="material-symbols-outlined">check_circle</span>Đã gửi thành công!</>}
+          {submitStatus === 'idle' && <><span className="material-symbols-outlined">restaurant_menu</span>{t('btnOrder')}</>}
+          {submitStatus === 'loading' && <><span className="material-symbols-outlined animate-spin">progress_activity</span>...</>}
+          {submitStatus === 'success' && <><span className="material-symbols-outlined">check_circle</span>{t('checkoutSuccess')}</>}
         </button>
       </div>
 
@@ -171,10 +173,8 @@ const CartPage = () => {
               <span className="material-symbols-outlined text-3xl">inventory_2</span>
             </div>
 
-            <h3 className="text-xl font-black text-gray-950 mb-2">Kho không đủ món</h3>
-            <p className="text-xs text-neutralCustom leading-relaxed mb-4 px-2">
-              Xin lỗi quý khách, hiện tại nhà bếp không có đủ nguyên liệu để chuẩn bị một số món ăn theo số lượng yêu cầu:
-            </p>
+            <h3 className="text-xl font-black text-gray-950 mb-2">{t('adjustStockTitle')}</h3>
+            <p className="text-xs text-neutralCustom leading-relaxed mb-4 px-2">{t('adjustStockDesc')}</p>
 
             {/* Danh sách các món lố kho được lặp mượt mà bằng CSS */}
             <div className="max-h-36 overflow-y-auto bg-gray-50/50 rounded-2xl border border-neutralCustom/10 p-3 space-y-2 mb-5 custom-scrollbar text-left">
@@ -194,23 +194,20 @@ const CartPage = () => {
               })}
             </div>
 
-            <p className="text-[11px] font-medium text-neutralCustom/80 mb-5 leading-snug">
-              Bạn có muốn hệ thống tự động điều chỉnh giỏ hàng về số lượng tối đa có thể phục vụ để tiếp tục đặt món không?
-            </p>
-
-            {/* 2 Nút hành động ở chân Popup */}
+            <p className="text-[11px] font-medium text-neutralCustom/80 mb-5 leading-snug">{t('adjustStockConfirm')}</p>
+            {/* Nút hành động ở chân Popup */}
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setIsStockModalOpen(false)}
                 className="w-full py-3 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-sm rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
               >
-                Hủy bỏ
+                {t('btnCancel')}
               </button>
               <button
                 onClick={handleAcceptAdjustStock}
                 className="w-full py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-secondary shadow-md hover:shadow-primary/20 active:scale-95 transition-all"
               >
-                Đồng ý giảm
+                {t('btnAccept')}
               </button>
             </div>
           </div>

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../config/supabase';
 import { initBroadcastChannel } from '../../../utils/realtimeHelper';
+import { useLanguage } from '../../../context/LanguageContext';
 
-const CallService = ({ tableName = "Bàn 2" }) => {
+const CallService = () => {
   const [showModal, setShowModal] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
   const [called, setCalled] = useState(false);
   const [channel, setChannel] = useState(null);
+  const { t } = useLanguage();
 
   // Khởi tạo kênh gửi tín hiệu gọi phục vụ
   useEffect(() => {
@@ -20,14 +22,18 @@ const CallService = ({ tableName = "Bàn 2" }) => {
   const handleCall = async () => {
     setIsCalling(true);
 
+    // Lấy mã số bàn động thực tế đang lưu trong bộ nhớ máy
+    const tableId = localStorage.getItem('tableId') || '...';
+    const displayTableName = `${t('table')} ${tableId}`;
+
     if (channel) {
-      await channel.send({
+      channel.send({
         type: 'broadcast',
         event: 'call_staff',
         payload: { 
-          tableName: tableName, 
+          tableName: displayTableName, 
           time: new Date().toLocaleTimeString(),
-          message: 'Khách cần hỗ trợ'
+          message: t('callStaffMessage')
         }
       });
     } else {
@@ -55,10 +61,10 @@ const CallService = ({ tableName = "Bàn 2" }) => {
         </span>
       </button>
 
-      {/* 2. THÔNG BÁO NHẸ NHÀNG (Đã dời lên trên) */}
+      {/* 2. THÔNG BÁO NHẸ NHÀNG */}
       {called && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-full shadow-md text-xs font-medium w-max animate-fade-in">
-          Nhân viên đang đến hỗ trợ!
+          {t('staffComingAlert')}
         </div>
       )}
 
@@ -75,9 +81,9 @@ const CallService = ({ tableName = "Bàn 2" }) => {
               notifications_active
             </span>
             
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Gọi phục vụ?</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">{t('callServiceTitle')}</h3>
             <p className="text-sm text-neutralCustom mb-5">
-              Nhân viên sẽ đến bàn của bạn ngay lập tức.
+              {t('callServiceDesc')}
             </p>
 
             <div className="flex gap-2">
@@ -86,14 +92,14 @@ const CallService = ({ tableName = "Bàn 2" }) => {
                 onClick={() => setShowModal(false)}
                 className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg active:bg-gray-200"
               >
-                Hủy
+                {t('btnNo')}
               </button>
               <button
                 disabled={isCalling}
                 onClick={handleCall}
                 className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary rounded-lg active:bg-orange-700 flex items-center justify-center"
               >
-                {isCalling ? 'Đang gửi...' : 'Xác nhận'}
+                {isCalling ? t('callingStatus') : t('btnYes')}
               </button>
             </div>
           </div>

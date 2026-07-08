@@ -1,0 +1,15 @@
+info:
+  name: Lấy thời gian 1 ca
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: http://localhost:5000/api/user/shift
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

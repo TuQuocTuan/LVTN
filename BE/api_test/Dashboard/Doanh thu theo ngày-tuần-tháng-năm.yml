@@ -1,17 +1,16 @@
 info:
-  name: Lấy KM theo SĐT
+  name: Doanh thu theo ngày/tuần/tháng/năm
   type: http
-  seq: 2
+  seq: 1
 
 http:
   method: POST
-  url: http://localhost:5000/api/promotions/customer-voucher
+  url: http://localhost:5000/api/dashboard/revenue
   body:
     type: json
     data: |-
       {
-        "phone_number": "0832071653",
-        "email": "bigbang159vn@gmail.com"
+        "range":"year"
       }
   auth: inherit
 

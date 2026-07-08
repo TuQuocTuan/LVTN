@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-const StaffHeader = ({ 
-  title = "Tiêu đề trang", 
-  subtitle = "Hệ thống quản lý", 
+const StaffHeader = ({
+  title = "Tiêu đề trang",
+  subtitle = "Hệ thống quản lý",
   notifications = [],
   onDismissNotification,
   onClearAllNotifications,
@@ -37,11 +38,36 @@ const StaffHeader = ({
     }
   };
 
-  const handleLogout = () => {
-    if(window.confirm("Bạn có chắc chắn muốn kết thúc ca làm việc và đăng xuất?")) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      navigate('/login');
+  const handleLogout = async () => {
+    // 1. Tự động nhận diện câu thông báo theo vai trò (Role)
+    const userStr = localStorage.getItem('user');
+    const userObj = userStr ? JSON.parse(userStr) : {};
+    const role = userObj.role?.toLowerCase();
+
+    // Nếu là thu ngân thì nhắc kết thúc ca, các quyền khác thì thông báo đăng xuất tiêu chuẩn
+    const confirmMessage = role === 'cashier'
+      ? "Bạn có chắc chắn muốn kết thúc ca làm việc và đăng xuất?"
+      : "Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?";
+
+    if (window.confirm(confirmMessage)) {
+      try {
+        console.log("👉 Dữ liệu chuẩn bị LOGOUT gửi lên BE:", userObj);
+
+        // 2. Gọi API ghi nhận log xuống Backend
+        await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+          user_id: userObj.id || userObj._id,
+          username: userObj.username || 'unknown'
+        });
+
+        console.log("✅ Đã gọi API logout thành công!");
+      } catch (err) {
+        console.error("❌ Lỗi ghi nhận LOGOUT xuống server:", err);
+      } finally {
+        // 3. Xóa sạch session và đá ra trang login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
     }
   };
 
@@ -51,12 +77,12 @@ const StaffHeader = ({
         <h1 className="text-2xl font-bold text-primary">{title}</h1>
         <p className="text-sm text-neutralCustom opacity-70">{subtitle}</p>
       </div>
-      
+
       <div className="flex items-center gap-6">
-        
+
         {/* THÔNG BÁO */}
         <div className="flex items-center gap-4 relative">
-          <button 
+          <button
             onClick={() => { setShowNotiDropdown(!showNotiDropdown); setShowProfileDropdown(false); }}
             className={`hover:text-primary transition-colors relative p-1.5 rounded-full flex items-center justify-center ${showNotiDropdown ? 'text-primary bg-primary/10' : 'text-neutralCustom'}`}
           >
@@ -82,40 +108,40 @@ const StaffHeader = ({
               </div>
               <div className="max-h-64 overflow-y-auto mt-2 px-2 space-y-1 custom-scrollbar">
                 {notifications.length === 0 ? (
-                    <div className="text-center py-8 text-sm text-neutralCustom opacity-60 flex flex-col items-center justify-center gap-1">
-                        <span className="material-symbols-outlined text-3xl opacity-40">notifications_off</span>
-                        Không có thông báo mới
-                    </div>
+                  <div className="text-center py-8 text-sm text-neutralCustom opacity-60 flex flex-col items-center justify-center gap-1">
+                    <span className="material-symbols-outlined text-3xl opacity-40">notifications_off</span>
+                    Không có thông báo mới
+                  </div>
                 ) : (
-                    notifications.map((note, index) => {
-                        const rawTableName = note.tableName || 'Bàn ẩn danh';
-                        const hasCheckoutText = rawTableName.includes('Tính tiền');
-                        const isCheckout = note.type === 'checkout' || note.action === 'checkout' || hasCheckoutText;
-                        const isKitchenOrder = rawTableName.includes('Mã đơn') || note.type === 'new_order';
-                        const cleanTableName = hasCheckoutText ? rawTableName.replace('(Tính tiền)', '').trim() : rawTableName;
-                        const actionText = isCheckout ? 'vừa yêu cầu tính tiền!' : (note.message || defaultNotifyText);
-                        const displayTitle = note.title || `${cleanTableName} ${actionText}`;
+                  notifications.map((note, index) => {
+                    const rawTableName = note.tableName || 'Bàn ẩn danh';
+                    const hasCheckoutText = rawTableName.includes('Tính tiền');
+                    const isCheckout = note.type === 'checkout' || note.action === 'checkout' || hasCheckoutText;
+                    const isKitchenOrder = rawTableName.includes('Mã đơn') || note.type === 'new_order';
+                    const cleanTableName = hasCheckoutText ? rawTableName.replace('(Tính tiền)', '').trim() : rawTableName;
+                    const actionText = isCheckout ? 'vừa yêu cầu tính tiền!' : (note.message || defaultNotifyText);
+                    const displayTitle = note.title || `${cleanTableName} ${actionText}`;
 
-                        let iconName = 'notifications_active';
-                        let iconColor = 'text-primary';
-                        if (isCheckout) { iconName = 'receipt_long'; iconColor = 'text-green-600'; } 
-                        else if (isKitchenOrder) { iconName = 'room_service'; iconColor = 'text-orange-500'; }
+                    let iconName = 'notifications_active';
+                    let iconColor = 'text-primary';
+                    if (isCheckout) { iconName = 'receipt_long'; iconColor = 'text-green-600'; }
+                    else if (isKitchenOrder) { iconName = 'room_service'; iconColor = 'text-orange-500'; }
 
-                        return (
-                        <div key={index} className="flex justify-between items-start p-2.5 rounded-xl hover:bg-culinaryBg/60 transition-colors border-b border-gray-50 last:border-none">
-                            <div className="flex gap-2.5">
-                            <span className={`material-symbols-outlined text-xl mt-0.5 ${iconColor}`}>{iconName}</span>
-                            <div>
-                                <p className="text-sm font-bold text-gray-900">{displayTitle}</p>
-                                <p className="text-[11px] text-neutralCustom opacity-80 mt-0.5">{note.time || note.created_at || 'Vừa xong'}</p>
-                            </div>
-                            </div>
-                            <button onClick={(e) => { e.stopPropagation(); onDismissNotification(index); }} className="text-neutralCustom hover:text-red-500 p-0.5 rounded-full hover:bg-gray-100 transition-colors">
-                              <span className="material-symbols-outlined text-base">close</span>
-                            </button>
+                    return (
+                      <div key={index} className="flex justify-between items-start p-2.5 rounded-xl hover:bg-culinaryBg/60 transition-colors border-b border-gray-50 last:border-none">
+                        <div className="flex gap-2.5">
+                          <span className={`material-symbols-outlined text-xl mt-0.5 ${iconColor}`}>{iconName}</span>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">{displayTitle}</p>
+                            <p className="text-[11px] text-neutralCustom opacity-80 mt-0.5">{note.time || note.created_at || 'Vừa xong'}</p>
+                          </div>
                         </div>
-                        );
-                    })
+                        <button onClick={(e) => { e.stopPropagation(); onDismissNotification(index); }} className="text-neutralCustom hover:text-red-500 p-0.5 rounded-full hover:bg-gray-100 transition-colors">
+                          <span className="material-symbols-outlined text-base">close</span>
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -128,8 +154,8 @@ const StaffHeader = ({
             <p className="text-sm font-bold text-gray-900 leading-none">{userInfo.fullname}</p>
             <p className="text-[10px] text-neutralCustom uppercase tracking-wider mt-1 font-semibold text-primary">{userInfo.role}</p>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => { setShowProfileDropdown(!showProfileDropdown); setShowNotiDropdown(false); }}
             className={`material-symbols-outlined transition-colors text-[32px] rounded-full ${showProfileDropdown ? 'text-primary' : 'text-neutralCustom hover:text-primary'}`}
           >
@@ -139,7 +165,7 @@ const StaffHeader = ({
           {/* Dropdown Menu Tài Khoản */}
           {showProfileDropdown && (
             <div className="absolute right-0 top-[120%] mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-50 flex flex-col animate-fade-in">
-              <button 
+              <button
                 className="px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 text-left transition-colors"
                 onClick={handleLogout}
               >

@@ -69,6 +69,48 @@ export const addReview = async (req, res) => {
 
         if (insertErr) throw insertErr;
 
+        try {
+
+            console.log("=== BEGIN DEBUG RATING SCORES ===");
+            console.log("Mảng reviews gửi lên:", reviewsToInsert);
+
+            const { data: allDishes, error: cacheErr } = await supabase
+                .from('dishes')
+                .select('id, score');
+
+            if (!cacheErr && allDishes) {
+                const reviewMap = new Map(reviewsToInsert.map(r => [r.dish_id, r.rating]));
+                for (const dish of allDishes) {
+                    let currentScore = dish.score !== null ? Number(dish.score) : 100.00;
+                    if (reviewMap.has(dish.id)) {
+                        const rating = reviewMap.get(dish.id);
+
+                        if (rating === 1) {
+                            currentScore -= 0.5;
+                        } else if (rating === 2) {
+                            currentScore -= 0.25;
+                        }
+                    }
+                    else {
+                        currentScore += 0.25;
+                    }
+                    if (currentScore >= 100) currentScore = 100.00;
+                    if (currentScore < 0) currentScore = 0.0;
+
+                    currentScore = Math.round(currentScore * 100) / 100;
+
+                    await supabase
+                        .from('dishes')
+                        .update({ score: currentScore })
+                        .eq('id', dish.id);
+                }
+            }
+
+
+        } catch (error) {
+            console.error("Lỗi thuật toán tính điểm chất lượng Dishes:", error.message);
+        }
+
         const formatReview = insertReview.map(item => ({
             ...item,
             created_at: moment(item.created_at).tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss")

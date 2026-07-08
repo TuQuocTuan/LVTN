@@ -6,6 +6,7 @@ import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
 import { createVnPayUrl } from '../controllers/paymentController.js';
 import { kiemtraMinStock } from './dishController.js';
+import htmlPdf from 'html-pdf-node';
 import e from 'express';
 
 export const kiemtraTonkho = async (items) => {
@@ -82,7 +83,7 @@ export const kiemtraTonkho = async (items) => {
 //Hàm tạo Order
 export const createOrder = async (req, res) => {
     try {
-        const { session_id, items } = req.body;
+        const { session_id, items, table_id } = req.body;
 
         if (!session_id) {
             return res.status(400).json({ success: false, message: 'Thiếu mã phiên ăn (session_id)!' });
@@ -91,11 +92,14 @@ export const createOrder = async (req, res) => {
         const { data: activeSession, error: sessionErr } = await supabase
             .from('dining_sessions')
             .select('id, status')
-            .eq('table_id', table_id)
+            .eq('table_id', Number(table_id))
             .eq('status', 'serving')
             .maybeSingle();
 
-        if (sessionErr) throw sessionErr;
+        if (sessionErr) {
+            console.error("Lỗi kết nối Supabase:", sessionErr);
+            return res.status(500).json({ success: false, error: "Lỗi hệ thống khi kiểm tra bàn!" });
+        }
 
         if (!activeSession || activeSession.id !== session_id) {
             return res.status(403).json({
@@ -340,10 +344,6 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             .eq('status', 'pending');
     }
 
-    console.log("Customer ID lấy được:", customerId);
-    console.log("Applied Promotion ID lấy được:", appliedPromotionId);
-
-
     const { data: sessionData, error: sessionErr } = await supabase
         .from('dining_sessions')
         .select('*, users (fullname)')
@@ -440,6 +440,7 @@ export const getTamtinhBill = async (session_id) => {
     }
 }
 
+
 //Hàm tính tiền và đóng bàn
 export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
@@ -534,6 +535,69 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
 
         const thoigianthanhtoan = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss");
 
+        const html_bill = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: 'Arial', sans-serif; font-size: 12px; width: 80mm; margin: 0; padding: 10px; }
+                .text-center { text-align: center; }
+                .bold { font-weight: bold; }
+                .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                table { width: 100%; border-collapse: collapse; }
+                .text-right { text-align: right; }
+            </style>
+        </head>
+        <body>
+            <div class="text-center">
+                <h3 style="margin: 0;">NHÀ HÀNG QR ORDER</h3>
+                <p style="margin: 5px 0;">Hóa Đơn Thanh Toán</p>
+                <p>Mã Phiên: #${session_id}</p>
+            </div>
+            <div class="divider"></div>
+            <p>Ngày in: ${thoigianthanhtoan}</p>
+            <div class="divider"></div>
+            <table>
+                <thead>
+                    <tr class="bold">
+                        <td>Tên món</td>
+                        <td class="text-center">SL</td>
+                        <td class="text-right">T.Tiền</td>
+                    </tr>
+                </thead>
+             <tbody>
+                    ${detailed_orders.flatMap(order =>
+            order.order_details.map(detail => `
+                            <tr>
+                                <td>${detail.dishes || 'Món ăn'}</td>
+                                <td class="text-center">${detail.quantity}</td>
+                                <td class="text-right">${Number(detail.price * detail.quantity).toLocaleString('vi-VN')}đ</td>
+                            </tr>
+                        `)
+        ).join('')}
+                </tbody>
+            </table>
+            <div class="divider"></div>
+            <table>
+                <tr>
+                    <td>Tạm tính:</td>
+                    <td class="text-right">${Number(sub_total).toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Thuế VAT (10%):</td>
+                    <td class="text-right">${Number(vat_amount).toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr class="bold" style="font-size: 14px;">
+                    <td>TỔNG CỘNG:</td>
+                    <td class="text-right">${Number(tongtien).toLocaleString('vi-VN')}đ</td>
+                </tr>
+            </table>
+            <div class="divider"></div>
+            <div class="text-center bold">CẢM ƠN QUÝ KHÁCH & HẸN GẶP LẠI</div>
+        </body>
+        </html>
+        `;
+
         return res.json({
             success: true,
             message: is_preview ? 'Lấy hóa đơn tạm tính thành công!' : 'Thanh toán và giải phóng bàn thành công!',
@@ -550,7 +614,8 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             vat_amount,
             tongtien,
             voucher_name: appliedVoucherName || "Không áp dụng",
-            is_closed: !is_preview && payment_method.toUpperCase() !== 'VNPAY'
+            is_closed: !is_preview && payment_method.toUpperCase() !== 'VNPAY',
+            html_bill: is_preview ? null : html_bill
         });
 
     } catch (error) {
@@ -636,13 +701,35 @@ export const updateOrderStatus = async (req, res) => {
 export const cancelOrderStatus = async (req, res) => {
     try {
         const { order_id } = req.body;
-        const { data: order, error: orderErr } = await supabase
-            .from('orders')
-            .update({ status: 'cancelled' })
-            .select(`status,id,session_id,order_details(quantity, dishes(name),note),dining_sessions (tables(name))`)
-            .eq('id', order_id)
-        if (orderErr) throw orderErr;
-        return res.json({ success: true, order });
+
+        const [orderUpdate, detailsUpdate] = await Promise.all([
+            supabase
+                .from('orders')
+                .update({ status: 'cancelled' })
+                .eq('id', order_id)
+                .select(`status, id, session_id, dining_sessions (tables(name))`)
+                .single(),
+
+            supabase
+                .from('order_details')
+                .update({ status: 'cancelled' })
+                .eq('order_id', order_id)
+        ]);
+
+        if (orderUpdate.error) throw orderUpdate.error;
+        if (detailsUpdate.error) throw detailsUpdate.error;
+
+        const { data: orderDetails } = await supabase
+            .from('order_details')
+            .select(`quantity, note, dishes(name)`)
+            .eq('order_id', order_id);
+
+        const finalOrder = {
+            ...orderUpdate.data,
+            order_details: orderDetails
+        };
+
+        return res.json({ success: true, order: finalOrder });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }

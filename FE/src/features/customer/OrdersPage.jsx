@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -41,21 +43,21 @@ const OrdersPage = () => {
         return (
           <span className="flex items-center gap-1 bg-tertiary/20 text-tertiary px-2 py-1 rounded text-[10px] font-bold uppercase">
             <span className="material-symbols-outlined text-[14px] animate-pulse">schedule</span>
-            Đang chế biến
+            {t('statusPending')}
           </span>
         );
       case 'completed':
         return (
           <span className="flex items-center gap-1 bg-primary/20 text-primary px-2 py-1 rounded text-[10px] font-bold uppercase">
             <span className="material-symbols-outlined text-[14px]">check_circle</span>
-            Đã xuất món
+            {t('statusCompleted')}
           </span>
         );
       case 'cancelled':
         return (
           <span className="flex items-center gap-1 bg-neutralCustom/20 text-neutralCustom px-2 py-1 rounded text-[10px] font-bold uppercase">
             <span className="material-symbols-outlined text-[14px]">cancel</span>
-            Món bị hủy
+            {t('statusCancelled')}
           </span>
         );
       default:
@@ -66,20 +68,20 @@ const OrdersPage = () => {
   return (
     <CustomerLayout>
       <div className="px-4 pt-4 pb-2">
-        <h2 className="text-xl font-bold text-gray-900">Đơn hàng của bạn</h2>
-        <p className="text-sm text-neutralCustom mt-1">Theo dõi tiến độ các món đã đặt</p>
+        <h2 className="text-xl font-bold text-gray-900">{t('orderHistoryTitle')}</h2>
+        <p className="text-sm text-neutralCustom mt-1">{t('orderHistorySub')}</p>
       </div>
 
       <div className="px-4 pb-24 space-y-4">
         {isLoading ? (
-          <div className="text-center py-10 animate-pulse text-sm text-neutralCustom">Đang tải đơn hàng...</div>
+          <div className="text-center py-10 animate-pulse text-sm text-neutralCustom">{t('loadingOrders')}</div>
         ) : orders.length > 0 ? (
           orders.map((order, index) => (
             <div key={order.id} className="bg-white border border-neutralCustom/20 rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-center border-b border-neutralCustom/10 pb-3 mb-3">
                 <div>
                   <h3 className="font-bold text-gray-900">
-                    Đơn #{index + 1} <span className="text-sm font-normal text-primary ml-1">#{String(order.id).slice(0, 4)}</span>
+                    {t('orderNo')} #{index + 1} <span className="text-sm font-normal text-primary ml-1">#{String(order.id).slice(0, 4)}</span>
                   </h3>
                   <span className="text-xs text-neutralCustom">
                     {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -108,7 +110,7 @@ const OrdersPage = () => {
                     {/* KIỂM TRA VÀ HIỂN THỊ GHI CHÚ (NOTE) TẠI ĐÂY */}
                     {item.note && (
                       <p className="text-xs text-neutralCustom/80 italic pl-6 mt-0.5">
-                        * Ghi chú: {item.note}
+                        * {t('noteLabel')}: {item.note}
                       </p>
                     )}
                   </div>
@@ -116,7 +118,7 @@ const OrdersPage = () => {
               </div>
 
               <div className="flex justify-between items-center bg-culinaryBg rounded-lg px-3 py-2">
-                <span className="text-sm font-semibold text-gray-900">Tổng cộng:</span>
+                <span className="text-sm font-semibold text-gray-900">{t('total')}:</span>
                 <span className={`font-bold ${order.status === 'cancelled' ? 'text-gray-400' : 'text-primary'}`}>
                   {Number(order.sub_total).toLocaleString('vi-VN')}đ
                 </span>
@@ -126,7 +128,7 @@ const OrdersPage = () => {
         ) : (
           <div className="text-center py-10">
             <span className="material-symbols-outlined text-6xl text-neutralCustom/50 mb-2">receipt_long</span>
-            <p className="text-neutralCustom font-semibold">Bạn chưa có đơn hàng nào</p>
+            <p className="text-neutralCustom font-semibold">{t('emptyOrders')}</p>
           </div>
         )}
       </div>

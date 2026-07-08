@@ -14,12 +14,15 @@ import reviewRoutes from './src/routes/reviewRoutes.js';
 import newsRoutes from './src/routes/newsRoute.js';
 import userRoutes from './src/routes/userRoutes.js';
 import authRoutes from './src/routes/authRoutes.js';
+import dashboardRoutes from './src/routes/dashboardRoutes.js';
+import billRoutes from './src/routes/billRoutes.js';
+
 const app = express();
 
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
 }));
 
 app.use(express.json());
@@ -39,5 +42,8 @@ app.use('/api/review', reviewRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/bills', billRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`BBQ Server chuẩn kiến trúc đang chạy tại cổng ${PORT}`));

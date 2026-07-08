@@ -222,63 +222,71 @@ export const getTotalBillCustomer = async (req, res) => {
     }
 }
 
+// 🌟 API MỚI: Lấy danh sách lịch sử khách hàng đã nhận Voucher (Cho Tab "Danh sách Voucher đã tặng")
+export const getCustomerVouchersHistory = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('customer_vouchers')
+            .select(`
+                id, is_used, created_at,
+                customers ( name, phone_number, email ),
+                promotions ( code, name, discount_value, discount_type )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return res.status(200).json({ success: true, data });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 //Hàm thêm voucher cho khách
-export const addVoucherCustomer = async (req, res) => {
-    const { code, name, type, discount_type, discount_value, min_bill_value, start_date, end_date, is_active, customer_id } = req.body;
+export const giftVoucherToCustomer = async (req, res) => {
+    const { phone_number, promotion_id, bypass_limit } = req.body;
 
     try {
-        if (!code || !name || !type || !discount_type || !discount_value || !start_date || !end_date || !customer_id) {
-            return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ các thông tin bắt buộc!' });
+        if (!phone_number || !promotion_id) {
+            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp đầy đủ Số điện thoại và mã Voucher!' });
         }
 
-        const totalBill = await calculateCustomerTotalBill(customer_id);
-
-        if (type === "VOUCHER" && totalBill < 5000000) {
-            return res.status(400).json({ success: false, message: 'Chưa đủ điều kiện chi tiêu 5 triệu!' });
-        }
-
-        let promotionId = null;
-        const upperCode = code.toUpperCase();
-
-        let formatData = {
-            code: code.toUpperCase(),
-            name: name.toUpperCase(),
-            type: type.toUpperCase(),
-            discount_type: discount_type.toUpperCase(),
-            discount_value: Number(discount_value),
-            min_bill_value: min_bill_value ? Number(min_bill_value) : null,
-            start_date: moment(start_date).tz("Asia/Ho_Chi_Minh").toISOString(),
-            end_date: moment(end_date).tz("Asia/Ho_Chi_Minh").toISOString(),
-            is_active: is_active !== undefined ? Boolean(is_active) : true,
-        };
-
-        const { data: existingPromo, error: checkErr } = await supabase
-            .from('promotions')
-            .select('id')
-            .eq('code', upperCode)
+        const { data: customer, error: findCusErr } = await supabase
+            .from('customers')
+            .select('id, name, email')
+            .eq('phone_number', phone_number.trim())
             .maybeSingle();
 
-        if (checkErr) throw checkErr;
+        if (findCusErr) throw findCusErr;
 
-        if (existingPromo) {
-            promotionId = existingPromo.id;
+        if (!customer) {
+            return res.status(404).json({ success: false, message: `Không tìm thấy bất kỳ khách hàng nào sử dụng Số điện thoại: ${phone_number}` });
         }
-        else {
-            const { data: addedPromo, error: addErr } = await supabase
-                .from('promotions')
-                .insert([formatData])
-                .select('*,id')
-                .single();
 
-            if (addErr) throw addErr;
-            promotionId = addedPromo.id;
+        const customer_id = customer.id;
+
+        const { data: promotion, error: promoErr } = await supabase
+            .from('promotions')
+            .select('*')
+            .eq('id', promotion_id)
+            .single();
+
+        if (promoErr) throw promoErr;
+
+        if (promotion.type === "VOUCHER" && !bypass_limit) {
+            const totalBill = await calculateCustomerTotalBill(customer_id);
+            if (totalBill < 5000000) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Khách hàng chưa đủ điều kiện chi tiêu tích lũy 5 triệu đồng! (Tích lũy hiện tại của khách: ${totalBill.toLocaleString('vi-VN')} đ)`
+                });
+            }
         }
 
         const { data: hasVoucher, error: checkVoucherErr } = await supabase
             .from('customer_vouchers')
             .select('id')
             .eq('customer_id', customer_id)
-            .eq('promotion_id', promotionId)
+            .eq('promotion_id', promotion_id)
             .maybeSingle();
 
         if (checkVoucherErr) throw checkVoucherErr;
@@ -286,74 +294,69 @@ export const addVoucherCustomer = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Khách hàng này đã sở hữu mã giảm giá này rồi!' });
         }
 
-        const { data: addedPromoCustomer, error: addErrCustomer } = await supabase
+        const { error: addErrCustomer } = await supabase
             .from('customer_vouchers')
             .insert({
                 customer_id: customer_id,
-                promotion_id: promotionId,
+                promotion_id: promotion_id,
                 is_used: false,
                 created_at: moment().tz("Asia/Ho_Chi_Minh").toISOString(),
-            })
-            .select();
+            });
+
         if (addErrCustomer) throw addErrCustomer;
 
-        const { data: customer, error: fetchCusErr } = await supabase
-            .from('customers')
-            .select('name,email')
-            .eq('id', customer_id)
-            .single();
-        if (fetchCusErr) throw fetchCusErr;
+        let mailSent = false;
+        if (customer.email && customer.email.trim() !== '' && !customer.email.includes('mail-tester.com')) {
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: 'Gmail',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
 
-        try {
-            const transporter = nodemailer.createTransport({
-                service: 'Gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
+                const mailOptions = {
+                    from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
+                    to: customer.email,
+                    subject: '[Làng Mixi] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
+                            <h2 style="color: #ff6b00; text-align: center;">MÓN QUÀ TRI ÂN KHÁCH HÀNG</h2>
+                            <p>Xin chào <b>${customer.name}</b>,</p>
+                            <p>Bạn vừa được hệ thống quản trị <b>Làng Mixi</b> gửi tặng một phần quà tri ân đặc biệt:</p>
+                            
+                            <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
+                                <p style="margin: 5px 0;"><b>Tên Voucher:</b> <code style="font-size: 14px; color: #333;">${promotion.name}</code></p>
+                                <p style="margin: 5px 0;"><b>Mã Voucher:</b> <b style="font-size: 16px; color: #ff6b00;">${promotion.code}</b></p>
+                                <p style="margin: 5px 0;"><b>Mức giảm giá:</b> <code style="font-size: 14px; color: #333;">${promotion.discount_type === 'PERCENTAGE' ? promotion.discount_value + '%' : promotion.discount_value.toLocaleString('vi-VN') + ' đ'}</code></p>
+                                <p style="margin: 5px 0;"><b>Hóa đơn tối thiểu:</b> <code style="font-size: 14px; color: #333;">${promotion.min_bill_value ? promotion.min_bill_value.toLocaleString('vi-VN') + ' VND' : 'Không có điều kiện'}</code></p>
+                                <p style="margin: 5px 0;"><b>Hạn sử dụng:</b> <code style="font-size: 14px; color: #333;">Đến hết ngày ${moment(promotion.end_date).format('DD/MM/YYYY HH:mm')}</code></p>
+                            </div>
 
-            const mailOptions = {
-                from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
-                to: customer.email,
-                subject: '[Làng Mixi] Bạn đã được cấp voucher mới',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
-                        <h2 style="color: #ff6b00; text-align: center;">BẠN ĐÃ ĐƯỢC TẶNG 1 VOUCHER</h2>
-                        <p>Xin chào <b>${customer.name}</b>,</p>
-                        <p>Bạn đã được hệ thống <b>Làng Mixi</b> tặng 1 voucher.</p>
-                        
-                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
-                            <p style="margin: 5px 0;"><b>Mã Voucher:</b> <code style="font-size: 14px; color: #333;">${formatData.code}</code></p>
-                            <p style="margin: 5px 0;"><b>Loại Voucher:</b> <code style="font-size: 14px; color: #333;">${formatData.type}</code></p>
-                            <p style="margin: 5px 0;"><b>Loại Giảm giá:</b> <code style="font-size: 14px; color: #333;">${formatData.discount_type}</code></p>
-                            <p style="margin: 5px 0;"><b>Giá trị giảm giá:</b> <code style="font-size: 14px; color: #333;">${formatData.discount_value}</code></p>
-                            <p style="margin: 5px 0;"><b>Giá trị đơn hàng tối thiểu:</b> <code style="font-size: 14px; color: #333;">${formatData.min_bill_value ? formatData.min_bill_value.toLocaleString('vi-VN') + ' VND' : '0 VND'}</code></p>
-                            <p style="margin: 5px 0;"><b>Thời gian bắt đầu:</b> <code style="font-size: 14px; color: #333;">${formatData.start_date}</code></p>
-                            <p style="margin: 5px 0;"><b>Thời gian kết thúc:</b> <code style="font-size: 14px; color: #333;">${formatData.end_date}</code></p>
-                            <p style="margin: 5px 0;"><b>Trạng thái:</b> <code style="font-size: 14px; color: #333;">${formatData.is_active}</code></p>
+                            <p style="font-size: 13px; color: #555;"><i>Cảm ơn bạn đã luôn đồng hành và ủng hộ Làng Mixi! Vui lòng xuất trình mã này khi thanh toán tại quầy.</i></p>
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
                         </div>
+                    `
+                };
 
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
-                    </div>
-                `
-            };
-
-            await transporter.sendMail(mailOptions);
-            console.log(`Đã gửi mail voucher thành công cho: ${customer.email}`);
-
-        } catch (mailError) {
-            console.error("Lỗi gửi mail voucher:", mailError);
-            return res.status(200).json({
-                success: true,
-                message: 'Thêm khuyến mãi thành công nhưng hệ thống gửi Mail thông báo gặp sự cố!'
-            });
+                await transporter.sendMail(mailOptions);
+                mailSent = true;
+                console.log(`Đã gửi mail tặng voucher thành công cho: ${customer.email}`);
+            } catch (mailError) {
+                console.error("Lỗi gửi mail tặng voucher:", mailError);
+            }
         }
 
-        return res.status(200).json({ success: true, message: 'Thêm khuyến mãi thành công!' });
+        const successMessage = mailSent
+            ? 'Đã phát tặng Voucher thành công và đã gửi thư chúc mừng tới Email của khách!'
+            : 'Đã phát tặng Voucher thành công! (Khách hàng chưa đăng ký Email hoặc Email dùng thử nên không gửi thư thông báo)';
+
+        return res.status(200).json({ success: true, message: successMessage });
+
     } catch (error) {
-        console.error("Lỗi addPromotions:", error.message);
+        console.error("Lỗi giftVoucherToCustomer:", error.message);
         return res.status(500).json({ success: false, message: error.message });
     }
 }

@@ -203,3 +203,51 @@ export const changePassword = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+export const quanlythoigianlam1ca = async (req, res) => {
+    try {
+        const { data: shift } = await supabase
+            .from('user_logs')
+            .select('user_id,action,created_at')
+            .order('created_at', { ascending: true });
+
+        if (!shift) return res.status(404).json({ success: false, message: 'Ca không tồn tại' });
+
+        const reportShifts = [];
+        const activeLogins = {};
+
+        shift.forEach(item => {
+            const userId = item.user_id;
+            if (item.action === 'LOGIN') {
+                activeLogins[userId] = item;
+            } else if (item.action === 'LOGOUT') {
+                if (activeLogins[userId]) {
+                    const loginlog = activeLogins[userId];
+                    const logintime = new Date(loginlog.created_at);
+                    const logouttime = new Date(item.created_at);
+
+                    const diffMs = logouttime - logintime;
+                    const tongphut = Math.floor(diffMs / (1000 * 60));
+                    const sogio = Math.floor(tongphut / 60);
+                    const sophut = tongphut % 60;
+
+                    reportShifts.push({
+                        user_id: userId,
+                        username: item.username,
+                        login_time: logintime.toLocaleString('vi-VN'),
+                        logout_time: logouttime.toLocaleString('vi-VN'),
+                        duration: `${sogio} giờ ${sophut} phút (${tongphut} phút)`,
+                        date: logintime.toLocaleString('vi-VN').split(',')[0],
+                    });
+
+                    delete activeLogins[userId];
+                }
+            }
+        })
+
+        reportShifts.sort((a, b) => new Date(b.login_time) - new Date(a.login_time));
+        return res.status(200).json({ success: true, data: reportShifts });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}

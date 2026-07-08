@@ -4,7 +4,7 @@ import { supabase } from '../../config/supabase';
 import StaffHeader from '../../components/layout/Staff/StaffHeader';
 import { listenDatabaseChanges } from '../../utils/realtimeHelper';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const KitchenDashboard = () => {
   const [orders, setOrders] = useState([]);
@@ -14,9 +14,39 @@ const KitchenDashboard = () => {
 
   const [notifications, setNotifications] = useState([]);
   const [showNotiDropdown, setShowNotiDropdown] = useState(false);
-  
+
+  const [userRole, setUserRole] = useState('');
+  const [userPermissions, setUserPermissions] = useState({});
+
   // Xử lý âm thanh thông báo
   const audio = new Audio('/Chinese Meme Ringtone Download.mp3');
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role?.toString().trim().toLowerCase());
+
+        let perms = {};
+        if (typeof user.permissions === 'string') {
+          perms = JSON.parse(user.permissions);
+        } else if (typeof user.permissions === 'object' && user.permissions !== null) {
+          perms = user.permissions;
+        }
+        setUserPermissions(perms);
+      } catch (e) {
+        console.error("Lỗi đọc thông tin phân quyền user trong TableManager:", e);
+      }
+    }
+  }, []);
+
+  // Hàm kiểm tra quyền thao tác (Super Admin mặc định được làm mọi thứ)
+  const hasPermission = (permissionKey) => {
+    if (userRole === 'super_admin') return true;
+    return !!userPermissions[permissionKey];
+  };
+
 
   //  Hàm lấy danh sách order đang chờ
   const fetchPendingOrders = async () => {
@@ -33,12 +63,12 @@ const KitchenDashboard = () => {
   // Lắng nghe Realtime Bếp
   useEffect(() => {
     fetchPendingOrders();
-    
+
     const channel = listenDatabaseChanges('kitchen-realtime', 'orders', 'INSERT', (payload) => {
       audio.play().catch(err => console.log(err));
-      
+
       const newNotification = {
-        tableName: `Mã đơn #${String(payload.new.id).slice(0,4)}`, 
+        tableName: `Mã đơn #${String(payload.new.id).slice(0, 4)}`,
         time: new Date().toLocaleTimeString(),
         type: 'new_order',
         message: 'Vừa có order mới cần chế biến!'
@@ -52,11 +82,15 @@ const KitchenDashboard = () => {
 
   // Hàm xem công thức món ăn
   const handleViewRecipe = async (dishId, dishName) => {
+    if (!hasPermission('view_recipes')) {
+      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền xem công thức!");
+    }
+
     if (!dishId) {
       alert("Thiếu ID món ăn để xem công thức!");
       return;
     }
-    
+
     try {
       const response = await axios.get(`${API_URL}/recipes/${dishId}`);
       if (response.data.success) {
@@ -76,6 +110,10 @@ const KitchenDashboard = () => {
 
   // Hàm hoàn thành đơn hàng
   const handleCompleteOrder = async (orderId) => {
+    if (!hasPermission('process_orders')) {
+      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền thay đổi trạng thái món ăn!");
+    }
+
     try {
       setLoading(true);
       const response = await axios.post(`${API_URL}/orders/completeOrder`, {
@@ -97,8 +135,12 @@ const KitchenDashboard = () => {
 
   // Hàm huỷ đơn hàng
   const handleCancelOrder = async (orderId) => {
+    if (!hasPermission('process_orders')) {
+      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền thay đổi trạng thái món ăn!");
+    }
+
     if (!window.confirm("Bếp đã hết nguyên liệu hoặc muốn từ chối làm order này?")) return;
-    
+
     try {
       setLoading(true);
       const response = await axios.post(`${API_URL}/orders/cancelOrder`, {
@@ -123,7 +165,7 @@ const KitchenDashboard = () => {
       <main className="flex-1 relative">
 
         {/* Header */}
-        <StaffHeader 
+        <StaffHeader
           title="Bếp & Đồ Ăn"
           subtitle="Hệ thống quản lý"
           userName="Đầu Bếp Nguyễn"
@@ -137,30 +179,32 @@ const KitchenDashboard = () => {
         {/* Danh sách Order */}
         <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {orders.length === 0 && <p className="text-gray-500 italic col-span-full">Hiện tại không có order nào đang chờ...</p>}
-          
+
           {orders.map((order) => (
             <div key={order.id} className="bg-white border border-neutralCustom/20 rounded-xl shadow-sm overflow-hidden border-t-4 border-t-tertiary flex flex-col">
-              
+
               {/* HEADER GỒM TIÊU ĐỀ VÀ NÚT HỦY GÓC TRÊN PHẢI */}
               <div className="p-5 flex justify-between items-start bg-culinaryBg">
                 <div>
                   <p className="text-[10px] font-bold text-neutralCustom uppercase">
-                    {order.dining_sessions?.tables?.name || 'Mang đi'} • #{String(order.id).slice(0,4)}
+                    {order.dining_sessions?.tables?.name || 'Mang đi'} • #{String(order.id).slice(0, 4)}
                   </p>
                   <h3 className="font-bold text-lg text-gray-900">Order mới</h3>
                 </div>
 
-                <button 
+                <button
                   onClick={() => handleCancelOrder(order.id)}
-                  disabled={loading}
-                  className="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-lg font-bold text-xs border border-orange-200 hover:bg-orange-100 transition-colors disabled:opacity-50 flex items-center gap-1 shadow-sm"
-                  title="Hủy toàn bộ đơn này"
+                  disabled={loading || !hasPermission('process_orders')}
+                  className={`px-3 py-1.5 rounded-lg font-bold text-xs border transition-colors flex items-center gap-1 shadow-sm
+                    ${hasPermission('process_orders')
+                      ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100 cursor-pointer'
+                      : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'}`}
+                  title={hasPermission('process_orders') ? "Hủy toàn bộ đơn này" : "Tài khoản bị giới hạn quyền hủy đơn"}
                 >
-                  <span className="material-symbols-outlined text-[14px]">cancel</span>
-                  HỦY
+                  <span className="material-symbols-outlined text-[14px]">cancel</span> HỦY
                 </button>
               </div>
-              
+
               <div className="p-5 space-y-3">
                 {order.order_details?.map((detail, index) => (
                   <div key={index} className="flex justify-between items-center border-b border-neutralCustom/10 pb-2 last:border-0">
@@ -172,25 +216,40 @@ const KitchenDashboard = () => {
                         {detail.note && <span className="text-xs text-red-500 italic font-normal">*{detail.note}</span>}
                       </div>
                     </div>
-                    
-                    <button 
+
+                    <button
                       onClick={() => handleViewRecipe(detail.dish_id, detail.dishes?.name)}
-                      className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                      title="Xem công thức"
+                      disabled={!hasPermission('view_recipes')}
+                      className={`p-1.5 rounded-lg transition-all
+                        ${hasPermission('view_recipes')
+                          ? 'text-neutralCustom hover:text-primary hover:bg-primary/10 cursor-pointer'
+                          : 'text-gray-300 cursor-not-allowed opacity-40'}`}
+                      title={hasPermission('view_recipes') ? "Xem công thức chi tiết" : "Tài khoản không được cấp quyền xem công thức"}
                     >
                       <span className="material-symbols-outlined text-[18px]">menu_book</span>
                     </button>
                   </div>
                 ))}
               </div>
-              
+
+              {/* THÔNG BÁO HẠN CHẾ: Hiện cảnh báo nhỏ trong thẻ nếu tài khoản bị khóa quyền */}
+              {!hasPermission('process_orders') && (
+                <div className="mx-5 mb-3 px-3 py-2 bg-red-50 border border-red-100 rounded-xl text-[11px] text-red-600 font-bold flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px]">gpp_maybe</span>
+                  Tài khoản bị giới hạn quyền xử lý đơn này.
+                </div>
+              )}
+
               <div className="p-5 pt-0">
-                <button 
+                <button
                   onClick={() => handleCompleteOrder(order.id)}
-                  disabled={loading}
-                  className="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-secondary transition-colors disabled:opacity-50 shadow-md"
+                  disabled={loading || !hasPermission('process_orders')}
+                  className={`w-full py-3 rounded-xl font-bold transition-all shadow-md text-sm
+                    ${hasPermission('process_orders')
+                      ? 'bg-primary text-white hover:bg-secondary active:scale-[0.98] cursor-pointer'
+                      : 'bg-gray-150 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'}`}
                 >
-                  {loading ? 'ĐANG XỬ LÝ...' : 'HOÀN THÀNH'}
+                  {loading ? 'ĐANG XỬ LÝ...' : hasPermission('process_orders') ? 'HOÀN THÀNH CHẾ BIẾN' : 'HẠN CHẾ QUYỀN CHẾ BIẾN'}
                 </button>
               </div>
             </div>
@@ -200,11 +259,11 @@ const KitchenDashboard = () => {
         {/* MODAL XEM CÔNG THỨC */}
         {isRecipeOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div 
+            <div
               className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
               onClick={toggleRecipe}
             ></div>
-            
+
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden transform transition-all border border-neutralCustom/20">
               <div className="p-6 border-b border-neutralCustom/20 flex justify-between items-center bg-culinaryBg">
                 <div>
@@ -215,14 +274,14 @@ const KitchenDashboard = () => {
                     {currentRecipe.dishName}
                   </p>
                 </div>
-                <button 
-                  className="material-symbols-outlined text-neutralCustom hover:bg-neutralCustom/10 p-2 rounded-full transition-colors" 
+                <button
+                  className="material-symbols-outlined text-neutralCustom hover:bg-neutralCustom/10 p-2 rounded-full transition-colors"
                   onClick={toggleRecipe}
                 >
                   close
                 </button>
               </div>
-              
+
               <div className="p-6 overflow-y-auto max-h-[60vh] bg-white">
                 {currentRecipe.details && currentRecipe.details.length > 0 ? (
                   <div className="space-y-3">
@@ -254,9 +313,9 @@ const KitchenDashboard = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="p-5 bg-culinaryBg border-t border-neutralCustom/20 flex justify-end">
-                <button 
+                <button
                   onClick={toggleRecipe}
                   className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-secondary active:scale-95 transition-all"
                 >

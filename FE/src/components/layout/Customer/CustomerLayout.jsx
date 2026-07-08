@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import CallService from './CallService';
 import { useCart } from '../../../context/CartContext';
-// Import thêm useLocation từ react-router-dom
+import { useLanguage } from '../../../context/LanguageContext';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 
 
 const CustomerLayout = ({ children }) => {
   const navigate = useNavigate(); // Hàm dùng để điều hướng bằng code
   const location = useLocation(); // Lấy thông tin URL hiện tại
+  const { t } = useLanguage();
 
   // Kiểm tra xem trình duyệt có đang ở trang /cart không
   const isCartActive = location.pathname === '/cart';
@@ -32,11 +33,11 @@ const CustomerLayout = ({ children }) => {
             restaurant
           </span>
           <div className="flex flex-col">
-            <h1 className="text-2xl font-semibold text-primary">Bàn {tableNumber}</h1>
+            <h1 className="text-2xl font-semibold text-primary">{t('table')} {tableNumber}</h1>
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
               <span className="text-[10px] font-bold text-neutralCustom tracking-wider uppercase">
-                Đã kết nối
+                {t('connected')}
               </span>
             </div>
           </div>
@@ -72,49 +73,41 @@ const CustomerLayout = ({ children }) => {
 
       {/* Footer (Bottom Navigation) */}
       <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-white rounded-t-xl border-t border-neutralCustom/20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-4">
-
-        {/* Nút Thực Đơn -> trỏ tới /menu */}
         <NavLink
           to="/menu"
-          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
-            }`}
+          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'}`}
         >
           {({ isActive }) => (
             <>
               <span className="material-symbols-outlined" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>menu_book</span>
-              <span className="text-xs font-bold uppercase mt-1">Thực đơn</span>
+              <span className="text-xs font-bold uppercase mt-1">{t('menu')}</span>
             </>
           )}
         </NavLink>
 
-        {/* Nút Đơn Hàng -> trỏ tới /orders */}
         <NavLink
           to="/orders"
-          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
-            }`}
+          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'}`}
         >
           {({ isActive }) => (
             <>
               <span className="material-symbols-outlined" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>receipt_long</span>
-              <span className="text-xs font-bold uppercase mt-1">Đơn hàng</span>
+              <span className="text-xs font-bold uppercase mt-1">{t('orders')}</span>
             </>
           )}
         </NavLink>
 
-        {/* Nút Thanh Toán -> trỏ tới /payment */}
         <NavLink
           to="/payment"
-          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'
-            }`}
+          className={({ isActive }) => `flex flex-col items-center justify-center h-full px-4 transition-all duration-200 active:scale-90 ${isActive ? 'text-primary font-bold border-t-2 border-primary' : 'text-neutralCustom hover:bg-culinaryBg'}`}
         >
           {({ isActive }) => (
             <>
               <span className="material-symbols-outlined" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>payments</span>
-              <span className="text-xs font-bold uppercase mt-1">Thanh toán</span>
+              <span className="text-xs font-bold uppercase mt-1">{t('payment')}</span>
             </>
           )}
         </NavLink>
-
       </nav>
     </div>
   );
