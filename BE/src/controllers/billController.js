@@ -106,9 +106,10 @@ export const inBill = async (req, res) => {
 }
 
 export const generateBillHtml = async (session_id, table_id) => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     // 1. Tạo đường dẫn dẫn đến trang review của bạn (thêm session_id để FE biết đang review cho phiên nào)
     // Nếu deploy thực tế thì thay localhost thành domain của bạn
-    const reviewUrl = `http://localhost:5173/review?session_id=${session_id}`;
+    const reviewUrl = `${frontendUrl}/review?session_id=${session_id}`;
 
     // 2. Sinh mã QR dưới dạng chuỗi DataURL (Base64 Image)
     const qrCodeImageBase64 = await QRCode.toDataURL(reviewUrl, {
