@@ -354,6 +354,7 @@ const TableManager = () => {
           //   alert("Không sinh được link VNPAY: " + data.message);
           // }
           try {
+            const API_BASE_URL = import.meta.env.VITE_API_URL;
             const vnpayResponse = await axios.post(`${API_BASE_URL}/payments/vnpay`, {
               session_id: selectedTable.sessionId,
               amount: billData.grandTotal // Tổng tiền đã gồm VAT 10%
