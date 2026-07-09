@@ -537,73 +537,11 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
 
         const thoigianthanhtoan = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss");
 
-        // const html_bill = `
-        // <!DOCTYPE html>
-        // <html>
-        // <head>
-        //     <style>
-        //         body { font-family: 'Arial', sans-serif; font-size: 12px; width: 80mm; margin: 0; padding: 10px; }
-        //         .text-center { text-align: center; }
-        //         .bold { font-weight: bold; }
-        //         .divider { border-top: 1px dashed #000; margin: 10px 0; }
-        //         table { width: 100%; border-collapse: collapse; }
-        //         .text-right { text-align: right; }
-        //     </style>
-        // </head>
-        // <body>
-        //     <div class="text-center">
-        //         <h3 style="margin: 0;">NHÀ HÀNG QR ORDER</h3>
-        //         <p style="margin: 5px 0;">Hóa Đơn Thanh Toán</p>
-        //         <p>Mã Phiên: #${session_id}</p>
-        //     </div>
-        //     <div class="divider"></div>
-        //     <p>Ngày in: ${thoigianthanhtoan}</p>
-        //     <div class="divider"></div>
-        //     <table>
-        //         <thead>
-        //             <tr class="bold">
-        //                 <td>Tên món</td>
-        //                 <td class="text-center">SL</td>
-        //                 <td class="text-right">T.Tiền</td>
-        //             </tr>
-        //         </thead>
-        //      <tbody>
-        //             ${detailed_orders.flatMap(order =>
-        //     order.order_details.map(detail => `
-        //                     <tr>
-        //                         <td>${detail.dishes || 'Món ăn'}</td>
-        //                         <td class="text-center">${detail.quantity}</td>
-        //                         <td class="text-right">${Number(detail.price * detail.quantity).toLocaleString('vi-VN')}đ</td>
-        //                     </tr>
-        //                 `)
-        // ).join('')}
-        //         </tbody>
-        //     </table>
-        //     <div class="divider"></div>
-        //     <table>
-        //         <tr>
-        //             <td>Tạm tính:</td>
-        //             <td class="text-right">${Number(sub_total).toLocaleString('vi-VN')}đ</td>
-        //         </tr>
-        //         <tr>
-        //             <td>Thuế VAT (10%):</td>
-        //             <td class="text-right">${Number(vat_amount).toLocaleString('vi-VN')}đ</td>
-        //         </tr>
-        //         <tr class="bold" style="font-size: 14px;">
-        //             <td>TỔNG CỘNG:</td>
-        //             <td class="text-right">${Number(tongtien).toLocaleString('vi-VN')}đ</td>
-        //         </tr>
-        //     </table>
-        //     <div class="divider"></div>
-        //     <div class="text-center bold">CẢM ƠN QUÝ KHÁCH & HẸN GẶP LẠI</div>
-        // </body>
-        // </html>
-        // `;
 
         let qrCodeHtmlSection = '';
         if (!is_preview) {
             try {
-                const reviewUrl = `http://localhost:5173/review?session_id=${session_id}`;
+                const reviewUrl = `${process.env.FRONTEND_URL}/review?session_id=${session_id}`;
                 const qrCodeImageBase64 = await QRCode.toDataURL(reviewUrl, {
                     width: 150,
                     margin: 1

@@ -106,7 +106,7 @@ export const inBill = async (req, res) => {
 }
 
 export const generateBillHtml = async (session_id, table_id) => {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL;
     // 1. Tạo đường dẫn dẫn đến trang review của bạn (thêm session_id để FE biết đang review cho phiên nào)
     // Nếu deploy thực tế thì thay localhost thành domain của bạn
     const reviewUrl = `${frontendUrl}/review?session_id=${session_id}`;
