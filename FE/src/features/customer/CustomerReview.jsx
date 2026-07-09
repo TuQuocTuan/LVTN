@@ -3,15 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
 // Thiết lập URL kết nối đến API Backend của Tuấn
-const getApiUrl = () => {
-  try {
-    const metaEnv = new Function("return import.meta.env")();
-    return metaEnv?.VITE_API_URL || 'http://localhost:5000/api';
-  } catch (e) {
-    return 'http://localhost:5000/api';
-  }
-};
-const API_URL = getApiUrl();
+
+const API_URL = import.meta.env.VITE_API_URL;
 const axiosConfig = { headers: { 'ngrok-skip-browser-warning': 'true' } };
 
 const CustomerReview = () => {
@@ -46,7 +39,7 @@ const CustomerReview = () => {
         const reviews = response.data.data || [];
         // Tìm xem đã có bản ghi đánh giá nào trùng với session_id này chưa
         const hasReviewed = reviews.some(r => r.session_id === targetSessionId);
-        
+
         if (hasReviewed) {
           setIsAlreadyReviewed(true);
           setIsSuccess(true); // Hiển thị thẳng màn hình Cảm ơn
@@ -71,10 +64,10 @@ const CustomerReview = () => {
     setErrorMsg('');
     try {
       const response = await axios.get(`${API_URL}/orders/${targetSessionId}`, axiosConfig);
-      
+
       if (response.data && response.data.success && response.data.data.length > 0) {
         const orderDataList = response.data.data;
-        
+
         // Lấy thông tin tên bàn nướng tự động
         const firstOrder = orderDataList[0];
         if (firstOrder.dining_sessions?.tables?.name) {
@@ -129,13 +122,13 @@ const CustomerReview = () => {
   };
 
   const handleRatingChange = (dishId, newRating) => {
-    setDishList(prev => prev.map(dish => 
+    setDishList(prev => prev.map(dish =>
       dish.dish_id === dishId ? { ...dish, rating: newRating } : dish
     ));
   };
 
   const handleCommentChange = (dishId, newComment) => {
-    setDishList(prev => prev.map(dish => 
+    setDishList(prev => prev.map(dish =>
       dish.dish_id === dishId ? { ...dish, comment: newComment } : dish
     ));
   };
@@ -195,7 +188,7 @@ const CustomerReview = () => {
             className="transition-transform active:scale-90 p-1"
             onClick={() => handleRatingChange(dish.dish_id, star)}
           >
-            <span 
+            <span
               className={`material-symbols-outlined text-[32px] sm:text-[38px] ${dish.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`}
               style={{ fontVariationSettings: dish.rating >= star ? "'FILL' 1" : "'FILL' 0" }}
             >
@@ -218,8 +211,8 @@ const CustomerReview = () => {
             {isAlreadyReviewed ? 'Đã ghi nhận đánh giá!' : 'Gửi thành công!'}
           </h2>
           <p className="text-stone-600 mb-2 text-sm leading-relaxed font-semibold">
-            {isAlreadyReviewed 
-              ? 'Hóa đơn này của bạn đã được thực hiện đánh giá trước đó.' 
+            {isAlreadyReviewed
+              ? 'Hóa đơn này của bạn đã được thực hiện đánh giá trước đó.'
               : 'Làng MIXI BBQ chân thành cảm ơn ý kiến đóng góp quý báu của bạn!'}
           </p>
           <p className="text-stone-500 text-xs leading-relaxed">
@@ -233,7 +226,7 @@ const CustomerReview = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-6 px-4 font-sans flex items-center justify-center w-full selection:bg-orange-600 selection:text-white">
       <div className="bg-white max-w-md w-full rounded-3xl shadow-xl border border-stone-200/60 overflow-hidden">
-        
+
         {/* Banner tiêu đề BBQ ấm áp */}
         <div className="bg-gradient-to-r from-orange-600 to-amber-500 p-6 text-white text-center relative">
           <span className="text-[9px] font-black uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full">
@@ -263,7 +256,7 @@ const CustomerReview = () => {
           {/* Form chính chỉ hiển thị khi đã bóc tách thành công món ăn */}
           {!isLoading && dishList.length > 0 && (
             <form onSubmit={handleSubmit} className="space-y-5">
-              
+
               {/* Thẻ hiển thị số bàn nướng dùng bữa tự động */}
               {tableName && (
                 <div className="bg-stone-50 border border-stone-200 p-3.5 rounded-2xl flex justify-between items-center shadow-inner">
@@ -291,7 +284,7 @@ const CustomerReview = () => {
                       </p>
                       {renderInteractiveStars(dish)}
                     </div>
-                    <input 
+                    <input
                       type="text"
                       placeholder="Góp ý vị nướng, nước chấm... (Không bắt buộc)"
                       value={dish.comment}
@@ -303,8 +296,8 @@ const CustomerReview = () => {
               </div>
 
               {/* Nút gửi đánh giá */}
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isSubmitting || dishList.length === 0}
                 className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white font-black py-3.5 rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-1.5 uppercase tracking-wide text-xs sm:text-sm"
               >
