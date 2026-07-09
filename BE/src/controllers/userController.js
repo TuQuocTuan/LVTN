@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import moment from 'moment';
 import nodemailer from 'nodemailer';
 
+
 export const getAllUser = async (req, res) => {
     try {
         const { data: users, error } = await supabase
@@ -261,4 +262,81 @@ export const quanlythoigianlam1ca = async (req, res) => {
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
+}
+
+export const ketCa = async (req, res) => {
+    try {
+        const now = moment().tz("Asia/Ho_Chi_Minh");
+        const startOfDay = moment().tz("Asia/Ho_Chi_Minh").startOf('day').toISOString();
+        const endOfDay = moment().tz("Asia/Ho_Chi_Minh").endOf('day').toISOString();
+        const thoigianin = now.format("DD/MM/YYYY HH:mm:ss");
+
+        const { data: bills, error: fetchErr } = await supabase
+            .from('bills')
+            .select('*')
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay);
+
+        const soLuongDon = bills ? bills.length : 0;
+        const tongTienBanDuoc = bills ? bills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
+        const tiendauca = 4000000;
+        const tongTienTrongKet = tiendauca + tongTienBanDuoc;
+
+        if (fetchErr) throw fetchErr;
+
+        const html_bill = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: 'Arial', sans-serif; font-size: 12px; width: 80mm; margin: 0; padding: 10px; }
+                .text-center { text-align: center; }
+                .bold { font-weight: bold; }
+                .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                table { width: 100%; border-collapse: collapse; }
+                .text-right { text-align: right; }
+            </style>
+        </head>
+        <body>
+            <div class="text-center">
+                <h3 style="margin: 0;">NHÀ HÀNG QR ORDER</h3>
+                <p style="margin: 5px 0;" class="bold">BÁO CÁO KẾT CA</p>
+            </div>
+            <div class="divider"></div>
+            <p>Thời gian in: ${thoigianin}</p>
+            <p>Tổng số đơn hàng: ${soLuongDon}</p>
+            <div class="divider"></div>
+            <table>
+                <tr>
+                    <td>Tiền đầu ca:</td>
+                    <td class="text-right">${tiendauca.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Tổng doanh thu:</td>
+                    <td class="text-right">${tongTienBanDuoc.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr class="bold" style="font-size: 14px;">
+                    <td>TỔNG TRONG KÉT:</td>
+                    <td class="text-right">${tongTienTrongKet.toLocaleString('vi-VN')}đ</td>
+                </tr>
+            </table>
+            <div class="divider"></div>
+            <div class="text-center bold">XÁC NHẬN CỦA QUẢN LÝ</div>
+            <br><br><br><br>
+            <div class="text-center">(Ký và ghi rõ họ tên)</div>
+        </body>
+        </html>
+        `;
+
+        return res.status(200).json({
+            success: true,
+            tien_dau_ca: tiendauca,
+            tong_tien_ban_duoc: tongTienBanDuoc,
+            tong_tien_trong_ket: tongTienTrongKet,
+            html_bill: html_bill
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+
 }
