@@ -30,7 +30,7 @@ export const getCustomerVoucher = async (req, res) => {
 
         const { data: promotion, error: promotionErr } = await supabase
             .from('promotions')
-            .select('code,name,discount_value,is_active')
+            .select('code,name,discount_value,discount_type,is_active')
             .in('id', promotionsID)
             .eq('is_active', true)
         return res.status(200).json({ success: true, message: 'Voucher của khách hàng', promotion });
@@ -317,14 +317,14 @@ export const giftVoucherToCustomer = async (req, res) => {
                 });
 
                 const mailOptions = {
-                    from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
+                    from: `"Làng MÌXI Management" <${process.env.EMAIL_USER}>`,
                     to: customer.email,
-                    subject: '[Làng Mixi] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
+                    subject: '[Làng MÌXI] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
                     html: `
                         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
                             <h2 style="color: #ff6b00; text-align: center;">MÓN QUÀ TRI ÂN KHÁCH HÀNG</h2>
                             <p>Xin chào <b>${customer.name}</b>,</p>
-                            <p>Bạn vừa được hệ thống quản trị <b>Làng Mixi</b> gửi tặng một phần quà tri ân đặc biệt:</p>
+                            <p>Bạn vừa được hệ thống quản trị <b>Làng MÌXI</b> gửi tặng một phần quà tri ân đặc biệt:</p>
                             
                             <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
                                 <p style="margin: 5px 0;"><b>Tên Voucher:</b> <code style="font-size: 14px; color: #333;">${promotion.name}</code></p>
@@ -334,9 +334,9 @@ export const giftVoucherToCustomer = async (req, res) => {
                                 <p style="margin: 5px 0;"><b>Hạn sử dụng:</b> <code style="font-size: 14px; color: #333;">Đến hết ngày ${moment(promotion.end_date).format('DD/MM/YYYY HH:mm')}</code></p>
                             </div>
 
-                            <p style="font-size: 13px; color: #555;"><i>Cảm ơn bạn đã luôn đồng hành và ủng hộ Làng Mixi! Vui lòng xuất trình mã này khi thanh toán tại quầy.</i></p>
+                            <p style="font-size: 13px; color: #555;"><i>Cảm ơn bạn đã luôn đồng hành và ủng hộ Làng MÌXI! Vui lòng xuất trình mã này khi thanh toán tại quầy.</i></p>
                             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                            <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
+                            <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
                         </div>
                     `
                 };

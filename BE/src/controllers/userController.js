@@ -83,14 +83,14 @@ export const addUser = async (req, res) => {
             });
 
             const mailOptions = {
-                from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
+                from: `"Làng MÌXI Management" <${process.env.EMAIL_USER}>`,
                 to: email,
-                subject: '[Làng Mixi] Thông báo cấp tài khoản nhân viên mới',
+                subject: '[Làng MÌXI] Thông báo cấp tài khoản nhân viên mới',
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
                         <h2 style="color: #ff6b00; text-align: center;">CHÀO MỪNG THÀNH VIÊN MỚI</h2>
                         <p>Xin chào <b>${fullname}</b>,</p>
-                        <p>Tài khoản quản trị hệ thống nội bộ của bạn tại <b>Làng Mixi</b> đã được khởi tạo thành công với vai trò: <span style="text-transform: uppercase; font-weight: bold; color: #ff6b00;">${role}</span>.</p>
+                        <p>Tài khoản quản trị hệ thống nội bộ của bạn tại <b>Làng MÌXI</b> đã được khởi tạo thành công với vai trò: <span style="text-transform: uppercase; font-weight: bold; color: #ff6b00;">${role}</span>.</p>
                         
                         <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
                             <p style="margin: 5px 0;"><b>Tên đăng nhập:</b> <code style="font-size: 14px; color: #333;">${username}</code></p>
@@ -99,7 +99,7 @@ export const addUser = async (req, res) => {
 
                         <p style="color: #dd2c00; font-size: 13px;"><i>* Lưu ý: Để đảm bảo an toàn bảo mật, vui lòng tiến hành đăng nhập và đổi lại mật khẩu cá nhân ngay trong phiên làm việc đầu tiên.</i></p>
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
+                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
                     </div>
                 `
             };
@@ -168,21 +168,21 @@ export const changePassword = async (req, res) => {
             });
 
             const mailOptions = {
-                from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
+                from: `"Làng MÌXI Management" <${process.env.EMAIL_USER}>`,
                 to: emailhople,
-                subject: '[Làng Mixi] Thông báo cấp tài khoản nhân viên mới',
+                subject: '[Làng MÌXI] Thông báo cấp tài khoản nhân viên mới',
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
                         <h2 style="color: #ff6b00; text-align: center;">CHÀO MỪNG THÀNH VIÊN MỚI</h2>
                         <p>Xin chào <b>${fullname}</b>,</p>
-                        <p>Tài khoản quản trị hệ thống nội bộ của bạn tại <b>Làng Mixi</b> đã được thay đổi mật khẩu thành công.</p>
+                        <p>Tài khoản quản trị hệ thống nội bộ của bạn tại <b>Làng MÌXI</b> đã được thay đổi mật khẩu thành công.</p>
                         
                         <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
                             <p style="margin: 5px 0;"><b>Mật khẩu mới:</b> <code style="font-size: 14px; color: #333;">${password}</code></p>
                         </div>
 
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
+                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
                     </div>
                 `
             };
@@ -289,7 +289,23 @@ export const ketCa = async (req, res) => {
         <html>
         <head>
             <style>
-                body { font-family: 'Arial', sans-serif; font-size: 12px; width: 80mm; margin: 0; padding: 10px; }
+                @page {
+                    size: 80mm auto;
+                    margin: 0;
+                }
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    width: 80mm;
+                    height: auto;
+                    background-color: #fff;
+                }
+                body {
+                    font-family: 'Arial', sans-serif;
+                    font-size: 12px;
+                    padding: 8px;
+                    box-sizing: border-box;
+                }
                 .text-center { text-align: center; }
                 .bold { font-weight: bold; }
                 .divider { border-top: 1px dashed #000; margin: 10px 0; }
@@ -299,7 +315,7 @@ export const ketCa = async (req, res) => {
         </head>
         <body>
             <div class="text-center">
-                <h3 style="margin: 0;">NHÀ HÀNG QR ORDER</h3>
+                <h3 style="margin: 0; font-size: 16px;">MÌXI</h3>
                 <p style="margin: 5px 0;" class="bold">BÁO CÁO KẾT CA</p>
             </div>
             <div class="divider"></div>

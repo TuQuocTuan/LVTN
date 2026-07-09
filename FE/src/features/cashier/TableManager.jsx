@@ -13,6 +13,42 @@ const TableManager = () => {
   const [activeFilter, setActiveFilter] = useState('all');
 
   const [notifications, setNotifications] = useState([]);
+  const [dialog, setDialog] = useState({
+    isOpen: false,
+    type: 'info', // 'success' | 'error' | 'warning' | 'confirm'
+    title: '',
+    message: '',
+    onConfirm: null,
+    onCancel: null
+  });
+
+  const showDialog = (type, title, message, onConfirm = null, onCancel = null) => {
+    setDialog({
+      isOpen: true,
+      type,
+      title,
+      message,
+      onConfirm,
+      onCancel
+    });
+  };
+
+  const closeDialog = () => {
+    setDialog(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const showAlert = (message, type = 'info') => {
+    let title = 'Thông báo';
+    if (type === 'success') title = 'Thành công';
+    if (type === 'error') title = 'Lỗi';
+    if (type === 'warning') title = 'Cảnh báo';
+
+    showDialog(type, title, message);
+  };
+
+  const showConfirm = (message, onConfirm, onCancel = null) => {
+    showDialog('confirm', 'Xác nhận', message, onConfirm, onCancel);
+  };
   const [showNotiDropdown, setShowNotiDropdown] = useState(false);
 
   // Quản lý danh sách bàn từ API
@@ -218,7 +254,7 @@ const TableManager = () => {
   const handleOpenTable = async (tableId) => {
     // Kiểm tra quyền mở bàn trước khi thực hiện
     if (!hasPermission('manage_tables')) {
-      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền thực hiện mở bàn mới!");
+      return showAlert("Tài khoản của bạn đã bị giới hạn, không có quyền thực hiện mở bàn mới!", "warning");
     }
 
     try {
@@ -226,41 +262,41 @@ const TableManager = () => {
       const data = response.data;
 
       if (data.success) {
-        alert("Mở bàn thành công!");
+        showAlert("Mở bàn thành công!", "success");
         handleCloseModal();
         fetchTables();
       } else {
-        alert("Lỗi: " + data.message);
+        showAlert("Lỗi: " + data.message, "error");
       }
     } catch (error) {
       console.error("Lỗi mở bàn:", error);
-      alert("Không thể kết nối đến server.");
+      showAlert("Không thể kết nối đến server.", "error");
     }
   };
 
   // CHỨC NĂNG ĐÓNG BÀN (Huỷ không thu tiền)
   const handleCloseTable = async (tableId) => {
     if (!hasPermission('manage_tables')) {
-      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền đóng/hủy bàn!");
+      return showAlert("Tài khoản của bạn đã bị giới hạn, không có quyền đóng/hủy bàn!", "warning");
     }
 
-    if (!window.confirm("Bạn có chắc chắn muốn đóng bàn này mà không tính tiền không?")) return;
+    showConfirm("Bạn có chắc chắn muốn đóng bàn này mà không tính tiền không?", async () => {
+      try {
+        const response = await axios.post(`${API_BASE_URL}/sessions/close`, { table_id: tableId });
+        const data = response.data;
 
-    try {
-      const response = await axios.post(`${API_BASE_URL}/sessions/close`, { table_id: tableId });
-      const data = response.data;
-
-      if (data.success) {
-        alert("Đóng bàn thành công!");
-        handleCloseModal();
-        fetchTables();
-      } else {
-        alert("Lỗi: " + data.message);
+        if (data.success) {
+          showAlert("Đóng bàn thành công!", "success");
+          handleCloseModal();
+          fetchTables();
+        } else {
+          showAlert("Lỗi: " + data.message, "error");
+        }
+      } catch (error) {
+        console.error("Lỗi đóng bàn:", error);
+        showAlert("Không thể kết nối đến server.", "error");
       }
-    } catch (error) {
-      console.error("Lỗi đóng bàn:", error);
-      alert("Không thể kết nối đến server.");
-    }
+    });
   };
 
 
@@ -288,64 +324,63 @@ const TableManager = () => {
     if (!selectedTable?.sessionId) return;
 
     if (!hasPermission('checkout')) {
-      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền thanh toán hóa đơn này!");
+      return showAlert("Tài khoản của bạn đã bị giới hạn, không có quyền thanh toán hóa đơn này!", "warning");
     }
 
     if (!billData || !billData.allOrders || billData.allOrders.length === 0) {
-      return alert("Bàn này chưa gọi món ăn nào!");
+      return showAlert("Bàn này chưa gọi món ăn nào!", "warning");
     }
 
     if (!billData.orders || billData.orders.length === 0) {
-      return alert("Các món ăn tại bàn này đều ở trạng thái [Đang chế biến].\n\nPhải có ít nhất 1 món đã hoàn thành mới có thể tính tiền!");
+      return showAlert("Các món ăn tại bàn này đều ở trạng thái [Đang chế biến].\n\nPhải có ít nhất 1 món đã hoàn thành mới có thể tính tiền!", "warning");
     }
 
     const confirmMsg = paymentMethod === 'CASH'
       ? `Xác nhận thanh toán TIỀN MẶT cho ${selectedTable.name}?`
       : `Xác nhận tạo mã VNPAY QR cho ${selectedTable.name}?`;
 
-    if (!window.confirm(confirmMsg)) return;
+    showConfirm(confirmMsg, async () => {
+      try {
+        const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
+          session_id: selectedTable.sessionId,
+          payment_method: paymentMethod, // Truyền 'CASH' hoặc 'VNPAY' tương ứng nút bấm
+          customer_name: 'Khách tại bàn',
+          phone_number: phoneNumber.trim() || null,
+          email: email.trim() || null,
+          voucher_code: voucherCode.trim() || null,
+          is_preview: false,
+          close_user: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e'
+        });
+        const data = response.data;
 
-    try {
-      const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
-        session_id: selectedTable.sessionId,
-        payment_method: paymentMethod, // Truyền 'CASH' hoặc 'VNPAY' tương ứng nút bấm
-        customer_name: 'Khách tại bàn',
-        phone_number: phoneNumber.trim() || null,
-        email: email.trim() || null,
-        voucher_code: voucherCode.trim() || null,
-        is_preview: false,
-        close_user: 'b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e'
-      });
-      const data = response.data;
+        if (data.success) {
+          if (paymentMethod === 'CASH') {
+            showAlert(`Thanh toán thành công!\nSố tiền thu: ${data.tongtien.toLocaleString('vi-VN')} đ`, "success");
 
-      if (data.success) {
-        if (paymentMethod === 'CASH') {
-          alert(`Thanh toán thành công!\nSố tiền thu: ${data.tongtien.toLocaleString('vi-VN')} đ`);
+            console.log("Link in nhận từ BE:", data.print_url);
+            //TỰ ĐỘNG IN BILL: Kiểm tra nếu BE trả về đường link in thì tự bật tab mới để in
+            if (data.html_bill) {
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              document.body.appendChild(iframe);
 
-          console.log("Link in nhận từ BE:", data.print_url);
-          //TỰ ĐỘNG IN BILL: Kiểm tra nếu BE trả về đường link in thì tự bật tab mới để in
-          if (data.html_bill) {
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
+              // Ghi thẳng nội dung HTML vào iframe mà không cần gọi URL nào hết
+              const doc = iframe.contentWindow.document;
+              doc.open();
+              doc.write(data.html_bill);
+              doc.close();
 
-            // Ghi thẳng nội dung HTML vào iframe mà không cần gọi URL nào hết
-            const doc = iframe.contentWindow.document;
-            doc.open();
-            doc.write(data.html_bill);
-            doc.close();
+              // Kích hoạt lệnh in
+              setTimeout(() => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                setTimeout(() => document.body.removeChild(iframe), 2000);
+              }, 500);
+            }
 
-            // Kích hoạt lệnh in
-            setTimeout(() => {
-              iframe.contentWindow.focus();
-              iframe.contentWindow.print();
-              setTimeout(() => document.body.removeChild(iframe), 2000);
-            }, 500);
-          }
-
-          handleCloseModal();
-          fetchTables();
-        } else if (paymentMethod === 'VNPAY') {
+            handleCloseModal();
+            fetchTables();
+          } else if (paymentMethod === 'VNPAY') {
           // if (data.payment_url) {
           //   window.open(data.payment_url, '_blank');
           //   handleCloseModal();
@@ -353,41 +388,42 @@ const TableManager = () => {
           // } else {
           //   alert("Không sinh được link VNPAY: " + data.message);
           // }
-          try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL;
-            const vnpayResponse = await axios.post(`${API_BASE_URL}/payments/vnpay`, {
-              session_id: selectedTable.sessionId,
-              amount: billData.grandTotal // Tổng tiền đã gồm VAT 10%
-            }, {
-              // Thêm header này để ép Ngrok không chặn API nữa
-              headers: {
-                'ngrok-skip-browser-warning': 'true',
-                'Content-Type': 'application/json'
+            try {
+              const API_BASE_URL = import.meta.env.VITE_API_URL;
+              const vnpayResponse = await axios.post(`${API_BASE_URL}/payments/vnpay`, {
+                session_id: selectedTable.sessionId,
+                amount: billData.grandTotal // Tổng tiền đã gồm VAT 10%
+              }, {
+                // Thêm header này để ép Ngrok không chặn API nữa
+                headers: {
+                  'ngrok-skip-browser-warning': 'true',
+                  'Content-Type': 'application/json'
+                }
+              });
+              const vnpayData = vnpayResponse.data;
+
+              if (vnpayData.success && vnpayData.payment_url) {
+                // Mở link cổng thanh toán tại tab hiện tại để thu ngân lấy QR cho khách quét
+                window.open(vnpayData.payment_url, '_blank');
+
+                setVnpayHtmlBill(data.html_bill);
+                setShowPrintVnpayBtn(true);
+
+              } else {
+                showAlert("Không sinh được link VNPAY qua Ngrok: " + vnpayData.message, "error");
               }
-            });
-            const vnpayData = vnpayResponse.data;
-
-            if (vnpayData.success && vnpayData.payment_url) {
-              // Mở link cổng thanh toán tại tab hiện tại để thu ngân lấy QR cho khách quét
-              window.open(vnpayData.payment_url, '_blank');
-
-              setVnpayHtmlBill(data.html_bill);
-              setShowPrintVnpayBtn(true);
-
-            } else {
-              alert("Không sinh được link VNPAY qua Ngrok: " + vnpayData.message);
+            } catch (err) {
+              console.error("Lỗi kết nối tunnel VNPAY:", err);
+              showAlert("Lỗi kết nối đến cổng Ngrok Backend!", "error");
             }
-          } catch (err) {
-            console.error("Lỗi kết nối tunnel VNPAY:", err);
-            alert("Lỗi kết nối đến cổng Ngrok Backend!");
           }
+        } else {
+          showAlert("Lỗi xử lý hóa đơn: " + data.message, "error");
         }
-      } else {
-        alert("Lỗi xử lý hóa đơn: " + data.message);
+      } catch (error) {
+        showAlert("Lỗi kết nối API thanh toán!", "error");
       }
-    } catch (error) {
-      alert("Lỗi kết nối API thanh toán!");
-    }
+    });
   };
 
   const handleOpenModal = (table) => {
@@ -565,218 +601,284 @@ const TableManager = () => {
             {/* BÀN ĐANG PHỤC VỤ / CHỜ THANH TOÁN */}
             {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
               <>
-                {/* TẦNG 1: DANH SÁCH MÓN ĂN */}
-                <div className="flex-1 p-6 bg-white flex flex-col min-h-0">
-                  <div className="flex items-center gap-2 text-primary font-bold text-sm border-b pb-2 mb-4 shrink-0">
-                    <span className="material-symbols-outlined text-sm">restaurant_menu</span>
-                    Món ăn đã đặt tại bàn:
-                  </div>
+                {/* BÀN ĐANG PHỤC VỤ / CHỜ THANH TOÁN */}
+                {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
+                  <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+                    {/* TẦNG 1: DANH SÁCH MÓN ĂN (Cột Trái) */}
+                    <div className="flex-1 p-6 bg-white flex flex-col min-h-0 border-b md:border-b-0 md:border-r border-neutralCustom/10">
+                      <div className="flex items-center gap-2 text-primary font-bold text-sm border-b pb-2 mb-4 shrink-0">
+                        <span className="material-symbols-outlined text-sm">restaurant_menu</span>
+                        Món ăn đã đặt tại bàn:
+                      </div>
 
-                  {loadingBill ? (
-                    <div className="text-center py-4 text-xs text-neutralCustom animate-pulse shrink-0">Đang đồng bộ hóa đơn tạm tính...</div>
-                  ) : billData && billData.allOrders && billData.allOrders.length > 0 ? (
+                      {loadingBill ? (
+                        <div className="text-center py-4 text-xs text-neutralCustom animate-pulse shrink-0">Đang đồng bộ hóa đơn tạm tính...</div>
+                      ) : billData && billData.allOrders && billData.allOrders.length > 0 ? (
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                          {(() => {
+                            // 1. Chạy logic gộp món trước (Chỉ gom thuần túy dữ liệu để hiển thị)
+                            const groupedDishes = [];
+                            billData.allOrders.forEach(order => {
+                              order.order_details.forEach(detail => {
+                                const name = detail.dishes?.name;
+                                const status = order.status;
+                                const note = detail.note?.trim();
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
-                      {(() => {
-                        // 1. Chạy logic gộp món trước (Chỉ gom thuần túy dữ liệu để hiển thị)
-                        const groupedDishes = [];
-                        billData.allOrders.forEach(order => {
-                          order.order_details.forEach(detail => {
-                            const name = detail.dishes?.name;
-                            const status = order.status;
-                            const note = detail.note?.trim();
+                                const existing = groupedDishes.find(
+                                  item => item.name === name && item.status === status
+                                );
 
-                            const existing = groupedDishes.find(
-                              item => item.name === name && item.status === status
-                            );
-
-                            if (existing) {
-                              existing.quantity += detail.quantity;
-                              if (note) {
-                                existing.note = existing.note ? `${existing.note} | ${note}` : note;
-                              }
-                            } else {
-                              groupedDishes.push({
-                                name,
-                                status,
-                                quantity: detail.quantity,
-                                note: note || ''
+                                if (existing) {
+                                  existing.quantity += detail.quantity;
+                                  if (note) {
+                                    existing.note = existing.note ? `${existing.note} | ${note}` : note;
+                                  }
+                                } else {
+                                  groupedDishes.push({
+                                    name,
+                                    status,
+                                    quantity: detail.quantity,
+                                    note: note || ''
+                                  });
+                                }
                               });
-                            }
-                          });
-                        });
+                            });
 
-                        // 2. Sau khi có mảng gộp độc lập hoàn toàn, mới tiến hành render UI
-                        return groupedDishes.map((item, idx) => (
-                          <div key={idx} className={`flex justify-between items-center text-xs p-2.5 rounded-xl border transition-all mb-2
+                            // 2. Sau khi có mảng gộp độc lập hoàn toàn, mới tiến hành render UI
+                            return groupedDishes.map((item, idx) => (
+                              <div key={idx} className={`flex justify-between items-center text-xs p-2.5 rounded-xl border transition-all mb-2
                               ${item.status === 'pending' ? 'bg-amber-50/60 border-amber-200' : ''}
                               ${item.status === 'cancelled' ? 'bg-gray-100/80 border-gray-200 opacity-80' : ''}
                               ${item.status !== 'pending' && item.status !== 'cancelled' ? 'bg-culinaryBg/30 border-neutralCustom/10' : ''}`}
-                          >
-                            <div>
-                              <p className={`font-bold ${item.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                                {item.name}
-                                {item.status === 'pending' && (
-                                  <span className="ml-2 text-[9px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-medium animate-pulse">Đang chế biến</span>
-                                )}
-                                {item.status === 'cancelled' && (
-                                  <span className="ml-2 text-[9px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-medium">Món bị hủy</span>
-                                )}
-                              </p>
-                              {item.note && <p className={`text-[10px] italic mt-0.5 ${item.status === 'cancelled' ? 'text-gray-400' : 'text-orange-600'}`}>📌 {item.note}</p>}
-                            </div>
-                            <span className={`font-black px-2 py-0.5 rounded-md ${item.status === 'cancelled' ? 'bg-gray-200 text-gray-500' : 'bg-primary/10 text-primary'}`}>x{item.quantity}</span>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-amber-600 bg-amber-50 p-3 rounded-xl text-center shrink-0">Bàn đã mở nhưng chưa tạo yêu cầu gọi món nào!</p>
-                  )}
-                </div>
-
-                {/* Nhập thông tin km */}
-                <div className="shrink-0 bg-white border-t border-neutralCustom/20 p-5 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] z-10">
-                  <div className="space-y-3">
-                    <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Khách hàng & Khuyến mãi</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        placeholder="Số điện thoại"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      />
-                      <input
-                        type="email"
-                        placeholder="Email nhận hóa đơn"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <select
-                        value={voucherCode}
-                        onChange={(e) => setVoucherCode(e.target.value)}
-                        className={`w-full px-3 py-2 text-sm bg-white border outline-none focus:ring-2 transition-all shadow-sm font-bold rounded-xl cursor-pointer
-                          ${customerVouchers.length > 0 ? 'border-primary/50 text-primary focus:ring-primary/20 focus:border-primary' : 'border-neutralCustom/30 text-gray-500'}
-                        `}
-                      >
-                        <option value="">
-                          {customerVouchers.length > 0 ? "-- Chọn mã giảm giá của khách --" : "-- Khách chưa có mã giảm giá --"}
-                        </option>
-                        {customerVouchers.map((v) => (
-                          <option key={v.code || v.id} value={v.code || v.id}>
-                            {v.code || v.id} - {v.name} (Giảm: {Number(v.discount_value).toLocaleString('vi-VN')}đ)
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {billData && (
-                    <div className="border-t border-dashed border-neutralCustom/30 pt-3 mt-4 space-y-2 text-sm">
-                      <div className="flex justify-between text-neutralCustom">
-                        <span>Tổng tiền món (Đã xuất món):</span>
-                        <span className="font-bold text-gray-800">{billData.subTotal?.toLocaleString('vi-VN')} đ</span>
-                      </div>
-
-                      {billData.voucherName && billData.voucherName !== "Không áp dụng" && (
-                        <div className="flex flex-col items-end mt-1.5 space-y-1">
-                          {billData.voucherName.split(/\+|,/).map((promoName, idx) => {
-                            const name = promoName.trim();
-                            if (!name) return null;
-                            return (
-                              <span key={idx} className="text-[10.5px] italic opacity-90 leading-tight bg-green-50 px-2 py-1 rounded-md border border-green-100">
-                                accepted {name}
-                              </span>
-                            );
-                          })}
+                              >
+                                <div>
+                                  <p className={`font-bold ${item.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                                    {item.name}
+                                    {item.status === 'pending' && (
+                                      <span className="ml-2 text-[9px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-medium animate-pulse">Đang chế biến</span>
+                                    )}
+                                    {item.status === 'cancelled' && (
+                                      <span className="ml-2 text-[9px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-medium">Món bị hủy</span>
+                                    )}
+                                  </p>
+                                  {item.note && <p className={`text-[10px] italic mt-0.5 ${item.status === 'cancelled' ? 'text-gray-400' : 'text-orange-600'}`}>📌 {item.note}</p>}
+                                </div>
+                                <span className={`font-black px-2 py-0.5 rounded-md ${item.status === 'cancelled' ? 'bg-gray-200 text-gray-500' : 'bg-primary/10 text-primary'}`}>x{item.quantity}</span>
+                              </div>
+                            ));
+                          })()}
                         </div>
+                      ) : (
+                        <p className="text-xs text-amber-600 bg-amber-50 p-3 rounded-xl text-center shrink-0">Bàn đã mở nhưng chưa tạo yêu cầu gọi món nào!</p>
                       )}
-
-                      <div className="flex justify-between text-gray-900 font-black text-base border-t border-neutralCustom/10 pt-2 mt-2">
-                        <span>Tạm tính (Gồm VAT 10%):</span>
-                        <span className="text-primary text-xl">{billData.grandTotal?.toLocaleString('vi-VN')} đ</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* CÁC NÚT BUTTON */}
-                <div className="p-5 bg-culinaryBg border-t border-neutralCustom/20 shrink-0">
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* NÚT TIỀN MẶT: Khóa nếu không có quyền 'checkout' */}
-                      <button
-                        onClick={() => handleCheckout('CASH')}
-                        disabled={!hasPermission('checkout')}
-                        className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-md transition-all
-                          ${hasPermission('checkout')
-                            ? 'bg-primary text-white hover:bg-secondary'
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'}`}
-                      >
-                        TIỀN MẶT
-                      </button>
-
-                      {/* NÚT VN PAY: Khóa nếu không có quyền 'checkout' */}
-                      <button
-                        onClick={() => handleCheckout('VNPAY')}
-                        disabled={!hasPermission('checkout')}
-                        className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-1.5
-                          ${hasPermission('checkout')
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'}`}
-                      >
-                        <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
-                        VN PAY
-                      </button>
                     </div>
 
-                    {showPrintVnpayBtn && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-center shadow-inner animation-fade-in">
-                        <p className="text-yellow-700 font-bold text-xs mb-2 animate-pulse">⏰ Đang chờ khách quét mã VNPAY...</p>
-                        <button
-                          onClick={() => {
-                            if (vnpayHtmlBill) {
-                              openSilentPrint(vnpayHtmlBill); // Kích hoạt lệnh in hóa đơn K80 tại chỗ
-                            }
-                            setShowPrintVnpayBtn(false); // Ẩn nút đi
-                            setVnpayHtmlBill(''); // Reset bộ nhớ tạm html
-                            handleCloseModal(); // Đóng bảng chi tiết bàn
-                            fetchTables(); // Cập nhật lại sơ đồ bàn trống
-                          }}
-                          className="w-full bg-green-600 text-white font-bold py-2.5 px-4 rounded-lg text-sm hover:bg-green-700 shadow transition-all"
-                        >
-                          KHÁCH ĐÃ CHUYỂN KHOẢN - IN BILL
-                        </button>
+                    {/* Cột Phải: Khách hàng, Voucher, Hóa đơn & Nút bấm */}
+                    <div className="w-full md:w-[360px] flex flex-col min-h-0 bg-white">
+                      {/* Nhập thông tin khuyến mãi & hóa đơn (Scrollable) */}
+                      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
+                        <div className="space-y-3">
+                          <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Khách hàng & Khuyến mãi</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <input
+                              type="text"
+                              placeholder="Số điện thoại"
+                              value={phoneNumber}
+                              onChange={(e) => setPhoneNumber(e.target.value)}
+                              className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                            />
+                            <input
+                              type="email"
+                              placeholder="Email nhận hóa đơn"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                            />
+                          </div>
+
+                          <div className="relative">
+                            <select
+                              value={voucherCode}
+                              onChange={(e) => setVoucherCode(e.target.value)}
+                              className={`w-full px-3 py-2 text-sm bg-white border outline-none focus:ring-2 transition-all shadow-sm font-bold rounded-xl cursor-pointer
+                            ${customerVouchers.length > 0 ? 'border-primary/50 text-primary focus:ring-primary/20 focus:border-primary' : 'border-neutralCustom/30 text-gray-500'}
+                          `}
+                            >
+                              <option value="">
+                                {customerVouchers.length > 0 ? "-- Chọn mã giảm giá của khách --" : "-- Khách chưa có mã giảm giá --"}
+                              </option>
+                              {customerVouchers.map((v) => (
+                                <option key={v.code || v.id} value={v.code || v.id}>
+                                  {v.code || v.id} - {v.name} (Giảm: {v.discount_type === 'PERCENTAGE' ? `${v.discount_value}%` : `${Number(v.discount_value).toLocaleString('vi-VN')}đ`})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {billData && (
+                          <div className="border-t border-dashed border-neutralCustom/30 pt-3 mt-4 space-y-2 text-sm">
+                            <div className="flex justify-between text-neutralCustom">
+                              <span>Tổng tiền món (Đã xuất món):</span>
+                              <span className="font-bold text-gray-800">{billData.subTotal?.toLocaleString('vi-VN')} đ</span>
+                            </div>
+
+                            {billData.voucherName && billData.voucherName !== "Không áp dụng" && (
+                              <div className="flex flex-col items-end mt-1.5 space-y-1">
+                                {billData.voucherName.split(/\+|,/).map((promoName, idx) => {
+                                  const name = promoName.trim();
+                                  if (!name) return null;
+                                  return (
+                                    <span key={idx} className="text-[10.5px] italic opacity-90 leading-tight bg-green-50 px-2 py-1 rounded-md border border-green-100">
+                                      accepted {name}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            <div className="flex justify-between text-gray-900 font-black text-base border-t border-neutralCustom/10 pt-2 mt-2">
+                              <span>Tạm tính (Gồm VAT 10%):</span>
+                              <span className="text-primary text-xl">{billData.grandTotal?.toLocaleString('vi-VN')} đ</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
 
-                    {/* Hiển thị dòng thông báo nhắc nhở nhẹ nếu bị tắt quyền checkout */}
-                    {!hasPermission('checkout') && (
-                      <p className="text-[11px] text-red-500 font-bold text-center italic mt-1.5">
-                        ⚠️ Tài khoản của bạn đã bị giới hạn quyền thanh toán (Checkout).
-                      </p>
-                    )}
+                      {/* CÁC NÚT BUTTON */}
+                      <div className="p-5 bg-culinaryBg border-t border-neutralCustom/20 shrink-0">
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* NÚT TIỀN MẶT: Khóa nếu không có quyền 'checkout' */}
+                            <button
+                              onClick={() => handleCheckout('CASH')}
+                              disabled={!hasPermission('checkout')}
+                              className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-md transition-all
+                            ${hasPermission('checkout')
+                                  ? 'bg-primary text-white hover:bg-secondary cursor-pointer'
+                                  : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'}`}
+                            >
+                              TIỀN MẶT
+                            </button>
 
-                    {/* NÚT HỦY PHIÊN/ĐÓNG BÀN: Khóa nếu không có quyền 'manage_tables' */}
-                    <button
-                      onClick={() => handleCloseTable(selectedTable.id)}
-                      disabled={!hasPermission('manage_tables')}
-                      className={`w-full py-3 rounded-xl font-bold text-sm transition-all border-2 bg-white
-                        ${hasPermission('manage_tables')
-                          ? 'border-primary text-primary hover:bg-primary/10'
-                          : 'border-gray-300 text-gray-400 cursor-not-allowed opacity-60'}`}
-                    >
-                      ĐÓNG BÀN (HỦY PHIÊN)
-                    </button>
+                            {/* NÚT VN PAY: Khóa nếu không có quyền 'checkout' */}
+                            <button
+                              onClick={() => handleCheckout('VNPAY')}
+                              disabled={!hasPermission('checkout')}
+                              className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-1.5
+                            ${hasPermission('checkout')
+                                  ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                                  : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'}`}
+                            >
+                              <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                              VN PAY
+                            </button>
+                          </div>
+
+                          {showPrintVnpayBtn && (
+                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-center shadow-inner animation-fade-in">
+                              <p className="text-yellow-700 font-bold text-xs mb-2 animate-pulse">⏰ Đang chờ khách quét mã VNPAY...</p>
+                              <button
+                                onClick={() => {
+                                  if (vnpayHtmlBill) {
+                                    openSilentPrint(vnpayHtmlBill); // Kích hoạt lệnh in hóa đơn K80 tại chỗ
+                                  }
+                                  setShowPrintVnpayBtn(false); // Ẩn nút đi
+                                  setVnpayHtmlBill(''); // Reset bộ nhớ tạm html
+                                  handleCloseModal(); // Đóng bảng chi tiết bàn
+                                  fetchTables(); // Cập nhật lại sơ đồ bàn trống
+                                }}
+                                className="w-full bg-green-600 text-white font-bold py-2.5 px-4 rounded-lg text-sm hover:bg-green-700 shadow transition-all cursor-pointer"
+                              >
+                                KHÁCH ĐÃ CHUYỂN KHOẢN - IN BILL
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Hiển thị dòng thông báo nhắc nhở nhẹ nếu bị tắt quyền checkout */}
+                          {!hasPermission('checkout') && (
+                            <p className="text-[11px] text-red-500 font-bold text-center italic mt-1.5">
+                              ⚠️ Tài khoản của bạn đã bị giới hạn quyền thanh toán (Checkout).
+                            </p>
+                          )}
+
+                          {/* NÚT HỦY PHIÊN/ĐÓNG BÀN: Khóa nếu không có quyền 'manage_tables' */}
+                          <button
+                            onClick={() => handleCloseTable(selectedTable.id)}
+                            disabled={!hasPermission('manage_tables')}
+                            className={`w-full py-3 rounded-xl font-bold text-sm transition-all border-2 bg-white
+                          ${hasPermission('manage_tables')
+                                ? 'border-primary text-primary hover:bg-primary/10 cursor-pointer'
+                                : 'border-gray-300 text-gray-400 cursor-not-allowed opacity-60'}`}
+                          >
+                            ĐÓNG BÀN (HỦY PHIÊN)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Hộp thoại thông báo tùy chỉnh (Custom Dialog) */}
+      {dialog.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={closeDialog}></div>
+          <div className="relative bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up z-[110]">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center border border-neutralCustom/10">
+              {dialog.type === 'success' && (
+                <span className="material-symbols-outlined text-4xl text-green-500 bg-green-50 w-full h-full rounded-full flex items-center justify-center">check_circle</span>
+              )}
+              {dialog.type === 'error' && (
+                <span className="material-symbols-outlined text-4xl text-red-500 bg-red-50 w-full h-full rounded-full flex items-center justify-center">error</span>
+              )}
+              {dialog.type === 'warning' && (
+                <span className="material-symbols-outlined text-4xl text-amber-500 bg-amber-50 w-full h-full rounded-full flex items-center justify-center">warning</span>
+              )}
+              {dialog.type === 'info' && (
+                <span className="material-symbols-outlined text-4xl text-blue-500 bg-blue-50 w-full h-full rounded-full flex items-center justify-center">info</span>
+              )}
+              {dialog.type === 'confirm' && (
+                <span className="material-symbols-outlined text-4xl text-primary bg-primary/10 w-full h-full rounded-full flex items-center justify-center">help</span>
+              )}
+            </div>
+            <h3 className="text-lg font-black text-gray-900 mb-2">{dialog.title}</h3>
+            <p className="text-sm text-neutralCustom mb-6 whitespace-pre-line leading-relaxed">{dialog.message}</p>
+            <div className="flex gap-3 justify-center">
+              {dialog.type === 'confirm' ? (
+                <>
+                  <button
+                    onClick={() => {
+                      if (dialog.onCancel) dialog.onCancel();
+                      closeDialog();
+                    }}
+                    className="w-1/2 py-2.5 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-sm rounded-xl hover:bg-stone-50 transition-all cursor-pointer"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (dialog.onConfirm) dialog.onConfirm();
+                      closeDialog();
+                    }}
+                    className="w-1/2 py-2.5 bg-primary text-white font-black text-sm rounded-xl hover:bg-secondary transition-all cursor-pointer shadow-md shadow-primary/10"
+                  >
+                    Xác nhận
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={closeDialog}
+                  className="px-8 py-2.5 bg-primary text-white font-bold text-sm rounded-xl hover:bg-secondary transition-all cursor-pointer shadow-md shadow-primary/10"
+                >
+                  Đồng ý
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

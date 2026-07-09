@@ -312,7 +312,7 @@ const RecipeManagement = () => {
       </head>
       <body>
         <div class="header">
-          <div style="font-size: 12pt; font-weight: bold;">LÀNG MIXI BBQ</div>
+          <div style="font-size: 12pt; font-weight: bold;">LÀNG MÌXI BBQ</div>
           <div style="font-size: 9pt; letter-spacing: 2px;">HỆ THỐNG QUẢN LÝ CÔNG THỨC TIÊU CHUẨN</div>
           <h1 class="doc-title" style="margin-top: 15px;">TIÊU CHUẨN CHẾ BIẾN MÓN ĂN</h1>
           <div class="doc-subtitle">Tên món: ${dishName} | Phiên bản áp dụng: Version ${selectedVersion}</div>
@@ -391,7 +391,7 @@ const RecipeManagement = () => {
         </div>
       )}
 
-      <main className="ml-64 pt-24 p-8 w-full flex flex-col h-screen transition-all duration-300">
+      <main className="ml-64 pt-24 p-8 w-[calc(100%-16rem)] flex flex-col h-screen transition-all duration-300">
         {/* === HEADER TRANG === */}
         <div className="mb-8 flex-shrink-0">
           <div onClick={() => navigate('/admin/dish-management')} className="flex items-center gap-2 text-neutralCustom mb-4 hover:text-primary cursor-pointer transition-colors w-fit no-print">

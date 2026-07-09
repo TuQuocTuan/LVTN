@@ -213,7 +213,7 @@ const CustomerReview = () => {
           <p className="text-stone-600 mb-2 text-sm leading-relaxed font-semibold">
             {isAlreadyReviewed
               ? 'Hóa đơn này của bạn đã được thực hiện đánh giá trước đó.'
-              : 'Làng MIXI BBQ chân thành cảm ơn ý kiến đóng góp quý báu của bạn!'}
+              : 'Làng MÌXI BBQ chân thành cảm ơn ý kiến đóng góp quý báu của bạn!'}
           </p>
           <p className="text-stone-500 text-xs leading-relaxed">
             Mọi ý kiến của quý khách là nguồn động lực và tư liệu to lớn giúp đội ngũ phát triển món ăn cải thiện dịch vụ nướng lẩu ngày một tốt hơn. Chúc bạn có một ngày vui vẻ!
@@ -234,7 +234,7 @@ const CustomerReview = () => {
           </span>
           <h1 className="text-2xl font-black uppercase mt-3 tracking-tight">LÀNG MÌXI BBQ</h1>
           <p className="text-xs text-orange-100/90 mt-1 leading-relaxed max-w-xs mx-auto">
-            Hãy để lại cảm nhận chân thực nhất của bạn để Làng MIXI ngày một phục vụ tốt hơn nhé!
+            Hãy để lại cảm nhận chân thực nhất của bạn để Làng MÌXI ngày một phục vụ tốt hơn nhé!
           </p>
         </div>
 

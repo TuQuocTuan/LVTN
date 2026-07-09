@@ -140,7 +140,7 @@ const AdminDashboard = () => {
       <body>
         <table>
           <tr>
-            <td colspan="3" class="title-row">BÁO CÁO DOANH THU HOẠT ĐỘNG - LÀNG MIXI BBQ</td>
+            <td colspan="3" class="title-row">BÁO CÁO DOANH THU HOẠT ĐỘNG - LÀNG MÌXI BBQ</td>
           </tr>
           <tr>
             <td class="meta-label">Thời điểm xuất báo cáo:</td>
@@ -319,7 +319,7 @@ const AdminDashboard = () => {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-[17px] font-bold text-gray-900">Xu hướng doanh thu</h3>
-              <p className="text-neutralCustom text-[11px] mt-0.5">Biểu đồ biểu diễn dòng tiền tuần này của Làng Mixi</p>
+              <p className="text-neutralCustom text-[11px] mt-0.5">Biểu đồ biểu diễn dòng tiền tuần này của Làng MÌXI</p>
             </div>
             <div className="flex gap-4 text-xs font-bold text-neutralCustom">
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-primary"></span> Doanh thu thật</span>

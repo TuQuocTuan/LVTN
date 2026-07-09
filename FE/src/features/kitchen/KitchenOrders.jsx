@@ -13,6 +13,42 @@ const KitchenDashboard = () => {
   const [loading, setLoading] = useState(false);
 
   const [notifications, setNotifications] = useState([]);
+  const [dialog, setDialog] = useState({
+    isOpen: false,
+    type: 'info', // 'success' | 'error' | 'warning' | 'confirm'
+    title: '',
+    message: '',
+    onConfirm: null,
+    onCancel: null
+  });
+
+  const showDialog = (type, title, message, onConfirm = null, onCancel = null) => {
+    setDialog({
+      isOpen: true,
+      type,
+      title,
+      message,
+      onConfirm,
+      onCancel
+    });
+  };
+
+  const closeDialog = () => {
+    setDialog(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const showAlert = (message, type = 'info') => {
+    let title = 'Thông báo';
+    if (type === 'success') title = 'Thành công';
+    if (type === 'error') title = 'Lỗi';
+    if (type === 'warning') title = 'Cảnh báo';
+    
+    showDialog(type, title, message);
+  };
+
+  const showConfirm = (message, onConfirm, onCancel = null) => {
+    showDialog('confirm', 'Xác nhận', message, onConfirm, onCancel);
+  };
   const [showNotiDropdown, setShowNotiDropdown] = useState(false);
 
   const [userRole, setUserRole] = useState('');
@@ -83,11 +119,11 @@ const KitchenDashboard = () => {
   // Hàm xem công thức món ăn
   const handleViewRecipe = async (dishId, dishName) => {
     if (!hasPermission('view_recipes')) {
-      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền xem công thức!");
+      return showAlert("Tài khoản của bạn đã bị giới hạn, không có quyền xem công thức!", "warning");
     }
 
     if (!dishId) {
-      alert("Thiếu ID món ăn để xem công thức!");
+      showAlert("Thiếu ID món ăn để xem công thức!", "warning");
       return;
     }
 
@@ -102,7 +138,7 @@ const KitchenDashboard = () => {
       }
     } catch (error) {
       console.error('Lỗi khi lấy công thức:', error);
-      alert('Món này chưa có công thức hoặc có lỗi xảy ra!');
+      showAlert('Món này chưa có công thức hoặc có lỗi xảy ra!', "error");
     }
   };
 
@@ -111,7 +147,7 @@ const KitchenDashboard = () => {
   // Hàm hoàn thành đơn hàng
   const handleCompleteOrder = async (orderId) => {
     if (!hasPermission('process_orders')) {
-      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền thay đổi trạng thái món ăn!");
+      return showAlert("Tài khoản của bạn đã bị giới hạn, không có quyền thay đổi trạng thái món ăn!", "warning");
     }
 
     try {
@@ -123,11 +159,11 @@ const KitchenDashboard = () => {
       if (response.data.success) {
         fetchPendingOrders();
       } else {
-        alert("Lỗi từ server: " + response.data.message);
+        showAlert("Lỗi từ server: " + response.data.message, "error");
       }
     } catch (error) {
       console.error("Lỗi hoàn thành đơn:", error);
-      alert("Không thể kết nối đến máy chủ để hoàn thành đơn!");
+      showAlert("Không thể kết nối đến máy chủ để hoàn thành đơn!", "error");
     } finally {
       setLoading(false);
     }
@@ -136,33 +172,33 @@ const KitchenDashboard = () => {
   // Hàm huỷ đơn hàng
   const handleCancelOrder = async (orderId) => {
     if (!hasPermission('process_orders')) {
-      return alert("Tài khoản của bạn đã bị giới hạn, không có quyền thay đổi trạng thái món ăn!");
+      return showAlert("Tài khoản của bạn đã bị giới hạn, không có quyền thay đổi trạng thái món ăn!", "warning");
     }
 
-    if (!window.confirm("Bếp đã hết nguyên liệu hoặc muốn từ chối làm order này?")) return;
+    showConfirm("Bếp đã hết nguyên liệu hoặc muốn từ chối làm order này?", async () => {
+      try {
+        setLoading(true);
+        const response = await axios.post(`${API_URL}/orders/cancelOrder`, {
+          order_id: orderId
+        });
 
-    try {
-      setLoading(true);
-      const response = await axios.post(`${API_URL}/orders/cancelOrder`, {
-        order_id: orderId
-      });
-
-      if (response.data.success) {
-        fetchPendingOrders();
-      } else {
-        alert("Lỗi từ server: " + response.data.message);
+        if (response.data.success) {
+          fetchPendingOrders();
+        } else {
+          showAlert("Lỗi từ server: " + response.data.message, "error");
+        }
+      } catch (error) {
+        console.error("Lỗi khi hủy đơn:", error);
+        showAlert("Không thể kết nối đến máy chủ để hủy đơn!", "error");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Lỗi khi hủy đơn:", error);
-      alert("Không thể kết nối đến máy chủ để hủy đơn!");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
     <div className="min-h-screen bg-culinaryBg text-neutralCustom font-sans overflow-hidden flex">
-      <main className="flex-1 relative">
+      <main className="flex-1 relative overflow-y-auto custom-scrollbar">
 
         {/* Header */}
         <StaffHeader
@@ -177,7 +213,7 @@ const KitchenDashboard = () => {
         />
 
         {/* Danh sách Order */}
-        <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {orders.length === 0 && <p className="text-gray-500 italic col-span-full">Hiện tại không có order nào đang chờ...</p>}
 
           {orders.map((order) => (
@@ -326,6 +362,65 @@ const KitchenDashboard = () => {
           </div>
         )}
       </main>
+
+      {/* Hộp thoại thông báo tùy chỉnh (Custom Dialog) */}
+      {dialog.isOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={closeDialog}></div>
+          <div className="relative bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up z-[130]">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center border border-neutralCustom/10">
+              {dialog.type === 'success' && (
+                <span className="material-symbols-outlined text-4xl text-green-500 bg-green-50 w-full h-full rounded-full flex items-center justify-center">check_circle</span>
+              )}
+              {dialog.type === 'error' && (
+                <span className="material-symbols-outlined text-4xl text-red-500 bg-red-50 w-full h-full rounded-full flex items-center justify-center">error</span>
+              )}
+              {dialog.type === 'warning' && (
+                <span className="material-symbols-outlined text-4xl text-amber-500 bg-amber-50 w-full h-full rounded-full flex items-center justify-center">warning</span>
+              )}
+              {dialog.type === 'info' && (
+                <span className="material-symbols-outlined text-4xl text-blue-500 bg-blue-50 w-full h-full rounded-full flex items-center justify-center">info</span>
+              )}
+              {dialog.type === 'confirm' && (
+                <span className="material-symbols-outlined text-4xl text-primary bg-primary/10 w-full h-full rounded-full flex items-center justify-center">help</span>
+              )}
+            </div>
+            <h3 className="text-lg font-black text-gray-900 mb-2">{dialog.title}</h3>
+            <p className="text-sm text-neutralCustom mb-6 whitespace-pre-line leading-relaxed">{dialog.message}</p>
+            <div className="flex gap-3 justify-center">
+              {dialog.type === 'confirm' ? (
+                <>
+                  <button
+                    onClick={() => {
+                      if (dialog.onCancel) dialog.onCancel();
+                      closeDialog();
+                    }}
+                    className="w-1/2 py-2.5 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-sm rounded-xl hover:bg-stone-50 transition-all cursor-pointer"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (dialog.onConfirm) dialog.onConfirm();
+                      closeDialog();
+                    }}
+                    className="w-1/2 py-2.5 bg-primary text-white font-black text-sm rounded-xl hover:bg-secondary transition-all cursor-pointer shadow-md shadow-primary/10"
+                  >
+                    Xác nhận
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={closeDialog}
+                  className="px-8 py-2.5 bg-primary text-white font-bold text-sm rounded-xl hover:bg-secondary transition-all cursor-pointer shadow-md shadow-primary/10"
+                >
+                  Đồng ý
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -162,7 +162,7 @@ const AboutPage = () => {
         <div className="absolute inset-0 z-0 opacity-40">
           <img 
             src="https://images.unsplash.com/photo-1544025162-d76694265947?w=1600&h=800&fit=crop" 
-            alt="Làng Mixi BBQ Background" 
+            alt="Làng MÌXI BBQ Background" 
             className="w-full h-full object-cover scale-105 filter blur-[0.5px]"
           />
         </div>
@@ -317,7 +317,7 @@ const AboutPage = () => {
       {/* BẢNG TIN & SỰ KIỆN */}
       <section className="py-24 max-w-5xl mx-auto px-4">
         <div className="text-center max-w-xl mx-auto mb-16">
-          <span className="text-orange-500 font-bold text-xs uppercase tracking-widest">Tin tức & Sự kiện Làng Mixi</span>
+          <span className="text-orange-500 font-bold text-xs uppercase tracking-widest">Tin tức & Sự kiện Làng MÌXI</span>
           <h2 className="text-3xl sm:text-4xl font-black text-stone-900 mt-1 tracking-tight">Sự Kiện Đồng Hành</h2>
           <p className="text-stone-500 text-xs sm:text-sm mt-3 leading-relaxed">
             Cập nhật thường xuyên các chương trình ưu đãi, ngày hội ẩm thực và đặc quyền tặng kèm voucher đặc biệt.
@@ -434,7 +434,7 @@ const AboutPage = () => {
             
             <h3 className="text-xl sm:text-2xl font-black text-stone-900 mb-1">Cổng Tra Cứu Ưu Đãi</h3>
             <p className="text-xs text-stone-500 leading-relaxed mb-6">
-              Vui lòng nhập chính xác Số điện thoại và Email đăng ký lúc đặt bàn để rà soát hòm thư voucher tri ân của bạn tại Làng Mixi BBQ.
+              Vui lòng nhập chính xác Số điện thoại và Email đăng ký lúc đặt bàn để rà soát hòm thư voucher tri ân của bạn tại Làng MÌXI BBQ.
             </p>
 
             <form onSubmit={handleVoucherLookup} className="space-y-3 max-w-md mx-auto mb-4">

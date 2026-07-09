@@ -558,14 +558,29 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 console.error("Lỗi sinh QR Code trên Bill:", qrErr.message);
             }
         }
-        // =========================================================================
 
         const html_bill = `
         <!DOCTYPE html>
         <html>
         <head>
             <style>
-                body { font-family: 'Arial', sans-serif; font-size: 12px; width: 80mm; margin: 0; padding: 10px; }
+                @page {
+                    size: 80mm auto;
+                    margin: 0;
+                }
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    width: 80mm;
+                    height: auto;
+                    background-color: #fff;
+                }
+                body {
+                    font-family: 'Arial', sans-serif;
+                    font-size: 12px;
+                    padding: 8px;
+                    box-sizing: border-box;
+                }
                 .text-center { text-align: center; }
                 .bold { font-weight: bold; }
                 .divider { border-top: 1px dashed #000; margin: 10px 0; }
@@ -575,7 +590,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
         </head>
         <body>
             <div class="text-center">
-                <h3 style="margin: 0;">NHÀ HÀNG QR ORDER</h3>
+                <h3 style="margin: 0; font-size: 16px;">MÌXI</h3>
                 <p style="margin: 5px 0;">Hóa Đơn Thanh Toán</p>
                 <p>Mã Phiên: #${session_id.substring(0, 8)}...</p>
             </div>

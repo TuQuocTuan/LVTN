@@ -64,7 +64,7 @@ const ReviewManagement = () => {
             }
         } catch (error) {
             console.error("Lỗi đồng bộ dữ liệu đánh giá:", error);
-            showAlert("Gặp sự cố khi đồng bộ ý kiến đánh giá từ hệ thống Làng MIXI BBQ!", "error", "Lỗi đồng bộ");
+            showAlert("Gặp sự cố khi đồng bộ ý kiến đánh giá từ hệ thống Làng MÌXI BBQ!", "error", "Lỗi đồng bộ");
         } finally {
             setIsLoading(false);
         }
@@ -389,7 +389,7 @@ const ReviewManagement = () => {
                             {isLoading ? (
                                 <div className="py-24 text-center text-stone-500 font-bold flex flex-col items-center justify-center gap-3">
                                     <span className="material-symbols-outlined text-5xl animate-spin text-primary">progress_activity</span>
-                                    <span>Đang lấy đánh giá live từ hệ thống Làng MIXI BBQ...</span>
+                                    <span>Đang lấy đánh giá live từ hệ thống Làng MÌXI BBQ...</span>
                                 </div>
                             ) : filteredReviews.length > 0 ? (
                                 viewMode === 'table' ? (

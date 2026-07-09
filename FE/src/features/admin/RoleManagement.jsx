@@ -24,6 +24,14 @@ const RoleManagement = () => {
   // State cho phần Edit Quyền (Cột bên phải)
   const [editData, setEditData] = useState({ role: '', is_active: true, permissions: {} });
 
+  // --- STATES CHỐT CHẶN BẢO MẬT THAY THẾ ALERT/CONFIRM TRÌNH DUYỆT ---
+  const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
+
+  const showAlert = (message, type = 'success', title = 'Thông báo') => {
+    setAlertModal({ show: true, message, title, type });
+  };
+
   // ĐỊNH NGHĨA CÁC QUYỀN
   const permissionCategories = [
     {
@@ -165,11 +173,11 @@ const RoleManagement = () => {
 
       const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
       if (res.data.success) {
-        alert("Cập nhật phân quyền thành công!");
+        showAlert("Cập nhật phân quyền thành công!", "success", "Thành công");
         fetchUsers();
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Lỗi cập nhật!");
+      showAlert(error.response?.data?.message || "Lỗi cập nhật!", "error", "Thất bại");
     } finally {
       setIsSaving(false);
     }
@@ -207,12 +215,12 @@ const RoleManagement = () => {
 
       const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
       if (res.data.success) {
-        alert("Cập nhật thông tin thành công!");
+        showAlert("Cập nhật thông tin thành công!", "success", "Thành công");
         setIsEditInfoModalOpen(false);
         fetchUsers();
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Lỗi khi cập nhật thông tin!");
+      showAlert(error.response?.data?.message || "Lỗi khi cập nhật thông tin!", "error", "Thất bại");
     } finally {
       setIsSaving(false);
     }
@@ -241,52 +249,58 @@ const RoleManagement = () => {
 
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/user/add`, payload);
       if (res.data.success) {
-        alert(res.data.message || "Đã thêm nhân viên và gửi Email thành công!");
+        showAlert(res.data.message || "Đã thêm nhân viên và gửi Email thành công!", "success", "Thành công");
         setIsAddModalOpen(false);
         setNewUser({ username: '', password: '', fullname: '', role: 'cashier', email: '', phone_number: '', is_active: true });
         fetchUsers();
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Lỗi khi thêm nhân viên!");
+      showAlert(error.response?.data?.message || "Lỗi khi thêm nhân viên!", "error", "Thất bại");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleToggleLockUser = async (emp) => {
-    if (emp.role?.toLowerCase() === 'super_admin') return alert("Không thể thao tác trên tài khoản Super Admin!");
+    if (emp.role?.toLowerCase() === 'super_admin') return showAlert("Không thể thao tác trên tài khoản Super Admin!", "error", "Không cho phép");
 
     const confirmMessage = emp.is_active
       ? `Bạn có chắc chắn muốn KHÓA tài khoản của "${emp.fullname}"?`
       : `Bạn có chắc chắn muốn MỞ KHÓA tài khoản của "${emp.fullname}"?`;
 
-    if (window.confirm(confirmMessage)) {
-      try {
-        if (emp.is_active) {
-          // Trường hợp KHÓA: Gọi API delete để soft lock (Backend sẽ đổi is_active = false)
-          const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/delete/${emp.id}`);
-          if (res.data.success) {
-            alert("Đã khóa tài khoản thành công!");
-            fetchUsers();
+    setConfirmModal({
+      show: true,
+      title: emp.is_active ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
+      message: confirmMessage,
+      onConfirm: async () => {
+        try {
+          if (emp.is_active) {
+            // Trường hợp KHÓA: Gọi API delete để soft lock (Backend sẽ đổi is_active = false)
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/delete/${emp.id}`);
+            if (res.data.success) {
+              showAlert("Đã khóa tài khoản thành công!", "success", "Khóa thành công");
+              fetchUsers();
+            }
+          } else {
+            // Trường hợp MỞ KHÓA: Gọi API update truyền is_active = true
+            const payload = {
+              id: emp.id,
+              role: emp.role,
+              is_active: true,
+              permissions: typeof emp.permissions === 'string' ? emp.permissions : JSON.stringify(emp.permissions || {})
+            };
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
+            if (res.data.success) {
+              showAlert("Đã mở khóa tài khoản thành công!", "success", "Mở khóa thành công");
+              fetchUsers();
+            }
           }
-        } else {
-          // Trường hợp MỞ KHÓA: Gọi API update truyền is_active = true
-          const payload = {
-            id: emp.id,
-            role: emp.role,
-            is_active: true,
-            permissions: typeof emp.permissions === 'string' ? emp.permissions : JSON.stringify(emp.permissions || {})
-          };
-          const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
-          if (res.data.success) {
-            alert("Đã mở khóa tài khoản thành công!");
-            fetchUsers();
-          }
+        } catch (error) {
+          showAlert("Lỗi khi cập nhật trạng thái hoạt động tài khoản!", "error", "Lỗi cập nhật");
         }
-      } catch (error) {
-        alert("Lỗi khi cập nhật trạng thái hoạt động tài khoản!");
+        setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
       }
-    }
+    });
   };
 
   return (
@@ -294,7 +308,7 @@ const RoleManagement = () => {
       <AdminSidebar currentTab="user" />
       <AdminHeader />
 
-      <main className="flex-1 ml-64 pt-24 p-8 min-h-screen bg-culinaryBg w-full">
+      <main className="flex-1 ml-64 pt-24 p-8 min-h-screen bg-culinaryBg w-[calc(100%-16rem)]">
         <div className="w-full">
           {/* Page Header */}
           <header className="mb-8 flex justify-between items-end">
@@ -588,6 +602,58 @@ const RoleManagement = () => {
               <button onClick={handleUpdateInfoSubmit} disabled={isSaving} className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-primary hover:bg-secondary shadow-md flex items-center gap-2 transition-all disabled:opacity-50">
                 {isSaving ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
                 {isSaving ? 'Đang xử lý...' : 'Lưu thay đổi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 HỆ THỐNG ALERT MODAL THAY THẾ TOAST (Bảo mật, có nút bấm Đồng ý) */}
+      {alertModal.show && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
+            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
+              alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+            }`}>
+              <span className="material-symbols-outlined text-3xl">
+                {alertModal.type === 'success' ? 'check_circle' : 'error'}
+              </span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
+            <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{alertModal.message}</p>
+            <button 
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'success' })} 
+              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${
+                alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
+              }`}
+            >
+              Đồng ý
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 HỆ THỐNG HỘP THOẠI XÁC NHẬN THAY THẾ CONFIRM */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
+            <div className="w-16 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+              <span className="material-symbols-outlined text-3xl">info</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
+            <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{confirmModal.message}</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })} 
+                className="w-1/2 py-3 border border-neutralCustom/20 rounded-xl font-bold text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={confirmModal.onConfirm} 
+                className="w-1/2 py-3 bg-primary text-white font-bold rounded-xl text-sm hover:bg-secondary transition-all"
+              >
+                Xác nhận
               </button>
             </div>
           </div>
