@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 // Import supabase client để gọi thông báo realtime cho thu ngân
-import { supabase } from '../../config/supabase'; 
+import { supabase } from '../../config/supabase';
 import { initBroadcastChannel } from '../../utils/realtimeHelper';
 import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
@@ -10,7 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const PaymentPage = () => {
   // Lấy thông tin bàn và phiên ăn hiện tại từ localStorage (Hoặc context/Redux của bạn)
-  const sessionId = localStorage.getItem('sessionId'); 
+  const sessionId = localStorage.getItem('sessionId');
   const tableName = localStorage.getItem('table_name') || 'Bàn của bạn';
   const { t } = useLanguage();
 
@@ -23,10 +23,18 @@ const PaymentPage = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [paymentCalled, setPaymentCalled] = useState(false);
 
+  // Hộp thoại Alert tùy biến
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    icon: 'info'
+  });
+
   // State lưu kênh thông báo
   const [channel, setChannel] = useState(null);
 
- // 1. Khởi tạo kênh báo thu ngân bằng hàm helper
+  // 1. Khởi tạo kênh báo thu ngân bằng hàm helper
   useEffect(() => {
     const notifyChannel = initBroadcastChannel('restaurant-notifications');
     setChannel(notifyChannel);
@@ -44,12 +52,12 @@ const PaymentPage = () => {
 
       try {
         const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
-            session_id: sessionId,
-            is_preview: true // Báo cho BE biết đây là luồng xem trước tạm tính
+          session_id: sessionId,
+          is_preview: true // Báo cho BE biết đây là luồng xem trước tạm tính
         });
 
         const data = response.data;
-        
+
         if (data.success) {
           setBillData(data); // Nạp dữ liệu hóa đơn vào màn hình
         } else {
@@ -61,7 +69,7 @@ const PaymentPage = () => {
         setBillData(null);
       } finally {
         // ĐẢM BẢO CHẮC CHẮN: Dù thành công hay lỗi đều phải tắt chữ "Đang tải..."
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     };
 
@@ -69,15 +77,15 @@ const PaymentPage = () => {
   }, [sessionId]);
 
   // HÀM XỬ LÝ KHI KHÁCH BẤM YÊU CẦU THANH TOÁN
- const handleCallPayment = async () => {
+  const handleCallPayment = async () => {
     setIsCallingPayment(true);
     try {
       if (channel) {
         channel.send({
           type: 'broadcast',
           event: 'call_staff',
-          payload: { 
-            tableName: tableName, 
+          payload: {
+            tableName: tableName,
             type: 'checkout',
             time: new Date().toLocaleTimeString(),
             message: 'Khách yêu cầu thanh toán'
@@ -88,7 +96,13 @@ const PaymentPage = () => {
       setShowConfirm(false);
     } catch (error) {
       console.error("Lỗi khi gọi thanh toán:", error);
-      alert("Có lỗi xảy ra, vui lòng gọi nhân viên trực tiếp.");
+      setAlertModal({
+        isOpen: true,
+        title: "Lỗi hệ thống",
+        message: "Có lỗi xảy ra, vui lòng gọi nhân viên trực tiếp.",
+        icon: "error"
+      });
+      setShowConfirm(false);
     } finally {
       setIsCallingPayment(false);
     }
@@ -143,7 +157,7 @@ const PaymentPage = () => {
         <div className="space-y-4 mb-8">
           <p className="text-sm font-bold text-neutralCustom ml-1">Chi tiết món ăn</p>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            
+
             {/* Vì BE trả về billData.items là Object { "Tên món": { price, quantity, sub_total } } nên phải dùng Object.entries để map */}
             {billData.items && Object.entries(billData.items).map(([dishName, detail], index, array) => (
               <div key={index} className={`flex justify-between items-center p-4 ${index !== array.length - 1 ? 'border-b border-gray-50' : ''}`}>
@@ -170,7 +184,7 @@ const PaymentPage = () => {
             <span className="text-neutralCustom">{t('subTotal')}</span>
             <span className="font-bold text-gray-900">{billData.sub_total?.toLocaleString()}đ</span>
           </div>
-          
+
           {/* Chỉ hiện dòng giảm giá nếu có áp dụng khuyến mãi */}
           {billData.discount_amount > 0 && (
             <div className="flex justify-between text-sm text-green-600">
@@ -183,7 +197,7 @@ const PaymentPage = () => {
             <span className="text-neutralCustom">{t('vatRateLabel')}</span>
             <span className="font-bold text-gray-900">{billData.vat_amount?.toLocaleString()}đ</span>
           </div>
-          
+
           <div className="border-t border-dashed border-gray-200 pt-3 flex justify-between items-center">
             <span className="font-bold text-gray-900 text-lg">{t('finalAmount')}</span>
             <span className="font-bold text-primary text-2xl">{billData.tongtien?.toLocaleString()}đ</span>
@@ -192,14 +206,14 @@ const PaymentPage = () => {
 
         {/* NÚT GỌI THANH TOÁN */}
         <div className="fixed bottom-24 left-0 w-full px-4 bg-transparent">
-          <button 
+          <button
             onClick={() => !paymentCalled && setShowConfirm(true)}
             disabled={paymentCalled}
             className={`w-full py-4 rounded-xl font-bold text-lg shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95 ${
-              paymentCalled 
-              ? 'bg-green-500 text-white cursor-default' 
-              : 'bg-primary text-white shadow-primary/30 hover:bg-orange-800'
-            }`}
+              paymentCalled
+                ? 'bg-green-500 text-white cursor-default'
+                : 'bg-primary text-white shadow-primary/30 hover:bg-orange-800'
+              }`}
           >
             <span className="material-symbols-outlined">
               {paymentCalled ? 'check_circle' : 'payments'}
@@ -221,19 +235,49 @@ const PaymentPage = () => {
                 {t('confirmPaymentDesc')}
               </p>
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={() => setShowConfirm(false)}
                   className="flex-1 py-3 text-sm font-bold text-neutralCustom bg-gray-100 rounded-xl"
                 >
                   {t('btnNo')}
                 </button>
-                <button 
+                <button
                   onClick={handleCallPayment}
                   className="flex-1 py-3 text-sm font-bold text-white bg-primary rounded-xl flex items-center justify-center"
                 >
                   {isCallingPayment ? '...' : t('btnYes')}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* POPUP ALERT MODAL */}
+        {alertModal.isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}></div>
+            <div className="relative bg-white w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl border border-neutralCustom/10 animate-scale-up">
+              
+              {/* Icon tương ứng với loại cảnh báo */}
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border shadow-sm ${
+                alertModal.icon === 'error' 
+                  ? 'bg-red-50 text-red-500 border-red-100' 
+                  : 'bg-blue-50 text-blue-500 border-blue-100'
+              }`}>
+                <span className="material-symbols-outlined text-3xl">
+                  {alertModal.icon === 'error' ? 'error' : 'info'}
+                </span>
+              </div>
+
+              <h3 className="text-xl font-black text-gray-950 mb-2">{alertModal.title}</h3>
+              <p className="text-xs text-neutralCustom leading-relaxed mb-6 px-2">{alertModal.message}</p>
+
+              <button
+                onClick={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                className="w-full py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-secondary active:scale-95 transition-all"
+              >
+                Đồng ý
+              </button>
             </div>
           </div>
         )}

@@ -299,7 +299,7 @@ const DishManagement = () => {
                 ))}
               </div>
               <span className="bg-primary/10 text-primary border border-primary/20 text-xs font-black px-3 py-1 rounded-full whitespace-nowrap ml-4">
-                {filteredDishes.length} món nướng lẩu
+                {filteredDishes.length} món.
               </span>
             </div>
 

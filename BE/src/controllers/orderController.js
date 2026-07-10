@@ -748,23 +748,14 @@ export const updateOrderStatus = async (req, res) => {
 export const cancelOrderStatus = async (req, res) => {
     try {
         const { order_id } = req.body;
+        const { data: orderData, error: orderErr } = await supabase
+            .from('orders')
+            .update({ status: 'cancelled' })
+            .eq('id', order_id)
+            .select(`status, id, session_id, dining_sessions (tables(name))`)
+            .single();
 
-        const [orderUpdate, detailsUpdate] = await Promise.all([
-            supabase
-                .from('orders')
-                .update({ status: 'cancelled' })
-                .eq('id', order_id)
-                .select(`status, id, session_id, dining_sessions (tables(name))`)
-                .single(),
-
-            supabase
-                .from('order_details')
-                .update({ status: 'cancelled' })
-                .eq('order_id', order_id)
-        ]);
-
-        if (orderUpdate.error) throw orderUpdate.error;
-        if (detailsUpdate.error) throw detailsUpdate.error;
+        if (orderErr) throw orderErr;
 
         const { data: orderDetails } = await supabase
             .from('order_details')
@@ -772,7 +763,7 @@ export const cancelOrderStatus = async (req, res) => {
             .eq('order_id', order_id);
 
         const finalOrder = {
-            ...orderUpdate.data,
+            ...orderData,
             order_details: orderDetails
         };
 
