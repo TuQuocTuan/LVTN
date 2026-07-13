@@ -309,7 +309,7 @@ const RoleManagement = () => {
       <AdminHeader />
 
       <main className="flex-1 ml-64 pt-20 p-6 h-screen flex flex-col bg-culinaryBg w-[calc(100%-16rem)] overflow-hidden">
-        <div className="max-w-6xl w-full mx-auto flex flex-col h-full overflow-hidden">
+        <div className="w-full flex flex-col h-full overflow-hidden">
           {/* Page Header */}
           <header className="mb-4 flex justify-between items-end shrink-0">
             <div>

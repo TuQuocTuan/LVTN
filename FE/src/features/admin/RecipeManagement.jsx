@@ -392,7 +392,7 @@ const RecipeManagement = () => {
       )}
 
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col h-screen overflow-hidden transition-all duration-300">
-        <div className="max-w-6xl w-full mx-auto flex flex-col h-full overflow-hidden">
+        <div className="w-full flex flex-col h-full overflow-hidden">
           {/* === HEADER TRANG === */}
           <div className="mb-5 flex-shrink-0">
             <div onClick={() => navigate('/admin/dish-management')} className="flex items-center gap-2 text-neutralCustom mb-3 hover:text-primary cursor-pointer transition-colors w-fit no-print">
