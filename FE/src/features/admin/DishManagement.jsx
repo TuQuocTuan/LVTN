@@ -245,158 +245,160 @@ const DishManagement = () => {
       )}
 
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col h-screen bg-culinaryBg overflow-hidden transition-all duration-300">
-        
-        {/* Page Header */}
-        <div className="flex flex-col gap-6 mb-6 flex-shrink-0">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-3xl font-black text-gray-900 mb-1 tracking-tight">Quản lý Thực đơn</h2>
-              <p className="text-neutralCustom text-sm">Quản lý danh sách món ăn, giá bán và cấu trúc định lượng cho bếp Làng MÌXI.</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleOpenPopup(null)}
-                className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-secondary transition-all active:scale-95 text-sm cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                Thêm món ăn mới
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center">
-            <div className="relative w-full max-w-md">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutralCustom text-xl">search</span>
-              <input
-                type="text"
-                placeholder="Tìm kiếm tên món ăn nướng lẩu..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-neutralCustom/20 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all shadow-sm"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Bảng danh sách - Thích ứng bề ngang rộng rãi của Laptop/PC */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm mb-6">
-
-            <div className="flex justify-between items-center p-4 border-b border-neutralCustom/20 bg-stone-50/50 shrink-0">
-              <div className="flex gap-6 overflow-x-auto no-scrollbar">
-                {tabCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveTab(cat)}
-                    className={`pb-1 px-1 whitespace-nowrap text-sm font-black transition-colors border-b-2 cursor-pointer
-                      ${activeTab === cat
-                        ? 'text-primary border-primary'
-                        : 'text-neutralCustom/70 border-transparent hover:text-primary'}
-                    `}
-                  >
-                    {cat}
-                  </button>
-                ))}
+        <div className="max-w-6xl w-full mx-auto flex flex-col h-full overflow-hidden">
+          
+          {/* Page Header */}
+          <div className="flex flex-col gap-4 mb-4 flex-shrink-0">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-1 tracking-tight">Quản lý Thực đơn</h2>
+                <p className="text-neutralCustom text-xs md:text-sm">Quản lý danh sách món ăn, giá bán và cấu trúc định lượng cho bếp Làng MÌXI.</p>
               </div>
-              <span className="bg-primary/10 text-primary border border-primary/20 text-xs font-black px-3 py-1 rounded-full whitespace-nowrap ml-4">
-                {filteredDishes.length} món.
-              </span>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleOpenPopup(null)}
+                  className="flex items-center gap-2 bg-primary text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl font-bold shadow-md hover:bg-secondary transition-all active:scale-95 text-xs md:text-sm cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px] md:text-[20px]">add_circle</span>
+                  Thêm món ăn mới
+                </button>
+              </div>
             </div>
 
-            {/* Vùng hiển thị danh sách có scrollbar thanh lịch */}
-            <div className="flex-1 overflow-y-auto relative custom-scrollbar divide-y divide-neutralCustom/10">
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 text-neutralCustom animate-pulse">
-                  <span className="material-symbols-outlined text-4xl animate-spin text-primary">progress_activity</span>
-                  <p className="mt-2 text-sm font-bold">Đang tải dữ liệu thực đơn Làng MÌXI...</p>
+            <div className="flex items-center">
+              <div className="relative w-full max-w-md">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutralCustom text-xl">search</span>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm tên món ăn nướng lẩu..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-neutralCustom/20 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all shadow-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bảng danh sách - Thích ứng bề ngang rộng rãi của Laptop/PC */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm mb-6">
+
+              <div className="flex justify-between items-center p-3.5 border-b border-neutralCustom/20 bg-stone-50/50 shrink-0">
+                <div className="flex gap-6 overflow-x-auto no-scrollbar">
+                  {tabCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveTab(cat)}
+                      className={`pb-1 px-1 whitespace-nowrap text-xs md:text-sm font-black transition-colors border-b-2 cursor-pointer
+                        ${activeTab === cat
+                          ? 'text-primary border-primary'
+                          : 'text-neutralCustom/70 border-transparent hover:text-primary'}
+                      `}
+                    >
+                      {cat}
+                    </button>
+                  ))}
                 </div>
-              ) : paginatedDishes.length > 0 ? (
-                paginatedDishes.map((dish) => (
-                  <div
-                    key={dish.id}
-                    onClick={() => handleOpenPopup(dish)}
-                    className={`flex items-center py-2.5 px-4 hover:bg-stone-50/80 transition-colors cursor-pointer group
-                      ${dish.status === 'out_of_stock' ? 'opacity-75' : ''}
-                    `}
-                  >
-                    <img
-                      src={dish.image_url || dish.image}
-                      alt={dish.name}
-                      className={`w-11 h-11 rounded-lg object-cover mr-3 shadow-sm ${dish.status === 'out_of_stock' ? 'grayscale-[50%]' : ''}`}
-                    />
-                    <div className="flex-1 min-w-0 pr-3">
-                      <h4 className="font-bold text-gray-900 text-sm truncate">{dish.name}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-xs font-bold ${dish.status === 'out_of_stock' ? 'text-neutralCustom' : 'text-primary'}`}>
-                          {Number(dish.price).toLocaleString('vi-VN')} đ
-                        </span>
-                        <span className="text-neutralCustom/30 text-[10px]">•</span>
-                        <span className="text-[10px] text-neutralCustom font-bold bg-neutralCustom/5 px-1.5 py-0.5 rounded">
-                          {dish.categories?.name || dish.category || 'Khác'}
+                <span className="bg-primary/10 text-primary border border-primary/20 text-xs font-black px-3 py-1 rounded-full whitespace-nowrap ml-4">
+                  {filteredDishes.length} món.
+                </span>
+              </div>
+
+              {/* Vùng hiển thị danh sách có scrollbar thanh lịch */}
+              <div className="flex-1 overflow-y-auto relative custom-scrollbar divide-y divide-neutralCustom/10">
+                {isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-neutralCustom animate-pulse">
+                    <span className="material-symbols-outlined text-4xl animate-spin text-primary">progress_activity</span>
+                    <p className="mt-2 text-sm font-bold">Đang tải dữ liệu thực đơn Làng MÌXI...</p>
+                  </div>
+                ) : paginatedDishes.length > 0 ? (
+                  paginatedDishes.map((dish) => (
+                    <div
+                      key={dish.id}
+                      onClick={() => handleOpenPopup(dish)}
+                      className={`flex items-center py-3 px-5 hover:bg-stone-50/80 transition-colors cursor-pointer group
+                        ${dish.status === 'out_of_stock' ? 'opacity-75' : ''}
+                      `}
+                    >
+                      <img
+                        src={dish.image_url || dish.image}
+                        alt={dish.name}
+                        className={`w-12 h-12 rounded-lg object-cover mr-4 shadow-sm ${dish.status === 'out_of_stock' ? 'grayscale-[50%]' : ''}`}
+                      />
+                      <div className="flex-1 min-w-0 pr-4">
+                        <h4 className="font-extrabold text-gray-900 text-sm md:text-base truncate">{dish.name}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs md:text-sm font-bold ${dish.status === 'out_of_stock' ? 'text-neutralCustom' : 'text-primary'}`}>
+                            {Number(dish.price).toLocaleString('vi-VN')} đ
+                          </span>
+                          <span className="text-neutralCustom/30 text-xs">•</span>
+                          <span className="text-[10px] md:text-xs text-neutralCustom font-semibold bg-neutralCustom/5 px-2 py-0.5 rounded-md">
+                            {dish.categories?.name || dish.category || 'Khác'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0">
+                        {dish.status !== 'out_of_stock' ? (
+                          <div className="bg-primary/10 text-primary border border-primary/20 text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                            Đang bán
+                          </div>
+                        ) : (
+                          <div className="bg-neutralCustom/10 text-neutralCustom border border-neutralCustom/20 text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                            Tạm ngưng
+                          </div>
+                        )}
+                        <span className="material-symbols-outlined text-neutralCustom/40 group-hover:text-primary transition-colors text-lg">
+                          chevron_right
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      {dish.status !== 'out_of_stock' ? (
-                        <div className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
-                          Đang bán
-                        </div>
-                      ) : (
-                        <div className="bg-neutralCustom/10 text-neutralCustom border border-neutralCustom/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
-                          Tạm ngưng
-                        </div>
-                      )}
-                      <span className="material-symbols-outlined text-neutralCustom/40 group-hover:text-primary transition-colors text-lg">
-                        chevron_right
-                      </span>
-                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-neutralCustom/60 py-20">
+                    <span className="material-symbols-outlined text-5xl mb-3">search_off</span>
+                    <p className="font-bold">Không tìm thấy món ăn nào phù hợp với bộ lọc.</p>
                   </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-neutralCustom/60 py-20">
-                  <span className="material-symbols-outlined text-5xl mb-3">search_off</span>
-                  <p className="font-bold">Không tìm thấy món ăn nào phù hợp với bộ lọc.</p>
+                )}
+              </div>
+
+              {/* Phân trang */}
+              {totalPages > 1 && (
+                <div className="p-3 bg-stone-50/50 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0 rounded-b-2xl">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center cursor-pointer w-9 h-9"
+                    >
+                      <span className="material-symbols-outlined text-sm">chevron_left</span>
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-9 h-9 rounded-lg shadow-sm transition-colors font-black text-xs md:text-sm cursor-pointer
+                          ${currentPage === page
+                            ? 'bg-primary text-white'
+                            : 'bg-white hover:bg-gray-50 text-neutralCustom border border-neutralCustom/10'}
+                        `}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center cursor-pointer w-9 h-9"
+                    >
+                      <span className="material-symbols-outlined text-sm">chevron_right</span>
+                    </button>
+                  </div>
                 </div>
               )}
+
             </div>
-
-            {/* Phân trang */}
-            {totalPages > 1 && (
-              <div className="p-3 bg-stone-50/50 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0 rounded-b-2xl">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center cursor-pointer w-8 h-8"
-                  >
-                    <span className="material-symbols-outlined text-sm">chevron_left</span>
-                  </button>
-
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-lg shadow-sm transition-colors font-black text-xs cursor-pointer
-                        ${currentPage === page
-                          ? 'bg-primary text-white'
-                          : 'bg-white hover:bg-gray-50 text-neutralCustom border border-neutralCustom/10'}
-                      `}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center cursor-pointer w-8 h-8"
-                  >
-                    <span className="material-symbols-outlined text-sm">chevron_right</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
           </div>
         </div>
       </main>

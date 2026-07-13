@@ -309,16 +309,16 @@ const RoleManagement = () => {
       <AdminHeader />
 
       <main className="flex-1 ml-64 pt-20 p-6 h-screen flex flex-col bg-culinaryBg w-[calc(100%-16rem)] overflow-hidden">
-        <div className="w-full flex flex-col h-full overflow-hidden">
+        <div className="max-w-6xl w-full mx-auto flex flex-col h-full overflow-hidden">
           {/* Page Header */}
           <header className="mb-4 flex justify-between items-end shrink-0">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-1">Người dùng & Phân quyền</h2>
-              <p className="text-neutralCustom text-base">Quản lý nhân viên, gán vai trò và thiết lập quyền truy cập bằng Checkbox.</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Người dùng & Phân quyền</h2>
+              <p className="text-neutralCustom text-xs md:text-sm">Quản lý nhân viên, gán vai trò và thiết lập quyền truy cập bằng Checkbox.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setIsAddModalOpen(true)} className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-secondary transition-all flex items-center gap-2 shadow-md active:scale-95">
-                <span className="material-symbols-outlined text-[20px]">person_add</span>
+              <button onClick={() => setIsAddModalOpen(true)} className="px-5 py-2 md:px-6 md:py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-secondary transition-all flex items-center gap-2 shadow-md active:scale-95 text-xs md:text-sm">
+                <span className="material-symbols-outlined text-[18px] md:text-[20px]">person_add</span>
                 Thêm nhân viên mới
               </button>
             </div>
@@ -351,11 +351,11 @@ const RoleManagement = () => {
 
                           <div className="flex justify-between items-center">
                             <div className="min-w-0 pr-2">
-                              <h4 className={`text-sm font-bold leading-tight flex items-center gap-1.5 truncate ${activeUserId === emp.id ? 'text-primary' : 'text-gray-900 group-hover:text-primary'}`}>
+                              <h4 className={`text-sm md:text-base font-bold leading-tight flex items-center gap-1.5 truncate ${activeUserId === emp.id ? 'text-primary' : 'text-gray-900 group-hover:text-primary'}`}>
                                 {emp.fullname}
                                 {!emp.is_active && <span className="text-[9px] bg-red-50 text-red-650 px-1 py-0.2 rounded font-extrabold uppercase scale-90">Khóa</span>}
                               </h4>
-                              <p className="text-[10px] text-neutralCustom mt-0.5 font-medium">Username: <b>{emp.username}</b></p>
+                              <p className="text-[10px] md:text-xs text-neutralCustom mt-0.5 font-medium">Username: <b>{emp.username}</b></p>
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
@@ -430,7 +430,7 @@ const RoleManagement = () => {
                     <div className="space-y-4">
                       {permissionCategories.map((category, catIdx) => (
                         <div key={catIdx}>
-                          <h4 className="text-[10px] font-bold text-neutralCustom uppercase tracking-wider mb-2 border-b border-neutralCustom/10 pb-1.5">
+                          <h4 className="text-[10px] md:text-xs font-bold text-neutralCustom uppercase tracking-wider mb-2 border-b border-neutralCustom/10 pb-1.5">
                             {category.title}
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -442,7 +442,7 @@ const RoleManagement = () => {
                                 <div
                                   key={item.id}
                                   onClick={() => handleTogglePermission(item.id)}
-                                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer select-none
+                                  className={`flex items-start gap-2.5 p-2.5 md:p-3 rounded-xl border transition-all cursor-pointer select-none
                                     ${isChecked ? 'bg-primary/5 border-primary/30' : 'bg-white border-neutralCustom/15 hover:border-primary/40'}
                                     ${isSuperAdmin ? 'opacity-65 cursor-not-allowed' : ''}
                                   `}
@@ -456,8 +456,8 @@ const RoleManagement = () => {
                                     />
                                   </div>
                                   <div className="min-w-0">
-                                    <p className={`font-bold text-xs truncate ${isChecked ? 'text-primary' : 'text-gray-900'}`}>{item.name}</p>
-                                    <p className="text-[10px] text-neutralCustom mt-0.5 leading-tight">{item.desc}</p>
+                                    <p className={`font-bold text-xs md:text-sm truncate ${isChecked ? 'text-primary' : 'text-gray-900'}`}>{item.name}</p>
+                                    <p className="text-[10px] md:text-xs text-neutralCustom mt-0.5 leading-tight">{item.desc}</p>
                                   </div>
                                 </div>
                               );

@@ -291,124 +291,125 @@ const IngredientManagement = () => {
       )}
 
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col h-screen overflow-hidden transition-all duration-300">
-        
-        {/* Header Bar */}
-        <div className="flex flex-col gap-4 mb-4 flex-shrink-0">
-          <div className="flex justify-between items-end">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1 tracking-tight">Quản lý Nguyên vật liệu</h2>
-              <p className="text-neutralCustom text-xs font-medium">Theo dõi sát sao định lượng tồn kho và cảnh báo nhập hàng cho bếp Làng MÌXI.</p>
+        <div className="max-w-6xl w-full mx-auto flex flex-col h-full overflow-hidden">
+          {/* Header Bar */}
+          <div className="flex flex-col gap-4 mb-4 flex-shrink-0">
+            <div className="flex justify-between items-end">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 tracking-tight">Quản lý Nguyên vật liệu</h2>
+                <p className="text-neutralCustom text-xs md:text-sm font-medium">Theo dõi sát sao định lượng tồn kho và cảnh báo nhập hàng cho bếp Làng MÌXI.</p>
+              </div>
+              <button
+                onClick={openAddModal}
+                className="flex items-center gap-2 bg-primary text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl font-bold shadow-md hover:bg-secondary transition-all active:scale-95 text-xs md:text-sm cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px] md:text-[20px]">add_box</span>
+                Thêm nguyên liệu mới
+              </button>
             </div>
-            <button
-              onClick={openAddModal}
-              className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl font-bold shadow-md hover:bg-secondary transition-all active:scale-95 text-xs cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">add_box</span>
-              Thêm nguyên liệu mới
-            </button>
+
+            <div className="flex items-center">
+              <div className="relative w-full max-w-md group">
+                <span className={`material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 ${searchQuery ? 'text-primary' : 'text-neutralCustom group-focus-within:text-primary'}`}>search</span>
+                <input type="text" placeholder="Tìm kiếm tên nguyên liệu..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-10 py-2 bg-white border border-neutralCustom/20 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all shadow-sm" />
+                {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutralCustom hover:text-red-500 transition-colors p-1 rounded-full cursor-pointer"><span className="material-symbols-outlined text-[18px]">close</span></button>}
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center">
-            <div className="relative w-full max-w-md group">
-              <span className={`material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 ${searchQuery ? 'text-primary' : 'text-neutralCustom group-focus-within:text-primary'}`}>search</span>
-              <input type="text" placeholder="Tìm kiếm tên nguyên liệu..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-10 py-2 bg-white border border-neutralCustom/20 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all shadow-sm" />
-              {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutralCustom hover:text-red-500 transition-colors p-1 rounded-full cursor-pointer"><span className="material-symbols-outlined text-[18px]">close</span></button>}
-            </div>
-          </div>
-        </div>
+          {/* Bảng danh sách */}
+          <div className="flex-1 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm mb-6">
+              <div className="p-3 bg-stone-50/50 border-b border-neutralCustom/20 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+                {categories.map((cat) => (
+                  <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-3.5 py-1.5 rounded-lg font-bold text-xs md:text-sm transition-all whitespace-nowrap cursor-pointer ${activeCategory === cat ? 'bg-primary text-white shadow-sm' : 'text-neutralCustom hover:bg-white border border-transparent'}`}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
 
-        {/* Bảng danh sách */}
-        <div className="flex-1 overflow-hidden">
-          <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm">
-            <div className="p-3 bg-stone-50/50 border-b border-neutralCustom/20 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
-              {categories.map((cat) => (
-                <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all whitespace-nowrap cursor-pointer ${activeCategory === cat ? 'bg-primary text-white shadow-sm' : 'text-neutralCustom hover:bg-white border border-transparent'}`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
+              <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-stone-50/30 border-b border-neutralCustom/10 text-neutralCustom font-black uppercase text-[10px] sm:text-[11px] tracking-widest shrink-0 items-center">
+                <div className="col-span-3">Chi tiết mặt hàng</div>
+                <div className="col-span-1 text-center">Đơn vị</div>
+                <div className="col-span-3">Tồn kho hiện tại</div>
+                <div className="col-span-2 text-center">Cảnh báo</div>
+                <div className="col-span-2 text-right">Đơn giá</div>
+                <div className="col-span-1 text-right whitespace-nowrap">Thao tác</div>
+              </div>
 
-            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-stone-50/30 border-b border-neutralCustom/10 text-neutralCustom font-black uppercase text-[10px] sm:text-[11px] tracking-widest shrink-0 items-center">
-              <div className="col-span-3">Chi tiết mặt hàng</div>
-              <div className="col-span-1 text-center">Đơn vị</div>
-              <div className="col-span-3">Tồn kho hiện tại</div>
-              <div className="col-span-2 text-center">Cảnh báo</div>
-              <div className="col-span-2 text-right">Đơn giá</div>
-              <div className="col-span-1 text-right whitespace-nowrap">Thao tác</div>
-            </div>
+              <div className="flex-1 overflow-y-auto relative custom-scrollbar divide-y divide-neutralCustom/10">
+                {isLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full text-neutralCustom/60 py-20 animate-pulse">
+                    <span className="material-symbols-outlined text-4xl animate-spin text-primary">hourglass_empty</span>
+                    <p className="mt-2 font-bold text-sm">Đang tải dữ liệu kho Làng MÌXI...</p>
+                  </div>
+                ) : paginatedIngredients.length > 0 ? (
+                  paginatedIngredients.map((item) => {
+                    const status = getStockStatus(item.quantity, item.min_stock);
+                    const isOutOfStock = item.quantity === 0;
 
-            <div className="flex-1 overflow-y-auto relative custom-scrollbar divide-y divide-neutralCustom/10">
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center h-full text-neutralCustom/60 py-20 animate-pulse">
-                  <span className="material-symbols-outlined text-4xl animate-spin text-primary">hourglass_empty</span>
-                  <p className="mt-2 font-bold text-sm">Đang tải dữ liệu kho Làng MÌXI...</p>
-                </div>
-              ) : paginatedIngredients.length > 0 ? (
-                paginatedIngredients.map((item) => {
-                  const status = getStockStatus(item.quantity, item.min_stock);
-                  const isOutOfStock = item.quantity === 0;
-
-                  return (
-                    <div key={item.id} className="grid grid-cols-12 gap-4 px-6 py-2.5 hover:bg-stone-50/60 transition-colors items-center group">
-                      <div className="col-span-3 flex items-center gap-3 min-w-0">
-                        <div className={`w-10 h-10 rounded-lg bg-stone-100 overflow-hidden border border-neutralCustom/15 shadow-sm shrink-0 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}>
-                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`font-bold text-xs truncate ${isOutOfStock ? 'text-neutralCustom/60 line-through' : 'text-gray-900'}`}>{item.name}</p>
-                          <p className="text-neutralCustom text-[10px] mt-0.5 font-bold">{item.category}</p>
-                        </div>
-                      </div>
-
-                      <div className="col-span-1 text-gray-900 text-xs font-semibold text-center">{item.unit}</div>
-
-                      <div className="col-span-3 pr-4">
-                        <div className="flex flex-col gap-1">
-                          <span className={`${status.color} font-bold text-xs`}>{item.quantity} {item.unit}</span>
-                          <div className="w-full bg-neutralCustom/10 h-1 rounded-full overflow-hidden">
-                            <div className={`${status.bg} h-full transition-all duration-500`} style={{ width: status.barWidth }}></div>
+                    return (
+                      <div key={item.id} className="grid grid-cols-12 gap-4 px-6 py-3 hover:bg-stone-50/60 transition-colors items-center group">
+                        <div className="col-span-3 flex items-center gap-3 min-w-0">
+                          <div className={`w-10 h-10 rounded-lg bg-stone-100 overflow-hidden border border-neutralCustom/15 shadow-sm shrink-0 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}>
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`font-bold text-xs md:text-sm truncate ${isOutOfStock ? 'text-neutralCustom/60 line-through' : 'text-gray-900'}`}>{item.name}</p>
+                            <p className="text-neutralCustom text-[10px] md:text-xs mt-0.5 font-bold">{item.category}</p>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="col-span-2 text-neutralCustom text-xs font-bold text-center">{item.min_stock} {item.unit}</div>
+                        <div className="col-span-1 text-gray-900 text-xs md:text-sm font-semibold text-center">{item.unit}</div>
 
-                      <div className="col-span-2 text-gray-900 text-xs font-bold text-right">
-                        {item.price > 0 ? `${item.price.toLocaleString('vi-VN')} đ` : '---'}
-                      </div>
+                        <div className="col-span-3 pr-4">
+                          <div className="flex flex-col gap-1">
+                            <span className={`${status.color} font-bold text-xs md:text-sm`}>{item.quantity} {item.unit}</span>
+                            <div className="w-full bg-neutralCustom/10 h-1 rounded-full overflow-hidden">
+                              <div className={`${status.bg} h-full transition-all duration-500`} style={{ width: status.barWidth }}></div>
+                            </div>
+                          </div>
+                        </div>
 
-                      <div className="col-span-1 flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEditModal(item)} className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer" title="Chỉnh sửa">
-                          <span className="material-symbols-outlined text-[16px]">edit</span>
-                        </button>
-                        <button onClick={() => handleDelete(item.id, item.name)} className="p-1.5 text-neutralCustom hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Xóa">
-                          <span className="material-symbols-outlined text-[16px]">delete</span>
-                        </button>
+                        <div className="col-span-2 text-neutralCustom text-xs md:text-sm font-bold text-center">{item.min_stock} {item.unit}</div>
+
+                        <div className="col-span-2 text-gray-900 text-xs md:text-sm font-bold text-right">
+                          {item.price > 0 ? `${item.price.toLocaleString('vi-VN')} đ` : '---'}
+                        </div>
+
+                        <div className="col-span-1 flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => openEditModal(item)} className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer" title="Chỉnh sửa">
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                          <button onClick={() => handleDelete(item.id, item.name)} className="p-1.5 text-neutralCustom hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Xóa">
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-neutralCustom/60 py-20">
-                  <span className="material-symbols-outlined text-5xl mb-3">inventory_2</span>
-                  <p className="font-bold">Không tìm thấy nguyên liệu nào phù hợp.</p>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-neutralCustom/60 py-20">
+                    <span className="material-symbols-outlined text-5xl mb-3">inventory_2</span>
+                    <p className="font-bold">Không tìm thấy nguyên liệu nào phù hợp.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Phân trang */}
+              {totalPages > 1 && (
+                <div className="p-3 bg-stone-50/50 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0">
+                  <div className="flex gap-2">
+                    <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 flex items-center justify-center bg-white w-8 h-8 cursor-pointer"><span className="material-symbols-outlined text-sm">chevron_left</span></button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg shadow-sm font-bold text-xs cursor-pointer ${currentPage === page ? 'bg-primary text-white' : 'hover:bg-white text-neutralCustom border border-neutralCustom/10 bg-white'}`}>{page}</button>
+                    ))}
+                    <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages || totalPages === 0} className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 flex items-center justify-center bg-white w-8 h-8 cursor-pointer"><span className="material-symbols-outlined text-sm">chevron_right</span></button>
+                  </div>
                 </div>
               )}
+
             </div>
-
-            {/* Phân trang */}
-            {totalPages > 1 && (
-              <div className="p-3 bg-stone-50/50 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0">
-                <div className="flex gap-2">
-                  <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 flex items-center justify-center bg-white w-8 h-8 cursor-pointer"><span className="material-symbols-outlined text-sm">chevron_left</span></button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg shadow-sm font-bold text-xs cursor-pointer ${currentPage === page ? 'bg-primary text-white' : 'hover:bg-white text-neutralCustom border border-neutralCustom/10 bg-white'}`}>{page}</button>
-                  ))}
-                  <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages || totalPages === 0} className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 flex items-center justify-center bg-white w-8 h-8 cursor-pointer"><span className="material-symbols-outlined text-sm">chevron_right</span></button>
-                </div>
-              </div>
-            )}
-
           </div>
         </div>
       </main>
