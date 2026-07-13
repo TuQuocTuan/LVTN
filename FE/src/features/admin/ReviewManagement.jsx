@@ -273,7 +273,7 @@ const ReviewManagement = () => {
   };
 
   return (
-    <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex overflow-x-hidden">
+    <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex overflow-x-hidden relative">
       <AdminSidebar currentTab="review" />
       <AdminHeader />
 
@@ -281,7 +281,7 @@ const ReviewManagement = () => {
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
-            <div className="w-16 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-14 rounded-2xl bg-red-50 text-red-650 flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-3xl">error</span>
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
@@ -297,10 +297,10 @@ const ReviewManagement = () => {
       )}
 
       {/* WORKSPACE GIÁM SÁT CHẤT LƯỢNG CHO MÁY TÍNH */}
-      <main className="ml-64 pt-24 p-8 w-full flex flex-col min-h-screen transition-all duration-300">
+      <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen transition-all duration-300">
         
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-4 flex justify-between items-center shrink-0">
           <div>
             <h2 className="text-3xl font-black text-gray-900 tracking-tight">Ý kiến & Khảo sát món ăn</h2>
             <p className="text-neutralCustom text-sm mt-1">Giám sát chất lượng món nướng lẩu ẩn danh trực tiếp từ ý kiến khách hàng quét mã QR trên bill.</p>
@@ -329,7 +329,7 @@ const ReviewManagement = () => {
         </div>
 
         {/* BENTO STATS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 shrink-0">
           <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
             <div className="w-14 h-14 rounded-2xl bg-yellow-50 text-yellow-500 flex items-center justify-center">
               <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -362,7 +362,7 @@ const ReviewManagement = () => {
         </div>
 
         {/* PANEL BỘ LỌC KHOẢNG THỜI GIAN */}
-        <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm mb-6 flex flex-col gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-4 flex flex-col gap-3 shrink-0">
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
             <div className="flex items-center gap-2 shrink-0">
               <span className="material-symbols-outlined text-primary text-xl">calendar_month</span>
@@ -414,7 +414,7 @@ const ReviewManagement = () => {
         </div>
 
         {/* LỌC THEO MÓN ĂN VÀ TÌM KIẾM TỪ KHÓA BÌNH LUẬN + BỘ LỌC SENSITIVE THÔ TỤC */}
-        <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm mb-6 space-y-4">
+        <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-4 space-y-3 shrink-0">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative w-full md:max-w-md">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">search</span>
@@ -490,10 +490,10 @@ const ReviewManagement = () => {
         </div>
 
         {/* KHU VỰC HIỂN THỊ ĐA CHẾ ĐỘ DÀNH CHO LAPTOP */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 flex-grow">
+        <div className="flex flex-col gap-6 mb-4">
           
-          {/* CỘT PHẢI (Chiếm 8 cột): CHI TIẾT DANH SÁCH REVIEW KÈM PHÂN TRANG */}
-          <div className="xl:col-span-8 flex flex-col justify-between h-full">
+          {/* CHI TIẾT DANH SÁCH REVIEW KÈM PHÂN TRANG (CHIẾM 100% CHIỀU RỘNG) */}
+          <div className="w-full flex flex-col">
             <div>
               {isLoading ? (
                 <div className="py-24 text-center text-stone-500 font-bold flex flex-col items-center justify-center gap-3">
@@ -507,12 +507,11 @@ const ReviewManagement = () => {
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-stone-50 border-b border-neutralCustom/10 text-neutralCustom text-xs font-bold uppercase tracking-wider">
-                            <th className="px-6 py-4">Thời gian</th>
-                            <th className="px-6 py-4">Mã hóa đơn (Session)</th>
-                            <th className="px-6 py-4">Món ăn nướng lẩu</th>
-                            <th className="px-6 py-4">Xếp hạng</th>
-                            <th className="px-6 py-4 max-w-md">Bình luận góp ý</th>
+                          <tr className="bg-stone-50 border-b border-neutralCustom/10 text-neutralCustom text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                            <th className="px-4 py-3">Phiên ăn / Thời gian</th>
+                            <th className="px-4 py-3">Món ăn nướng lẩu</th>
+                            <th className="px-4 py-3 text-center">Xếp hạng</th>
+                            <th className="px-4 py-3">Bình luận góp ý</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutralCustom/10">
@@ -523,24 +522,28 @@ const ReviewManagement = () => {
 
                             return (
                               <tr key={idx} className={`hover:bg-orange-500/5 transition-colors group ${hasBadWord ? 'bg-red-50/10' : ''}`}>
-                                <td className="px-6 py-4 text-xs font-mono font-bold text-gray-500 whitespace-nowrap">
-                                  {formatDate(review.created_at)}
+                                <td className="px-4 py-3.5">
+                                  <div className="flex flex-col min-w-[130px]">
+                                    <span className="text-xs font-bold text-gray-800 whitespace-nowrap">
+                                      {formatDate(review.created_at)}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-neutralCustom/85 mt-0.5" title={review.session_id}>
+                                      #{String(review.session_id).slice(0, 8)}...
+                                    </span>
+                                  </div>
                                 </td>
-                                <td className="px-6 py-4 text-xs font-mono font-semibold text-gray-600 truncate max-w-[120px]" title={review.session_id}>
-                                  #{String(review.session_id).slice(0, 8)}...
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className="bg-orange-50 border border-orange-200 text-orange-600 font-extrabold px-3 py-1 rounded-lg text-xs">
+                                <td className="px-4 py-3.5">
+                                  <span className="inline-block bg-orange-50 border border-orange-200 text-orange-600 font-extrabold px-2.5 py-1 rounded-lg text-xs whitespace-nowrap">
                                     {getDishNameById(review.dish_id)}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex gap-0.5">{renderStars(review.rating)}</div>
+                                <td className="px-4 py-3.5 text-center">
+                                  <div className="flex gap-0.5 justify-center">{renderStars(review.rating)}</div>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-700 max-w-md">
+                                <td className="px-4 py-3.5 text-sm text-gray-700 min-w-[200px] max-w-xs md:max-w-md">
                                   <div className="flex flex-col gap-1">
                                     {/* THAY THẾ BIẾN THÔ review.comment THÀNH BIẾN ĐÃ ĐƯỢC CHE DẤU displayComment */}
-                                    <p className="italic font-medium leading-relaxed font-semibold">
+                                    <p className="italic font-medium leading-relaxed font-semibold break-words">
                                       "{displayComment || 'Không để lại lời nhắn'}"
                                     </p>
                                     {/* Nhãn đỏ cảnh báo nếu phát hiện thô tục */}
@@ -613,7 +616,7 @@ const ReviewManagement = () => {
 
             {/* PHÂN TRANG DANH SÁCH ĐÁNH GIÁ ĐƠN GIẢN TRUNG TÂM */}
             {!isLoading && totalReviewPages > 1 && (
-              <div className="mt-6 flex justify-center items-center p-4 rounded-2xl shrink-0">
+              <div className="mt-3 flex justify-center items-center p-2 rounded-2xl shrink-0">
                 <div className="flex gap-2">
                   <button 
                     onClick={() => setReviewCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -647,9 +650,9 @@ const ReviewManagement = () => {
             )}
           </div>
 
-          {/* CỘT TRÁI (Chiếm 4 cột): BẢNG PHÂN TÍCH CHẤT LƯỢNG CHI TIẾT TỪNG MÓN */}
-          <div className="xl:col-span-4 flex flex-col gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-neutralCustom/20 shadow-sm flex flex-col h-full max-h-[660px] overflow-hidden justify-between">
+          {/* BẢNG PHÂN TÍCH CHẤT LƯỢNG CHI TIẾT TỪNG MÓN (ĐẨY XUỐNG DƯỚI CÙNG FULL WIDTH) */}
+          <div className="w-full flex flex-col">
+            <div className="bg-white p-6 rounded-2xl border border-neutralCustom/20 shadow-sm flex flex-col justify-between">
               <div>
                 <div className="border-b border-gray-150 pb-4 mb-4">
                   <h3 className="font-bold text-gray-900 text-base flex items-center gap-1.5">
@@ -658,7 +661,7 @@ const ReviewManagement = () => {
                   <p className="text-xs text-neutralCustom mt-0.5">Tự động tổng hợp và xếp hạng trung bình từ dữ liệu Live của khách hàng.</p>
                 </div>
 
-                <div className="space-y-4 overflow-y-auto custom-scrollbar pr-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   {currentDishesAnalytics.length > 0 ? (
                     currentDishesAnalytics.map((dish, index) => {
                       const avgScore = (dish.sumStars / dish.totalReviews).toFixed(1);

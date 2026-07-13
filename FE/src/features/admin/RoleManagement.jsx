@@ -304,14 +304,14 @@ const RoleManagement = () => {
   };
 
   return (
-    <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex">
+    <div className="bg-culinaryBg text-gray-900 font-sans h-screen flex overflow-hidden">
       <AdminSidebar currentTab="user" />
       <AdminHeader />
 
-      <main className="flex-1 ml-64 pt-24 p-8 min-h-screen bg-culinaryBg w-[calc(100%-16rem)]">
-        <div className="w-full">
+      <main className="flex-1 ml-64 pt-20 p-6 h-screen flex flex-col bg-culinaryBg w-[calc(100%-16rem)] overflow-hidden">
+        <div className="w-full flex flex-col h-full overflow-hidden">
           {/* Page Header */}
-          <header className="mb-8 flex justify-between items-end">
+          <header className="mb-4 flex justify-between items-end shrink-0">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-1">Người dùng & Phân quyền</h2>
               <p className="text-neutralCustom text-base">Quản lý nhân viên, gán vai trò và thiết lập quyền truy cập bằng Checkbox.</p>
@@ -324,20 +324,20 @@ const RoleManagement = () => {
             </div>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden mb-4">
             {/* CỘT TRÁI: DANH SÁCH NHÂN VIÊN */}
-            <section className="md:col-span-4 flex flex-col gap-4">
-              <div className="bg-white border border-neutralCustom/20 rounded-2xl overflow-hidden shadow-sm flex flex-col h-[calc(100vh-200px)]">
-                <div className="p-4 bg-culinaryBg/50 border-b border-neutralCustom/20 flex justify-between items-center shrink-0">
-                  <h3 className="text-lg font-bold text-gray-900">Danh sách tài khoản</h3>
-                  <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">{users.length} User</span>
+            <section className="md:col-span-4 flex flex-col h-full overflow-hidden">
+              <div className="bg-white border border-neutralCustom/20 rounded-2xl overflow-hidden shadow-sm flex flex-col h-full">
+                <div className="p-3.5 bg-culinaryBg/50 border-b border-neutralCustom/20 flex justify-between items-center shrink-0">
+                  <h3 className="text-base font-bold text-gray-900">Danh sách tài khoản</h3>
+                  <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[11px] font-bold">{users.length} User</span>
                 </div>
 
                 <div className="divide-y divide-neutralCustom/10 overflow-y-auto flex-1 custom-scrollbar">
                   {isLoading ? (
-                    <div className="p-8 text-center text-neutralCustom">Đang tải dữ liệu...</div>
+                    <div className="p-6 text-center text-neutralCustom text-xs">Đang tải dữ liệu...</div>
                   ) : users.length === 0 ? (
-                    <div className="p-8 text-center text-neutralCustom">Chưa có dữ liệu nhân viên.</div>
+                    <div className="p-6 text-center text-neutralCustom text-xs">Chưa có dữ liệu nhân viên.</div>
                   ) : (
                     users.map((emp) => {
                       const colorClass = roleColors[emp.role?.toLowerCase()] || 'bg-gray-100 text-gray-700';
@@ -345,37 +345,37 @@ const RoleManagement = () => {
                         <div
                           key={emp.id}
                           onClick={() => handleSelectUser(emp)}
-                          className={`relative p-4 flex flex-col gap-2 cursor-pointer transition-all group ${activeUserId === emp.id ? 'bg-primary/5 shadow-inner' : 'hover:bg-culinaryBg/50'} ${!emp.is_active ? 'opacity-60' : ''}`}
+                          className={`relative p-2.5 flex flex-col gap-1 cursor-pointer transition-all group ${activeUserId === emp.id ? 'bg-primary/5 shadow-inner' : 'hover:bg-culinaryBg/50'} ${!emp.is_active ? 'opacity-60' : ''}`}
                         >
                           {activeUserId === emp.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>}
 
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className={`text-base font-bold leading-tight flex items-center gap-2 ${activeUserId === emp.id ? 'text-primary' : 'text-gray-900 group-hover:text-primary'}`}>
+                          <div className="flex justify-between items-center">
+                            <div className="min-w-0 pr-2">
+                              <h4 className={`text-sm font-bold leading-tight flex items-center gap-1.5 truncate ${activeUserId === emp.id ? 'text-primary' : 'text-gray-900 group-hover:text-primary'}`}>
                                 {emp.fullname}
-                                {!emp.is_active && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase">Khóa</span>}
+                                {!emp.is_active && <span className="text-[9px] bg-red-50 text-red-650 px-1 py-0.2 rounded font-extrabold uppercase scale-90">Khóa</span>}
                               </h4>
-                              <p className="text-xs text-neutralCustom mt-1">Username: <b>{emp.username}</b></p>
+                              <p className="text-[10px] text-neutralCustom mt-0.5 font-medium">Username: <b>{emp.username}</b></p>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <div className="flex gap-1.5">
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex gap-1">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setIsEditInfoModalOpen(true); setEditInfoForm(emp); }}
                                   className="text-gray-500 hover:text-gray-700"
                                 >
-                                  <span className="material-symbols-outlined text-[18px]">edit</span></button>
+                                  <span className="material-symbols-outlined text-[16px]">edit</span></button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleToggleLockUser(emp); }}
-                                  className={`transition-colors ${emp.is_active ? 'text-red-400 hover:text-red-600' : 'text-green-500 hover:text-green-700'}`}
+                                  className={`transition-colors ${emp.is_active ? 'text-red-400 hover:text-red-650' : 'text-green-500 hover:text-green-700'}`}
                                   title={emp.is_active ? "Khóa tài khoản" : "Mở khóa tài khoản"}
                                 >
-                                  <span className="material-symbols-outlined text-[18px]">
+                                  <span className="material-symbols-outlined text-[16px]">
                                     {emp.is_active ? 'lock' : 'lock_open'}
                                   </span>
                                 </button>
                               </div>
-                              <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${roleColors[emp.role] || 'bg-gray-100'}`}>{emp.role}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${roleColors[emp.role] || 'bg-gray-100'}`}>{emp.role}</span>
                             </div>
                           </div>
                         </div>
@@ -387,28 +387,28 @@ const RoleManagement = () => {
             </section>
 
             {/* CỘT PHẢI: GÁN QUYỀN (CHECKBOX) & TRẠNG THÁI */}
-            <section className="md:col-span-8">
+            <section className="md:col-span-8 flex flex-col h-full overflow-hidden">
               {activeUser ? (
-                <div className="bg-white border border-neutralCustom/20 rounded-2xl shadow-md flex flex-col h-[calc(100vh-200px)] overflow-hidden">
+                <div className="bg-white border border-neutralCustom/20 rounded-2xl shadow-md flex flex-col h-full overflow-hidden">
 
                   {/* Header info */}
-                  <div className="p-6 bg-culinaryBg/30 border-b border-neutralCustom/20 flex justify-between items-start shrink-0">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-tertiary/10 text-tertiary flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[32px]">manage_accounts</span>
+                  <div className="p-4 bg-culinaryBg/30 border-b border-neutralCustom/20 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[24px]">manage_accounts</span>
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900">{activeUser.fullname}</h3>
-                        <p className="text-sm text-neutralCustom mt-1">Tick chọn để bật/tắt quyền truy cập từng tính năng.</p>
+                        <h3 className="text-base font-bold text-gray-900">{activeUser.fullname}</h3>
+                        <p className="text-xs text-neutralCustom mt-0.5">Tick chọn để bật/tắt quyền truy cập từng tính năng.</p>
                       </div>
                     </div>
                     {/* Trạng thái hoạt động */}
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2">
                       <select
                         value={editData.role}
                         onChange={(e) => handleRoleChange(e.target.value)}
                         disabled={isSuperAdmin}
-                        className="px-3 py-1.5 text-xs font-bold border border-neutralCustom/30 rounded-lg outline-none bg-white cursor-pointer disabled:opacity-50"
+                        className="px-2.5 py-1 text-xs font-bold border border-neutralCustom/30 rounded-lg outline-none bg-white cursor-pointer disabled:opacity-50"
                       >
                         <option value="super_admin">Super Admin</option>
                         <option value="admin">Quản lý (Admin)</option>
@@ -419,21 +419,21 @@ const RoleManagement = () => {
                   </div>
 
                   {/* Body: Form Gán Quyền (CHECKBOX) */}
-                  <div className="p-6 flex-grow overflow-y-auto custom-scrollbar">
+                  <div className="p-4 flex-grow overflow-y-auto custom-scrollbar">
                     {isSuperAdmin && (
-                      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-center gap-2">
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-center gap-2">
                         <span className="material-symbols-outlined text-[18px]">gpp_good</span>
                         Tài khoản Super Admin mặc định sở hữu toàn bộ đặc quyền (đã được tick sẵn) và không thể thay đổi.
                       </div>
                     )}
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {permissionCategories.map((category, catIdx) => (
                         <div key={catIdx}>
-                          <h4 className="text-xs font-bold text-neutralCustom uppercase tracking-widest mb-3 border-b border-neutralCustom/10 pb-2">
+                          <h4 className="text-[10px] font-bold text-neutralCustom uppercase tracking-wider mb-2 border-b border-neutralCustom/10 pb-1.5">
                             {category.title}
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                             {category.items.map((item) => {
                               // Dùng biến isSuperAdmin (dựa theo Role đang sửa) để quyết định tick
                               const isChecked = isSuperAdmin ? true : !!editData.permissions?.[item.id];
@@ -442,22 +442,22 @@ const RoleManagement = () => {
                                 <div
                                   key={item.id}
                                   onClick={() => handleTogglePermission(item.id)}
-                                  className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none
-                                    ${isChecked ? 'bg-primary/5 border-primary/30' : 'bg-white border-neutralCustom/20 hover:border-primary/40'}
-                                    ${isSuperAdmin ? 'opacity-60 cursor-not-allowed' : ''}
+                                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer select-none
+                                    ${isChecked ? 'bg-primary/5 border-primary/30' : 'bg-white border-neutralCustom/15 hover:border-primary/40'}
+                                    ${isSuperAdmin ? 'opacity-65 cursor-not-allowed' : ''}
                                   `}
                                 >
-                                  <div className="mt-0.5">
+                                  <div className="mt-0.5 shrink-0">
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
                                       readOnly
-                                      className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary accent-primary pointer-events-none"
+                                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary pointer-events-none"
                                     />
                                   </div>
-                                  <div>
-                                    <p className={`font-bold text-sm ${isChecked ? 'text-primary' : 'text-gray-900'}`}>{item.name}</p>
-                                    <p className="text-xs text-neutralCustom mt-0.5 leading-tight">{item.desc}</p>
+                                  <div className="min-w-0">
+                                    <p className={`font-bold text-xs truncate ${isChecked ? 'text-primary' : 'text-gray-900'}`}>{item.name}</p>
+                                    <p className="text-[10px] text-neutralCustom mt-0.5 leading-tight">{item.desc}</p>
                                   </div>
                                 </div>
                               );
@@ -468,17 +468,17 @@ const RoleManagement = () => {
                     </div>
 
                     {/* Trạng thái tài khoản */}
-                    <div className="mt-8 border-t border-neutralCustom/10 pt-6">
-                      <h4 className="text-xs font-bold text-neutralCustom uppercase tracking-widest mb-3">Trạng thái đăng nhập</h4>
-                      <div className={`flex items-center gap-3 p-4 rounded-xl border w-fit transition-all ${editData.is_active ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} ${isSuperAdmin ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <div className="mt-6 border-t border-neutralCustom/10 pt-4">
+                      <h4 className="text-[10px] font-bold text-neutralCustom uppercase tracking-wider mb-2">Trạng thái đăng nhập</h4>
+                      <div className={`flex items-center gap-2.5 p-3 rounded-xl border w-fit transition-all ${editData.is_active ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} ${isSuperAdmin ? 'opacity-50 pointer-events-none' : ''}`}>
                         <input
                           type="checkbox"
                           id="acc_active"
                           checked={editData.is_active}
                           onChange={(e) => setEditData({ ...editData, is_active: e.target.checked })}
-                          className="w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer"
+                          className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
                         />
-                        <label htmlFor="acc_active" className={`font-bold text-sm cursor-pointer ${editData.is_active ? 'text-green-700' : 'text-red-700'}`}>
+                        <label htmlFor="acc_active" className={`font-bold text-xs cursor-pointer ${editData.is_active ? 'text-green-700' : 'text-red-750'}`}>
                           {editData.is_active ? 'Tài khoản đang Hoạt động (Cho phép Login)' : 'Tài khoản đã bị Khóa (Không thể Login)'}
                         </label>
                       </div>
@@ -487,22 +487,22 @@ const RoleManagement = () => {
                   </div>
 
                   {/* Footer Actions */}
-                  <div className="p-5 bg-culinaryBg/50 border-t border-neutralCustom/20 flex justify-between items-center shrink-0">
-                    <span className="text-xs text-neutralCustom italic">
+                  <div className="p-4 bg-culinaryBg/50 border-t border-neutralCustom/20 flex justify-between items-center shrink-0">
+                    <span className="text-[11px] text-neutralCustom italic">
                       Quyền sẽ có tác dụng khi nhân viên tải lại trang.
                     </span>
                     <button
                       onClick={handleUpdateRole}
                       disabled={isSuperAdmin || isSaving} // Không cho phép Lưu nếu đang là Super Admin
-                      className="px-8 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-secondary active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-6 py-2 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-secondary active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-xs"
                     >
-                      {isSaving ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
+                      {isSaving ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">save</span>}
                       {isSaving ? 'Đang lưu...' : 'Lưu cấu hình quyền'}
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white border border-neutralCustom/20 rounded-2xl h-[calc(100vh-200px)] flex flex-col items-center justify-center text-neutralCustom">
+                <div className="bg-white border border-neutralCustom/20 rounded-2xl h-full flex flex-col items-center justify-center text-neutralCustom">
                   <span className="material-symbols-outlined text-6xl opacity-20 mb-4">manage_accounts</span>
                   <p>Chọn một nhân viên bên trái để xem và gán quyền.</p>
                 </div>

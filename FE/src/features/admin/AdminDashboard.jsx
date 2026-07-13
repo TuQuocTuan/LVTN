@@ -239,7 +239,7 @@ const AdminDashboard = () => {
       )}
 
       {/* 3. KHU VỰC NỘI DUNG CHÍNH (MAIN) */}
-      <main className="ml-64 max-lg:ml-0 pt-24 p-8 max-lg:p-5 w-full transition-all duration-300 flex flex-col gap-6">
+      <main className="ml-64 max-lg:ml-0 pt-20 p-6 max-lg:p-5 lg:w-[calc(100%-16rem)] w-full transition-all duration-300 flex flex-col gap-6">
         
         {/* Header Section */}
         <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

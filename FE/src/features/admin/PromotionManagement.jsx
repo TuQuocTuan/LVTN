@@ -281,7 +281,7 @@ const PromotionManagement = () => {
         </div>
       )}
 
-      <main className="ml-64 pt-24 p-8 w-[calc(100%-16rem)] flex flex-col min-h-screen">
+      <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <div>
@@ -334,12 +334,12 @@ const PromotionManagement = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-culinaryBg/50 text-neutralCustom border-b border-neutralCustom/20">
-                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Tên chương trình</th>
-                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Loại</th>
-                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Mức giảm</th>
-                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Thời hạn</th>
-                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Trạng thái</th>
-                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right">Thao tác</th>
+                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Tên chương trình</th>
+                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Loại</th>
+                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Mức giảm</th>
+                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Thời hạn</th>
+                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Trạng thái</th>
+                    <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right whitespace-nowrap">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutralCustom/10">
@@ -355,27 +355,27 @@ const PromotionManagement = () => {
                             <p className="font-bold text-gray-900 text-sm">{promo.name}</p>
                             <p className="text-xs text-neutralCustom mt-0.5 font-mono">{promo.code}</p>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${typeStyle.color}`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${typeStyle.color}`}>
                               {typeStyle.label}
                             </span>
                           </td>
-                          <td className="px-6 py-4 font-bold text-sm text-gray-900">
+                          <td className="px-6 py-4 font-bold text-sm text-gray-900 whitespace-nowrap">
                             {Number(promo.discount_value).toLocaleString('vi-VN')} {promo.discount_type === 'PERCENTAGE' ? '%' : 'đ'}
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-col text-neutralCustom text-xs">
-                              <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">calendar_today</span> {formatDate(promo.start_date)}</span>
-                              <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">event_busy</span> {formatDate(promo.end_date)}</span>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col text-neutralCustom text-xs whitespace-nowrap">
+                              <span className="flex items-center gap-1 whitespace-nowrap"><span className="material-symbols-outlined text-[14px]">calendar_today</span> {formatDate(promo.start_date)}</span>
+                              <span className="flex items-center gap-1 whitespace-nowrap"><span className="material-symbols-outlined text-[14px]">event_busy</span> {formatDate(promo.end_date)}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className={`flex items-center gap-2 font-bold text-sm ${statusObj.color}`}>
-                              <span className={`w-2 h-2 rounded-full ${statusObj.dot}`}></span>{statusObj.text}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className={`flex items-center gap-2 font-bold text-sm whitespace-nowrap ${statusObj.color}`}>
+                              <span className={`w-2 h-2 rounded-full whitespace-nowrap ${statusObj.dot}`}></span>{statusObj.text}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <div className="inline-flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                               {promo.type?.toUpperCase() === 'VOUCHER' && promo.is_active && (
                                 <button onClick={() => handleOpenGiftModal(promo)} className="p-1.5 text-secondary hover:bg-secondary/10 rounded-lg transition-colors" title="Tặng Voucher cho khách">
                                   <span className="material-symbols-outlined text-[18px]">card_giftcard</span>

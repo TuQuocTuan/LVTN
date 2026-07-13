@@ -376,7 +376,7 @@ const RecipeManagement = () => {
   };
 
   return (
-    <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex overflow-x-hidden relative">
+    <div className="bg-culinaryBg text-gray-900 font-sans h-screen flex overflow-hidden relative">
 
       <AdminSidebar currentTab="recipes" />
       <AdminHeader />
@@ -391,26 +391,26 @@ const RecipeManagement = () => {
         </div>
       )}
 
-      <main className="ml-64 pt-24 p-8 w-[calc(100%-16rem)] flex flex-col h-screen transition-all duration-300">
+      <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col h-screen overflow-hidden transition-all duration-300">
         {/* === HEADER TRANG === */}
-        <div className="mb-8 flex-shrink-0">
-          <div onClick={() => navigate('/admin/dish-management')} className="flex items-center gap-2 text-neutralCustom mb-4 hover:text-primary cursor-pointer transition-colors w-fit no-print">
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span className="text-sm font-bold">Trở về Quản lý món ăn</span>
+        <div className="mb-5 flex-shrink-0">
+          <div onClick={() => navigate('/admin/dish-management')} className="flex items-center gap-2 text-neutralCustom mb-3 hover:text-primary cursor-pointer transition-colors w-fit no-print">
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            <span className="text-xs font-bold">Trở về Quản lý món ăn</span>
           </div>
 
-          <div className="flex justify-between items-end border-b border-neutralCustom/20 pb-4">
+          <div className="flex justify-between items-end border-b border-neutralCustom/20 pb-3">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">{dishName}</h2>
-              <p className="text-sm text-neutralCustom mt-1 font-medium no-print">Lưu trữ {versions.length} phiên bản công thức trong kho</p>
+              <h2 className="text-2xl font-bold text-gray-900">{dishName}</h2>
+              <p className="text-xs text-neutralCustom mt-0.5 font-medium no-print">Lưu trữ {versions.length} phiên bản công thức trong kho</p>
               {/* Phiên bản hiển thị tĩnh dành riêng cho tờ giấy A4 khi in */}
-              <p className="hidden print:block text-sm text-neutralCustom font-bold mt-1">Phiên bản áp dụng: Version {selectedVersion} (Mới nhất)</p>
+              <p className="hidden print:block text-xs text-neutralCustom font-bold mt-0.5">Phiên bản áp dụng: Version {selectedVersion} (Mới nhất)</p>
             </div>
 
-            <div className="flex items-center gap-3 no-print">
+            <div className="flex items-center gap-2.5 no-print">
               {/* Dropdown chọn phiên bản công thức */}
               {versions.length > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 border border-neutralCustom/20 rounded-xl bg-white shadow-sm text-sm">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 border border-neutralCustom/20 rounded-xl bg-white shadow-sm text-xs">
                   <span className="font-bold text-neutralCustom">Phiên bản:</span>
                   <select
                     value={selectedVersion}
@@ -430,9 +430,9 @@ const RecipeManagement = () => {
 
               <button 
                 onClick={handleExportWord}
-                className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all shadow-md text-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all shadow-md text-xs cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[18px]">description</span>
+                <span className="material-symbols-outlined text-[16px]">description</span>
                 Xuất Word Công Thức
               </button>
             </div>
@@ -440,18 +440,18 @@ const RecipeManagement = () => {
         </div>
 
         {/* === NỘI DUNG HIỂN THỊ CHÍNH (READ-ONLY) === */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 overflow-hidden pb-6">
+        <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 overflow-hidden pb-6">
           
           {/* CỘT 1: BẢNG NGUYÊN LIỆU */}
-          <div className="lg:col-span-4 h-full flex flex-col">
+          <div className="w-full lg:w-1/3 h-full flex flex-col min-h-0">
             <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm">
-              <div className="p-4 border-b border-neutralCustom/20 bg-culinaryBg/30 flex justify-between items-center bg-gray-50/50">
-                <h3 className="text-md font-bold text-gray-900 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-xl">kitchen</span>Nguyên Liệu Định Lượng
+              <div className="py-2.5 px-4 border-b border-neutralCustom/20 bg-culinaryBg/30 flex justify-between items-center bg-gray-50/50">
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-lg">kitchen</span>Nguyên Liệu Định Lượng
                 </h3>
                 {/* NÚT SỬA NGUYÊN LIỆU */}
-                <button onClick={handleOpenEditIngModal} className="text-xs font-bold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform no-print">
-                  <span className="material-symbols-outlined text-[16px]">edit</span> Định lượng
+                <button onClick={handleOpenEditIngModal} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-lg active:scale-95 transition-transform no-print">
+                  <span className="material-symbols-outlined text-[14px]">edit</span> Định lượng
                 </button>
               </div>
               <div className="p-4 flex-1 overflow-y-auto custom-scrollbar">
@@ -460,9 +460,9 @@ const RecipeManagement = () => {
                     <div className="text-center py-5 text-neutralCustom">Đang tải dữ liệu...</div>
                   ) : ingredients.length > 0 ? (
                     ingredients.map((item) => (
-                      <div key={item.id} className="py-3.5 flex justify-between items-center text-sm font-medium">
+                      <div key={item.id} className="py-2 flex justify-between items-center text-xs font-medium">
                         <span className="text-gray-950 font-semibold">{item.name || "Nguyên liệu không rõ"}</span>
-                        <span className="text-xs font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-md">{item.amount} {item.unit}</span>
+                        <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded">{item.amount} {item.unit}</span>
                       </div>
                     ))
                   ) : (
@@ -474,26 +474,26 @@ const RecipeManagement = () => {
           </div>
 
           {/* CỘT 2: BẢNG HƯỚNG DẪN THỰC HIỆN */}
-          <div className="lg:col-span-8 h-full flex flex-col">
+          <div className="w-full lg:w-2/3 h-full flex flex-col min-h-0">
             <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm">
-              <div className="p-4 border-b border-neutralCustom/20 bg-culinaryBg/30 flex justify-between items-center bg-gray-50/50">
-                <h3 className="text-md font-bold text-gray-900 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-xl">format_list_numbered</span>Quy Trình Chế Biến
+              <div className="py-2.5 px-4 border-b border-neutralCustom/20 bg-culinaryBg/30 flex justify-between items-center bg-gray-50/50">
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-lg">format_list_numbered</span>Quy Trình Chế Biến
                 </h3>
                 {/* NÚT SỬA HƯỚNG DẪN */}
-                <button onClick={handleOpenEditStepModal} className="text-xs font-bold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform no-print">
-                  <span className="material-symbols-outlined text-[16px]">edit</span> Sửa quy trình
+                <button onClick={handleOpenEditStepModal} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-lg active:scale-95 transition-transform no-print">
+                  <span className="material-symbols-outlined text-[14px]">edit</span> Sửa quy trình
                 </button>
               </div>
-              <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-                <ol className="space-y-6 list-decimal list-inside marker:text-primary marker:font-black marker:text-lg">
+              <div className="p-4 flex-1 overflow-y-auto custom-scrollbar">
+                <ol className="space-y-4 list-decimal list-inside marker:text-primary marker:font-black marker:text-base">
                   {instructions.length > 0 ? (
                     instructions.map((inst, idx) => (
-                      <li key={idx} className="text-neutralCustom text-sm leading-relaxed pl-2 font-medium">
-                        <span className="font-bold text-gray-950 ml-1 text-sm">{inst.title}:</span> {inst.desc}
+                      <li key={idx} className="text-neutralCustom text-xs leading-relaxed pl-1 font-medium">
+                        <span className="font-bold text-gray-950 ml-1 text-xs">{inst.title}:</span> {inst.desc}
                         {/* Hiện cảnh báo nếu có nhập nội dung vào */}
                         {inst.warning && (
-                          <div className="mt-2.5 p-3 bg-red-50 border-l-4 border-red-500 text-xs text-red-700 ml-6 rounded-r-lg font-bold">
+                          <div className="mt-2 p-2 bg-red-50 border-l-4 border-red-500 text-[10px] text-red-750 ml-5 rounded-r-lg font-bold">
                             <span className="font-black text-red-600 mr-2 uppercase tracking-wide">Cảnh báo:</span>{inst.warning}
                           </div>
                         )}

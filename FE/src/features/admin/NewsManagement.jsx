@@ -237,7 +237,7 @@ const NewsManagement = () => {
         </div>
       )}
 
-      <main className="ml-64 pt-24 p-8 w-full flex flex-col min-h-screen transition-all duration-300">
+      <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen transition-all duration-300">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">

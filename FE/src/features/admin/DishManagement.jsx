@@ -188,7 +188,7 @@ const DishManagement = () => {
 
   /* STREAMING_CHUNK: Render giao diện quản trị món ăn chuẩn PC/Laptop */
   return (
-    <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex overflow-x-hidden relative">
+    <div className="bg-culinaryBg text-gray-900 font-sans h-screen flex overflow-hidden relative">
       <AdminSidebar currentTab="dish" />
       <AdminHeader />
 
@@ -244,7 +244,7 @@ const DishManagement = () => {
         </div>
       )}
 
-      <main className="ml-64 pt-24 p-8 w-full flex flex-col h-screen bg-culinaryBg transition-all duration-300">
+      <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col h-screen bg-culinaryBg overflow-hidden transition-all duration-300">
         
         {/* Page Header */}
         <div className="flex flex-col gap-6 mb-6 flex-shrink-0">
@@ -315,38 +315,38 @@ const DishManagement = () => {
                   <div
                     key={dish.id}
                     onClick={() => handleOpenPopup(dish)}
-                    className={`flex items-center p-4 hover:bg-stone-50/80 transition-colors cursor-pointer group
+                    className={`flex items-center py-2.5 px-4 hover:bg-stone-50/80 transition-colors cursor-pointer group
                       ${dish.status === 'out_of_stock' ? 'opacity-75' : ''}
                     `}
                   >
                     <img
                       src={dish.image_url || dish.image}
                       alt={dish.name}
-                      className={`w-14 h-14 rounded-xl object-cover mr-4 shadow-sm ${dish.status === 'out_of_stock' ? 'grayscale-[50%]' : ''}`}
+                      className={`w-11 h-11 rounded-lg object-cover mr-3 shadow-sm ${dish.status === 'out_of_stock' ? 'grayscale-[50%]' : ''}`}
                     />
-                    <div className="flex-1 min-w-0 pr-4">
-                      <h4 className="font-extrabold text-gray-900 text-base truncate">{dish.name}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-sm font-bold ${dish.status === 'out_of_stock' ? 'text-neutralCustom' : 'text-primary'}`}>
-                          {Number(dish.price).toLocaleString('vi-VN')}đ
+                    <div className="flex-1 min-w-0 pr-3">
+                      <h4 className="font-bold text-gray-900 text-sm truncate">{dish.name}</h4>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-xs font-bold ${dish.status === 'out_of_stock' ? 'text-neutralCustom' : 'text-primary'}`}>
+                          {Number(dish.price).toLocaleString('vi-VN')} đ
                         </span>
-                        <span className="text-neutralCustom/30 text-xs">•</span>
-                        <span className="text-xs text-neutralCustom font-semibold bg-neutralCustom/5 px-2 py-0.5 rounded-md">
+                        <span className="text-neutralCustom/30 text-[10px]">•</span>
+                        <span className="text-[10px] text-neutralCustom font-bold bg-neutralCustom/5 px-1.5 py-0.5 rounded">
                           {dish.categories?.name || dish.category || 'Khác'}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6 shrink-0">
+                    <div className="flex items-center gap-4 shrink-0">
                       {dish.status !== 'out_of_stock' ? (
-                        <div className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider">
+                        <div className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
                           Đang bán
                         </div>
                       ) : (
-                        <div className="bg-neutralCustom/10 text-neutralCustom border border-neutralCustom/20 text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider">
+                        <div className="bg-neutralCustom/10 text-neutralCustom border border-neutralCustom/20 text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
                           Tạm ngưng
                         </div>
                       )}
-                      <span className="material-symbols-outlined text-neutralCustom/40 group-hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-neutralCustom/40 group-hover:text-primary transition-colors text-lg">
                         chevron_right
                       </span>
                     </div>
@@ -362,12 +362,12 @@ const DishManagement = () => {
 
             {/* Phân trang */}
             {totalPages > 1 && (
-              <div className="p-4 bg-stone-50/50 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0 rounded-b-2xl">
+              <div className="p-3 bg-stone-50/50 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0 rounded-b-2xl">
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="p-1.5 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center cursor-pointer w-9 h-9"
+                    className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center cursor-pointer w-8 h-8"
                   >
                     <span className="material-symbols-outlined text-sm">chevron_left</span>
                   </button>
@@ -376,7 +376,7 @@ const DishManagement = () => {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-9 h-9 rounded-lg shadow-sm transition-colors font-black text-xs cursor-pointer
+                      className={`w-8 h-8 rounded-lg shadow-sm transition-colors font-black text-xs cursor-pointer
                         ${currentPage === page
                           ? 'bg-primary text-white'
                           : 'bg-white hover:bg-gray-50 text-neutralCustom border border-neutralCustom/10'}
@@ -389,7 +389,7 @@ const DishManagement = () => {
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-1.5 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center cursor-pointer w-9 h-9"
+                    className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-white text-neutralCustom disabled:opacity-50 transition-colors bg-white flex items-center justify-center cursor-pointer w-8 h-8"
                   >
                     <span className="material-symbols-outlined text-sm">chevron_right</span>
                   </button>

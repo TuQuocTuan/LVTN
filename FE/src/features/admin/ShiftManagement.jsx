@@ -464,7 +464,7 @@ const ShiftManagement = () => {
       )}
 
       {}
-      <main className="ml-64 pt-24 p-8 w-full flex flex-col min-h-screen">
+      <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
@@ -646,14 +646,14 @@ const ShiftManagement = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-culinaryBg/50 text-neutralCustom border-b border-neutralCustom/20">
-                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Nhân viên</th>
-                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Vai trò</th>
-                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Check-In</th>
-                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Check-Out</th>
-                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Tổng giờ công</th>
-                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Lương / Giờ</th>
-                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider">Thành tiền</th>
-                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right">Thao tác</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Nhân viên</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Vai trò</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Check-In</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Check-Out</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Tổng giờ công</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Lương / Giờ</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Thành tiền</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right whitespace-nowrap">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutralCustom/10">
@@ -664,39 +664,39 @@ const ShiftManagement = () => {
                 ) : currentShifts.length > 0 ? (
                   currentShifts.map((shift) => (
                     <tr key={shift.id} className="hover:bg-culinaryBg/30 transition-colors group">
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <p className="font-bold text-gray-900 text-sm">{shift.users?.fullname || 'Ẩn danh'}</p>
                         <p className="text-xs text-neutralCustom mt-0.5 font-mono">@{shift.users?.username || 'no-username'}</p>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase border ${
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase border whitespace-nowrap ${
                           shift.users?.role?.toLowerCase() === 'admin' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'
                         }`}>
                           {shift.users?.role?.toLowerCase() === 'admin' ? 'Quản lý' : 'Thu ngân'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-semibold text-gray-700">
+                      <td className="px-6 py-4 text-xs font-semibold text-gray-700 whitespace-nowrap">
                         {formatDate(shift.check_in)}
                       </td>
-                      <td className="px-6 py-4 text-xs font-semibold text-gray-700">
-                        {shift.check_out ? formatDate(shift.check_out) : <span className="text-green-500 font-bold animate-pulse flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping"></span>Đang làm việc...</span>}
+                      <td className="px-6 py-4 text-xs font-semibold text-gray-700 whitespace-nowrap">
+                        {shift.check_out ? formatDate(shift.check_out) : <span className="text-green-500 font-bold animate-pulse flex items-center gap-1 whitespace-nowrap"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping"></span>Đang làm việc...</span>}
                       </td>
                       {}
-                      <td className="px-6 py-4 text-sm font-bold text-gray-900">
+                      <td className="px-6 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
                         {formatDuration(shift.duration_hours)}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-700 whitespace-nowrap">
                         {Number(shift.hourly_rate || 0).toLocaleString('vi-VN')} đ/h
                       </td>
-                      <td className="px-6 py-4 text-sm font-black text-primary">
+                      <td className="px-6 py-4 text-sm font-black text-primary whitespace-nowrap">
                         {shift.total_wage ? `${Number(shift.total_wage).toLocaleString('vi-VN')} đ` : '---'}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        <div className="inline-flex justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                           {shift.status === 'active' && (
                             <button 
                               onClick={() => handleCheckoutStaff(shift.users?.id || shift.user_id, shift.id)} 
-                              className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 rounded-lg text-xs font-bold flex items-center gap-1 transition-all shadow-sm active:scale-95" 
+                              className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 rounded-lg text-xs font-bold flex items-center gap-1 transition-all shadow-sm active:scale-95 whitespace-nowrap" 
                               title="Kết thúc ca làm"
                             >
                               <span className="material-symbols-outlined text-sm">logout</span> Kết ca
