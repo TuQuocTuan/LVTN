@@ -448,7 +448,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
         const { session_id, close_user, is_preview, payment_method, customer_name, phone_number, email, voucher_code } = req.body;
 
-        console.log("=== CHECKOUT REQUEST ===", { session_id, payment_method, is_preview, is_manual });
+        console.log("=== CHECKOUT REQUEST ===", { session_id, payment_method, is_preview });
 
         const { orders, total: sub_total, billDetails } = await getTamtinhBill(session_id);
 
