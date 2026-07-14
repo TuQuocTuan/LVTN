@@ -786,7 +786,7 @@ const TableManager = () => {
                                     const userId = parsedUser?.id || null; // Lấy được đúng ID của người dùng đang đăng nhập
 
                                     // 1. Gọi API gửi lên Backend để chốt đóng phiên trong DB
-                                    const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
+                                    const response = await axios.post(`${API_BASE_URL}/orders/check`, {
                                       session_id: selectedTable.sessionId,
                                       payment_method: 'VNPAY',// Bỏ qua check VNPAY tự động ở BE
                                       is_preview: false,
