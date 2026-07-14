@@ -307,7 +307,7 @@ const getOrderBySessionId = async (session_id) => {
 }
 
 //Hàm xử lý thanh toán cuối cùng: cập nhật thông tin khách hàng, đổi trạng thái voucher, đóng phiên ăn
-const handleFinalPayment = async (req, session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId, financialData) => {
+const handleFinalPayment = async (req, session_id, close_user, payment_method, customer_name, phone_number, client_voucher_id, appliedPromotionId, financialData, is_manual) => {
     let customerId = null;
 
     if (phone_number) {
@@ -356,7 +356,7 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
 
     const { sub_total, discount_amount, vat_rate, vat_amount, tongtien } = financialData;
 
-    if (payment_method.toUpperCase() === 'VNPAY') {
+    if (payment_method.toUpperCase() === 'VNPAY' && !is_manual) {
         const vnpayUrl = createVnPayUrl(req, session_id, tongtien);
 
         return {
@@ -446,7 +446,7 @@ export const getTamtinhBill = async (session_id) => {
 //Hàm tính tiền và đóng bàn
 export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
-        const { session_id, close_user, is_preview, payment_method, customer_name, phone_number, email, voucher_code } = req.body;
+        const { session_id, close_user, is_preview, payment_method, customer_name, phone_number, email, voucher_code, is_manual } = req.body;
 
         console.log("=== CHECKOUT REQUEST ===", { session_id, payment_method, is_preview });
 
@@ -527,7 +527,8 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 phone_number ? phone_number.trim() : null,
                 null,
                 appliedPromotionId,
-                { sub_total, discount_amount, vat_rate, vat_amount, tongtien }
+                { sub_total, discount_amount, vat_rate, vat_amount, tongtien },
+                is_manual
             );
 
             console.log("=== HANDLE FINAL PAYMENT RESULT ===", closedByName);

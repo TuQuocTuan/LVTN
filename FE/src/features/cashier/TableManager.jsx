@@ -790,7 +790,8 @@ const TableManager = () => {
                                       session_id: selectedTable.current_session_id, // Hoặc biến chứa ID session hiện tại của bạn
                                       payment_method: 'VNPAY',// Bỏ qua check VNPAY tự động ở BE
                                       is_preview: false,
-                                      close_user: userId,                  // ID user thực hiện đóng ca nếu có
+                                      close_user: userId, // ID user thực hiện đóng ca nếu có
+                                      is_manual: true
                                     });
 
                                     if (response.data.success) {
