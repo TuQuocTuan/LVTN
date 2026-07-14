@@ -577,23 +577,6 @@ const PromotionManagement = () => {
                   * Hệ thống sẽ tự động tra cứu khách hàng dựa trên Số điện thoại để cấp mã Voucher và gửi email phản hồi trực tiếp tới Email đăng ký của họ.
                 </p>
               </div>
-
-              {/* Checkbox bỏ qua điều kiện tích lũy 5 triệu */}
-              <div className="flex items-center gap-3 bg-orange-50/50 p-3.5 rounded-2xl border border-orange-100 mt-2">
-                <input 
-                  type="checkbox" 
-                  id="bypass_limit" 
-                  checked={giftData.bypass_limit} 
-                  onChange={(e) => setGiftData({ ...giftData, bypass_limit: e.target.checked })} 
-                  className="w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer" 
-                />
-                <div className="flex flex-col cursor-pointer select-none" onClick={() => setGiftData({ ...giftData, bypass_limit: !giftData.bypass_limit })}>
-                  <label htmlFor="bypass_limit" className="text-xs font-bold text-gray-900 cursor-pointer">
-                    Bỏ qua điều kiện tích lũy chi tiêu 5.000.000 đ
-                  </label>
-                  <span className="text-[10px] text-neutralCustom">Tích chọn để phát ngay lập tức cho khách hàng bất kỳ.</span>
-                </div>
-              </div>
             </div>
 
             <div className="p-5 border-t border-neutralCustom/10 bg-gray-50 flex justify-end gap-3 shrink-0">

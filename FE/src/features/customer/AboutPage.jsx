@@ -484,29 +484,54 @@ const AboutPage = () => {
                       Đã tìm thấy ưu đãi của bạn:
                     </h5>
                     
-                    {searchResult.map((voucher, index) => (
-                      <div key={index} className="bg-orange-50/40 border border-orange-100 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute top-0 right-0 bg-orange-600 text-white font-mono font-bold text-[9px] px-2.5 py-0.5 rounded-bl uppercase">
-                          {voucher.code}
+                    {searchResult.map((voucher, index) => {
+                      const isUsed = voucher.is_used;
+                      return (
+                        <div 
+                          key={index} 
+                          className={`p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden border transition-all ${
+                            isUsed 
+                              ? 'bg-stone-100/60 border-stone-200 opacity-70' 
+                              : 'bg-orange-50/40 border-orange-100 shadow-sm hover:shadow-md'
+                          }`}
+                        >
+                          <div className={`absolute top-0 right-0 font-mono font-bold text-[9px] px-2.5 py-0.5 rounded-bl uppercase ${
+                            isUsed ? 'bg-stone-400 text-white' : 'bg-orange-600 text-white'
+                          }`}>
+                            {voucher.code}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                                isUsed ? 'bg-stone-200 text-stone-600' : 'bg-green-100 text-green-700'
+                              }`}>
+                                {isUsed ? 'Đã dùng' : 'Khả dụng'}
+                              </span>
+                              <p className={`font-black text-xs sm:text-sm pr-20 ${isUsed ? 'text-stone-500 line-through' : 'text-stone-900'}`}>
+                                {voucher.name}
+                              </p>
+                            </div>
+                            <p className="text-[11px] text-stone-550 mt-1 leading-relaxed">
+                              {isUsed 
+                                ? 'Ưu đãi này đã được áp dụng cho hóa đơn thanh toán trước đó.' 
+                                : 'Ưu đãi áp dụng nướng lẩu thả ga cho hóa đơn dùng bữa tại quầy. Xuất trình mã này cho thu ngân khi thanh toán.'
+                              }
+                            </p>
+                          </div>
+                          <div className={`flex justify-between items-center mt-3 border-t pt-2.5 ${isUsed ? 'border-stone-200' : 'border-orange-100/50'}`}>
+                            <span className="text-[10px] text-stone-500 font-medium">Hạn sử dụng: <strong className="text-stone-700">Theo chương trình</strong></span>
+                            <span className={`text-xs sm:text-sm font-black ${isUsed ? 'text-stone-400 line-through' : 'text-orange-600'}`}>
+                              Giảm -{Number(voucher.discount_value).toLocaleString('vi-VN')}đ
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-black text-stone-900 text-xs sm:text-sm pr-20">{voucher.name}</p>
-                          <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
-                            Ưu đãi áp dụng nướng lẩu thả ga cho hóa đơn dùng bữa tại quầy. Xuất trình mã này cho thu ngân khi thanh toán ca làm.
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center mt-3 border-t border-orange-100/50 pt-2.5">
-                          <span className="text-[10px] text-stone-500 font-medium">Hạn sử dụng: <strong className="text-stone-700">Theo chương trình</strong></span>
-                          <span className="text-xs sm:text-sm font-black text-orange-600">Giảm -{Number(voucher.discount_value).toLocaleString('vi-VN')}đ</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl text-center">
                     <span className="material-symbols-outlined text-stone-400 text-3xl mb-1.5">sentiment_dissatisfied</span>
                     <p className="text-xs font-bold text-stone-600">SĐT hoặc Email này hiện chưa có Voucher khả dụng!</p>
-                    <p className="text-[10px] text-stone-400 mt-1">Gợi ý: Chỉ các khách hàng có SĐT & Email đã đăng ký trong cơ sở dữ liệu và tích lũy đủ mốc chi tiêu mới hiển thị.</p>
                   </div>
                 )}
               </div>

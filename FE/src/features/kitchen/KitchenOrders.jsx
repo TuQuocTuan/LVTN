@@ -204,8 +204,6 @@ const KitchenDashboard = () => {
         <StaffHeader
           title="Bếp & Đồ Ăn"
           subtitle="Hệ thống quản lý"
-          userName="Đầu Bếp Nguyễn"
-          userRole="Bếp trưởng"
           notifications={notifications}
           onDismissNotification={(index) => setNotifications(prev => prev.filter((_, i) => i !== index))}
           onClearAllNotifications={() => setNotifications([])}

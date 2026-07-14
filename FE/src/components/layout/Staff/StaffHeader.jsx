@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const StaffHeader = ({
   title = "Tiêu đề trang",
   subtitle = "Hệ thống quản lý",
@@ -16,6 +18,10 @@ const StaffHeader = ({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userRole, setUserRole] = useState('');
   const navigate = useNavigate();
+
+  // States để lưu dữ liệu kết ca từ API
+  const [shiftReportData, setShiftReportData] = useState(null);
+  const [ketCaTime, setKetCaTime] = useState('');
 
   const [userInfo, setUserInfo] = useState({ fullname: 'Đang tải...', role: '' });
 
@@ -41,21 +47,73 @@ const StaffHeader = ({
     }
   };
 
+  // Trình in ẩn (Silent Print) dùng để in HTML Hóa đơn kết ca
+  const openSilentPrint = (htmlContent) => {
+    if (!htmlContent) return;
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+    }, 500);
+  };
+
+  const handleOpenKetCaModal = async () => {
+    try {
+      setIsLoggingOut(true);
+      const response = await axios.get(`${API_BASE_URL}/user/ketca`);
+      if (response.data && response.data.success) {
+        setShiftReportData(response.data);
+        // Ghi nhận mốc ngày giờ bấm kết ca hiện tại
+        setKetCaTime(new Date().toLocaleString('vi-VN'));
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải dữ liệu kết ca:", error);
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutConfirm(true);
+    }
+  };
+
+  // Đóng profile dropdown và mở modal đăng xuất cơ bản (không gọi dữ liệu kết ca)
+  const handleOpenNormalLogoutModal = () => {
+    setShowProfileDropdown(false);
+    setShiftReportData(null); // Clear dữ liệu kết ca để hiện modal đăng xuất thường
+    setShowLogoutConfirm(true);
+  };
+
   const handleLogoutSubmit = async () => {
     setIsLoggingOut(true);
+
     try {
+      // Lệnh in bill kết ca tự động nếu có dữ liệu html_bill trả về từ API (Chỉ áp dụng với Thu ngân khi bấm Kết ca)
+      if (userRole === 'cashier' && shiftReportData?.html_bill) {
+        openSilentPrint(shiftReportData.html_bill);
+      }
+
+      // Gọi API Logout lưu Log vào hệ thống
       const userStr = localStorage.getItem('user');
       const userObj = userStr ? JSON.parse(userStr) : {};
 
-      console.log("👉 Dữ liệu chuẩn bị LOGOUT gửi lên BE:", userObj);
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {
-        user_id: userObj.id || userObj._id,
-        username: userObj.username || 'unknown'
-      });
-      console.log("✅ Đã gọi API logout thành công!");
+      if (import.meta.env.VITE_API_URL) {
+        await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+          user_id: userObj.id || userObj._id,
+          username: userObj.username || 'unknown'
+        });
+      }
+      console.log("Đã gọi API logout thành công!");
     } catch (err) {
-      console.error("❌ Lỗi ghi nhận LOGOUT xuống server:", err);
+      console.error("Lỗi ghi nhận LOGOUT xuống server:", err);
     } finally {
+      // Xóa bộ nhớ và điều hướng ra màn hình Đăng nhập
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setShowLogoutConfirm(false);
@@ -73,7 +131,23 @@ const StaffHeader = ({
 
       <div className="flex items-center gap-4 sm:gap-6">
 
-        {/* THÔNG BÁO CHỜ CHẾ BIẾN/THANH TOÁN (STAY ALIGNED ON LAPTOPS) */}
+        {/* 🌟 STREAMING_CHUNK: Render nút KẾT CA chuyên dụng chỉ hiển thị cho Thu Ngân (Cashier) */}
+        {userRole === 'cashier' && (
+          <button
+            onClick={handleOpenKetCaModal}
+            disabled={isLoggingOut}
+            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-extrabold rounded-xl flex items-center gap-2 shadow-md hover:shadow-red-500/20 active:scale-95 text-xs transition-all cursor-pointer shrink-0"
+          >
+            {isLoggingOut ? (
+              <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+            ) : (
+              <span className="material-symbols-outlined text-[16px]">work_history</span>
+            )}
+            <span>KẾT CA LÀM VIỆC</span>
+          </button>
+        )}
+
+        {/* THÔNG BÁO CHỜ CHẾ BIẾN/THANH TOÁN */}
         <div className="flex items-center gap-4 relative">
           <button
             onClick={() => { setShowNotiDropdown(!showNotiDropdown); setShowProfileDropdown(false); }}
@@ -88,7 +162,7 @@ const StaffHeader = ({
             )}
           </button>
 
-          {/* Hộp thoại danh sách thông báo rủ xuống trên Laptop */}
+          {/* Hộp thoại danh sách thông báo */}
           {showNotiDropdown && (
             <div className="absolute -right-16 top-[120%] mt-1 w-80 bg-white rounded-2xl shadow-xl border border-neutralCustom/15 py-3 z-50 animate-scale-up origin-top-right">
               <div className="flex justify-between items-center px-4 pb-2 border-b border-stone-100">
@@ -146,7 +220,7 @@ const StaffHeader = ({
         {/* TÀI KHOẢN NHÂN SỰ & MENU PHỤ */}
         <div className="flex items-center gap-3 pl-4 sm:pl-6 border-l border-neutralCustom/15 relative">
           <div className="text-right select-none hidden sm:block">
-            <p className="text-xs sm:text-sm font-bold leading-none text-gray-950 truncate max-w-[120px]">{userInfo.fullname}</p>
+            <p className="text-xs sm:text-sm font-bold leading-none text-gray-950 whitespace-nowrap">{userInfo.fullname}</p>
             <p className="text-[10px] text-primary uppercase font-extrabold tracking-wider mt-1">{userInfo.role}</p>
           </div>
 
@@ -161,11 +235,11 @@ const StaffHeader = ({
           {showProfileDropdown && (
             <div className="absolute right-0 top-[120%] mt-1 w-48 bg-white border border-neutralCustom/15 rounded-xl shadow-xl py-1.5 z-50 flex flex-col animate-scale-up origin-top-right">
               <div className="px-4 py-2 border-b border-stone-100 sm:hidden">
-                <p className="text-xs font-bold text-gray-950 truncate">{userInfo.fullname}</p>
+                <p className="text-xs font-bold text-gray-900 truncate">{userInfo.fullname}</p>
                 <p className="text-[9px] text-primary font-black uppercase mt-0.5">{userInfo.role}</p>
               </div>
               <button
-                onClick={() => { setShowProfileDropdown(false); setShowLogoutConfirm(true); }}
+                onClick={handleOpenNormalLogoutModal}
                 className="px-4 py-2.5 text-xs sm:text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 text-left transition-colors w-full cursor-pointer"
               >
                 <span className="material-symbols-outlined text-lg">logout</span>
@@ -176,40 +250,103 @@ const StaffHeader = ({
         </div>
       </div>
 
+      {/* 🌟 STREAMING_CHUNK: Render hộp thoại Modal Kết ca hoặc Đăng xuất tùy thuộc vào dữ liệu shiftReportData */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
-            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100 animate-pulse">
-              <span className="material-symbols-outlined text-4xl">work_history</span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-2">
-              {userRole === 'cashier' ? 'Kết thúc ca làm việc?' : 'Đăng xuất'}
-            </h3>
-            <p className="text-xs sm:text-sm text-neutralCustom mb-6 leading-relaxed">
-              {userRole === 'cashier'
-                ? 'Hệ thống sẽ đồng bộ và tổng hợp thời gian hoạt động của ca làm hiện tại của bạn. Xác nhận hoàn ca?'
-                : 'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng nghiệp vụ Làng MÌXI BBQ?'}
-            </p>
-            <div className="flex gap-3">
-              <button
-                disabled={isLoggingOut}
-                onClick={() => setShowLogoutConfirm(false)}
-                className="w-1/2 py-3 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-xs sm:text-sm rounded-xl hover:bg-stone-50 active:scale-95 transition-all cursor-pointer"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                disabled={isLoggingOut}
-                onClick={handleLogoutSubmit}
-                className="w-1/2 py-3 bg-red-500 text-white font-black text-xs sm:text-sm rounded-xl hover:bg-red-600 shadow-md shadow-red-500/10 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1"
-              >
-                {isLoggingOut ? (
-                  <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                ) : (
-                  'Xác nhận'
-                )}
-              </button>
-            </div>
+          <div className={`bg-white rounded-3xl p-6 sm:p-8 shadow-2xl w-full border border-neutralCustom/10 animate-scale-up ${userRole === 'cashier' && shiftReportData ? 'max-w-md' : 'max-w-sm text-center'}`}>
+            
+            {/* THIẾT KẾ CHO THU NGÂN (CHỈ KHI CÓ DỮ LIỆU KẾT CA THẬT) */}
+            {userRole === 'cashier' && shiftReportData ? (
+              <>
+                <div className="flex items-center gap-3 mb-5 border-b border-gray-100 pb-4">
+                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center border border-primary/20 shrink-0">
+                    <span className="material-symbols-outlined text-3xl">receipt_long</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-gray-900">Báo Cáo Kết Ca</h3>
+                    <p className="text-xs text-neutralCustom mt-0.5">Xác nhận doanh thu và đóng ca làm việc Làng MÌXI.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mb-6 bg-stone-50/50 p-4 rounded-2xl border border-stone-200/50 text-left">
+                  {/* 🌟 THÊM MỚI: Hiển thị Ngày và Giờ bấm kết ca */}
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold text-gray-700">Ngày giờ kết ca:</span>
+                    <span className="font-bold text-gray-900 font-mono">{ketCaTime}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold text-gray-700">Tiền mặt đầu ca:</span>
+                    <span className="font-bold text-gray-900">{Number(shiftReportData?.tien_dau_ca || 0).toLocaleString('vi-VN')} đ</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold text-gray-700">Tổng doanh thu bán được:</span>
+                    <span className="font-bold text-gray-900">{Number(shiftReportData?.tong_tien_ban_duoc || 0).toLocaleString('vi-VN')} đ</span>
+                  </div>
+                  <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between items-center mt-2">
+                    <span className="font-black text-gray-900 text-base uppercase">Tổng tiền trong két:</span>
+                    <span className="font-black text-primary text-xl">{Number(shiftReportData?.tong_tien_trong_ket || 0).toLocaleString('vi-VN')} đ</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button 
+                    disabled={isLoggingOut}
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="w-1/2 py-3 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-sm rounded-xl hover:bg-stone-50 active:scale-95 transition-all cursor-pointer"
+                  >
+                    Đóng cửa sổ
+                  </button>
+                  <button 
+                    disabled={isLoggingOut}
+                    onClick={handleLogoutSubmit}
+                    className="w-1/2 py-3 bg-primary text-white font-black text-sm rounded-xl hover:bg-secondary shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isLoggingOut ? (
+                      <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-lg">print</span>
+                        In Bill & Đăng Xuất
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* THIẾT KẾ CHO ĐẦU BẾP / QUẢN LÝ / HOẶC THU NGÂN KHI BẤM LOGOUT THƯỜNG */
+              <>
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+                  <span className="material-symbols-outlined text-4xl">logout</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-2">
+                  Đăng xuất hệ thống
+                </h3>
+                <p className="text-xs sm:text-sm text-neutralCustom mb-6 leading-relaxed">
+                  Bạn có chắc chắn muốn kết thúc ca làm việc và đăng xuất khỏi ứng dụng nghiệp vụ Làng MÌXI BBQ?
+                </p>
+                <div className="flex gap-3">
+                  <button 
+                    disabled={isLoggingOut}
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="w-1/2 py-3 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-xs sm:text-sm rounded-xl hover:bg-stone-50 active:scale-95 transition-all cursor-pointer"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button 
+                    disabled={isLoggingOut}
+                    onClick={handleLogoutSubmit}
+                    className="w-1/2 py-3 bg-red-500 text-white font-black text-xs sm:text-sm rounded-xl hover:bg-red-600 shadow-md shadow-red-500/10 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    {isLoggingOut ? (
+                      <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                    ) : (
+                      'Xác nhận'
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
       )}

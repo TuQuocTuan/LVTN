@@ -154,7 +154,9 @@ const TableManager = () => {
           orders: completedOrders,
           subTotal: calculatedSubTotal,
           grandTotal: calculatedSubTotal * 1.1, // VAT 10%
-          originalGrandTotal: calculatedSubTotal * 1.1
+          originalGrandTotal: calculatedSubTotal * 1.1,
+          vatAmount: calculatedSubTotal * 0.1,
+          discountAmount: 0
         });
       }
     } catch (error) {
@@ -201,7 +203,10 @@ const TableManager = () => {
           });
 
           if (response.data && response.data.success) {
-            setCustomerVouchers(response.data.promotion || []);
+            const allVouchers = response.data.promotion || [];
+            // Chỉ hiển thị các voucher chưa được sử dụng (is_used !== true)
+            const unusedVouchers = allVouchers.filter(v => !v.is_used);
+            setCustomerVouchers(unusedVouchers);
           } else {
             // Trường hợp BE trả về 200 nhưng success: false
             setCustomerVouchers([]);
@@ -239,6 +244,7 @@ const TableManager = () => {
             ...prev,
             grandTotal: response.data.tongtien || prev.grandTotal,
             discountAmount: response.data.discount_amount || 0,
+            vatAmount: response.data.vat_amount || 0,
             voucherName: response.data.voucher_name
           }));
         }
@@ -445,9 +451,6 @@ const TableManager = () => {
     return true;
   });
 
-
-
-
   return (
     <div className="bg-culinaryBg text-neutralCustom font-sans min-h-screen flex">
       <main className="flex-1 relative">
@@ -456,8 +459,6 @@ const TableManager = () => {
         <StaffHeader
           title="Bàn & Thanh Toán"
           subtitle="Hệ thống quản lý"
-          userName="Thu Ngân Nguyễn"
-          userRole="Nhân viên thu ngân"
           notifications={notifications}
           onDismissNotification={(index) => setNotifications(prev => prev.filter((_, i) => i !== index))}
           onClearAllNotifications={() => setNotifications([])}
@@ -700,7 +701,7 @@ const TableManager = () => {
                             <select
                               value={voucherCode}
                               onChange={(e) => setVoucherCode(e.target.value)}
-                              className={`w-full px-3 py-2 text-sm bg-white border outline-none focus:ring-2 transition-all shadow-sm font-bold rounded-xl cursor-pointer
+                              className={`w-full px-3 py-2 text-xs bg-white border outline-none focus:ring-2 transition-all shadow-sm font-semibold rounded-xl cursor-pointer
                             ${customerVouchers.length > 0 ? 'border-primary/50 text-primary focus:ring-primary/20 focus:border-primary' : 'border-neutralCustom/30 text-gray-500'}
                           `}
                             >
@@ -709,7 +710,7 @@ const TableManager = () => {
                               </option>
                               {customerVouchers.map((v) => (
                                 <option key={v.code || v.id} value={v.code || v.id}>
-                                  {v.code || v.id} - {v.name} (Giảm: {v.discount_type === 'PERCENTAGE' ? `${v.discount_value}%` : `${Number(v.discount_value).toLocaleString('vi-VN')}đ`})
+                                  {v.code || v.id} - {v.name && v.name.length > 18 ? `${v.name.slice(0, 18)}...` : v.name} (Giảm: {v.discount_type === 'PERCENTAGE' ? `${v.discount_value}%` : `${Number(v.discount_value).toLocaleString('vi-VN')}đ`})
                                 </option>
                               ))}
                             </select>
@@ -722,6 +723,20 @@ const TableManager = () => {
                               <span>Tổng tiền món (Đã xuất món):</span>
                               <span className="font-bold text-gray-800">{billData.subTotal?.toLocaleString('vi-VN')} đ</span>
                             </div>
+
+                            {billData.discountAmount > 0 && (
+                              <div className="flex justify-between text-red-600 font-bold">
+                                <span>Giảm giá (Voucher):</span>
+                                <span>-{Number(billData.discountAmount).toLocaleString('vi-VN')} đ</span>
+                              </div>
+                            )}
+
+                            {billData.vatAmount !== undefined && (
+                              <div className="flex justify-between text-neutralCustom">
+                                <span>Thuế VAT (10%):</span>
+                                <span className="font-bold text-gray-800">+{Number(billData.vatAmount).toLocaleString('vi-VN')} đ</span>
+                              </div>
+                            )}
 
                             {billData.voucherName && billData.voucherName !== "Không áp dụng" && (
                               <div className="flex flex-col items-end mt-1.5 space-y-1">

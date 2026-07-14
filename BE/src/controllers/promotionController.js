@@ -20,20 +20,40 @@ export const getCustomerVoucher = async (req, res) => {
         const { data: cusVoucher, error: cusVoucherErr } = await supabase
             .from('customer_vouchers')
             .select('customer_id, promotion_id, is_used')
-            .eq('customer_id', customer.id)
-            .eq('is_used', false)
+            // .eq('customer_id', customer.id)
+            // .eq('is_used', false)
+            .eq('customer_id', customer.id);
+        if (cusVoucherErr) throw cusVoucherErr;
         if (!cusVoucher || cusVoucher.length === 0) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy voucher cho khách hàng này!' });
         }
 
         let promotionsID = cusVoucher.map(voucher => voucher.promotion_id);
 
-        const { data: promotion, error: promotionErr } = await supabase
+        const { data: promotions, error: promotionErr } = await supabase
             .from('promotions')
-            .select('code,name,discount_value,discount_type,is_active')
+            .select('id,code,name,discount_value,discount_type,is_active')
             .in('id', promotionsID)
-            .eq('is_active', true)
-        return res.status(200).json({ success: true, message: 'Voucher của khách hàng', promotion });
+            .eq('is_active', true);
+        if (promotionErr) throw promotionErr;
+
+        const promotionResult = [];
+        cusVoucher.forEach(cv => {
+            const promo = promotions.find(p => p.id === cv.promotion_id);
+            if (promo) {
+                promotionResult.push({
+                    id: promo.id,
+                    code: promo.code,
+                    name: promo.name,
+                    discount_value: promo.discount_value,
+                    discount_type: promo.discount_type,
+                    is_active: promo.is_active,
+                    is_used: cv.is_used
+                });
+            }
+        });
+
+        return res.status(200).json({ success: true, message: 'Voucher của khách hàng', promotion: promotionResult });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
@@ -271,16 +291,6 @@ export const giftVoucherToCustomer = async (req, res) => {
             .single();
 
         if (promoErr) throw promoErr;
-
-        if (promotion.type === "VOUCHER" && !bypass_limit) {
-            const totalBill = await calculateCustomerTotalBill(customer_id);
-            if (totalBill < 5000000) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Khách hàng chưa đủ điều kiện chi tiêu tích lũy 5 triệu đồng! (Tích lũy hiện tại của khách: ${totalBill.toLocaleString('vi-VN')} đ)`
-                });
-            }
-        }
 
         const { data: hasVoucher, error: checkVoucherErr } = await supabase
             .from('customer_vouchers')
