@@ -393,6 +393,16 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
 
     if (billErr) throw billErr;
 
+    const { error: tableErr } = await supabase
+        .from('dining_sessions')
+        .update({
+            status: 'closed',
+            current_session_id: null
+        })
+        .eq('current_session_id', session_id);
+
+    if (tableErr) throw tableErr;
+
     if (customerId && appliedPromotionId) {
         await supabase
             .from('customer_vouchers')
@@ -550,7 +560,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 // Chuẩn bị sẵn đoạn HTML chứa ảnh mã QR
                 qrCodeHtmlSection = `
                     <div class="text-center" style="margin-top: 15px; margin-bottom: 5px;">
-                        <p class="bold" style="font-size: 11px; margin: 0 0 5px 0;">🎉 QUÉT MÃ ĐÁNH GIÁ MÓN ĂN NHẬN ƯU ĐÃI!</p>
+                        <p class="bold" style="font-size: 11px; margin: 0 0 5px 0;">QUÉT MÃ ĐÁNH GIÁ MÓN ĂN!</p>
                         <img src="${qrCodeImageBase64}" alt="Review QR Code" style="width: 120px; height: 120px; border: 1px solid #eee; padding: 2px;"/>
                     </div>
                 `;
