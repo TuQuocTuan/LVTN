@@ -788,7 +788,7 @@ const TableManager = () => {
                                     // 1. Gọi API gửi lên Backend để chốt đóng phiên trong DB
                                     const response = await axios.post(`${API_BASE_URL}/checkout`, {
                                       session_id: selectedTable.current_session_id, // Hoặc biến chứa ID session hiện tại của bạn
-                                      payment_method: 'VNPAY_MANUAL',// Bỏ qua check VNPAY tự động ở BE
+                                      payment_method: 'VNPAY',// Bỏ qua check VNPAY tự động ở BE
                                       is_preview: false,
                                       close_user: userId,                  // ID user thực hiện đóng ca nếu có
                                     });
