@@ -18,7 +18,7 @@ export const createVnPayUrl = (req, session_id, amount) => {
     const tmnCode = 'HFZO9WRM';
     const secretKey = 'HXWPBBC8GOHC2CWLRJUYV0L2O51IUIOI';
     const vnpUrl = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
-    const returnUrl = 'http://localhost:5173/payment-return';
+    const returnUrl = 'https://lvtn-sable.vercel.app/cashier';
     const date = new Date();
     const createDate = moment(date).tz("Asia/Ho_Chi_Minh").format('YYYYMMDDHHmmss');
 

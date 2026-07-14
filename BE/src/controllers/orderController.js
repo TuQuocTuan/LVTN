@@ -393,16 +393,6 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
 
     if (billErr) throw billErr;
 
-    const { error: tableErr } = await supabase
-        .from('dining_sessions')
-        .update({
-            status: 'closed',
-            current_session_id: null
-        })
-        .eq('current_session_id', session_id);
-
-    if (tableErr) throw tableErr;
-
     if (customerId && appliedPromotionId) {
         await supabase
             .from('customer_vouchers')

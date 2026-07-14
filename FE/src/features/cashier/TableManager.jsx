@@ -381,13 +381,13 @@ const TableManager = () => {
             handleCloseModal();
             fetchTables();
           } else if (paymentMethod === 'VNPAY') {
-          // if (data.payment_url) {
-          //   window.open(data.payment_url, '_blank');
-          //   handleCloseModal();
-          //   fetchTables();
-          // } else {
-          //   alert("Không sinh được link VNPAY: " + data.message);
-          // }
+            // if (data.payment_url) {
+            //   window.open(data.payment_url, '_blank');
+            //   handleCloseModal();
+            //   fetchTables();
+            // } else {
+            //   alert("Không sinh được link VNPAY: " + data.message);
+            // }
             try {
               const API_BASE_URL = import.meta.env.VITE_API_URL;
               const vnpayResponse = await axios.post(`${API_BASE_URL}/payments/vnpay`, {
@@ -777,16 +777,35 @@ const TableManager = () => {
 
                           {showPrintVnpayBtn && (
                             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-center shadow-inner animation-fade-in">
-                              <p className="text-yellow-700 font-bold text-xs mb-2 animate-pulse">⏰ Đang chờ khách quét mã VNPAY...</p>
+                              <p className="text-yellow-700 font-bold text-xs mb-2 animate-pulse">Đang chờ khách quét mã VNPAY...</p>
                               <button
-                                onClick={() => {
-                                  if (vnpayHtmlBill) {
-                                    openSilentPrint(vnpayHtmlBill); // Kích hoạt lệnh in hóa đơn K80 tại chỗ
+                                onClick={async () => {
+                                  try {
+                                    // 1. Gọi API gửi lên Backend để chốt đóng phiên trong DB
+                                    const response = await axios.post(`${API_BASE_URL}/checkout`, {
+                                      session_id: selectedTable.current_session_id, // Hoặc biến chứa ID session hiện tại của bạn
+                                      payment_method: 'VNPAY_MANUAL',// Bỏ qua check VNPAY tự động ở BE
+                                      is_preview: false,
+                                      close_user: currentUser?.id,                  // ID user thực hiện đóng ca nếu có
+                                    });
+
+                                    if (response.data.success) {
+                                      //2. In hóa đơn chính thức từ Backend trả về (nếu có) hoặc dùng bill tạm trước đó
+                                      const billToPrint = response.data.html_bill || vnpayHtmlBill;
+                                      if (billToPrint) {
+                                        openSilentPrint(billToPrint);
+                                      }
+
+                                      //3. Dọn dẹp UI và cập nhật lại sơ đồ bàn trống
+                                      setShowPrintVnpayBtn(false);
+                                      setVnpayHtmlBill('');
+                                      handleCloseModal(); // Đóng bảng chi tiết bàn
+                                      fetchTables();// Cập nhật lại sơ đồ bàn sang màu xanh
+                                    }
+                                  } catch (error) {
+                                    console.error("Lỗi đóng phiên VNPAY thủ công:", error);
+                                    alert("Không thể đóng bàn: " + (error.response?.data?.message || error.message));
                                   }
-                                  setShowPrintVnpayBtn(false); // Ẩn nút đi
-                                  setVnpayHtmlBill(''); // Reset bộ nhớ tạm html
-                                  handleCloseModal(); // Đóng bảng chi tiết bàn
-                                  fetchTables(); // Cập nhật lại sơ đồ bàn trống
                                 }}
                                 className="w-full bg-green-600 text-white font-bold py-2.5 px-4 rounded-lg text-sm hover:bg-green-700 shadow transition-all cursor-pointer"
                               >
