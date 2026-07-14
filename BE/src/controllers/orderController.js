@@ -448,7 +448,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
         const { session_id, close_user, is_preview, payment_method, customer_name, phone_number, email, voucher_code, is_manual } = req.body;
 
-        console.log("=== CHECKOUT REQUEST ===", { session_id, payment_method, is_preview });
+        console.log("=== CHECKOUT REQUEST ===", { session_id, payment_method, is_preview, is_manual });
 
         const { orders, total: sub_total, billDetails } = await getTamtinhBill(session_id);
 
@@ -676,7 +676,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("💥 CRASH TRONG HÀM CHECKOUT:", error.message);
+        console.error("CRASH TRONG HÀM CHECKOUT:", error.message);
         return res.status(500).json({ success: false, message: error.message });
     }
 };
