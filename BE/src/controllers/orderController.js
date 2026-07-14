@@ -448,7 +448,11 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
     try {
         const { session_id, close_user, is_preview, payment_method, customer_name, phone_number, email, voucher_code } = req.body;
 
+        console.log("=== CHECKOUT REQUEST ===", { session_id, payment_method, is_preview, is_manual });
+
         const { orders, total: sub_total, billDetails } = await getTamtinhBill(session_id);
+
+        console.log("=== ORDERS FOUND ===", orders ? orders.length : 0);
 
         if (!orders || orders.length === 0) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn cho phiên ăn này!' });
@@ -511,6 +515,9 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             if (!payment_method) {
                 return res.status(400).json({ success: false, message: 'Vui lòng chọn phương thức thanh toán!' });
             }
+
+            console.log("👉 Chuẩn bị nhảy vào handleFinalPayment...");
+
             closedByName = await handleFinalPayment(
                 req,
                 session_id,
@@ -522,6 +529,8 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 appliedPromotionId,
                 { sub_total, discount_amount, vat_rate, vat_amount, tongtien }
             );
+
+            console.log("=== HANDLE FINAL PAYMENT RESULT ===", closedByName);
         }
 
         let detailed_orders = orders.map(order => ({
@@ -666,6 +675,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("💥 CRASH TRONG HÀM CHECKOUT:", error.message);
         return res.status(500).json({ success: false, message: error.message });
     }
 };
