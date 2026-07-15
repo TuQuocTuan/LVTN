@@ -415,9 +415,12 @@ const NewsManagement = () => {
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5 tracking-wide">Đính kèm chương trình khuyến mãi (Nếu có)</label>
                   <select value={newsFormData.promotion_id} onChange={(e) => setNewsFormData({ ...newsFormData, promotion_id: e.target.value })} className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-bold text-gray-700 cursor-pointer">
                     <option value="">-- Không đính kèm chương trình nào --</option>
-                    {promotionsList.map(promo => (
-                      <option key={promo.id} value={promo.id}>{promo.name} (Code: {promo.code})</option>
-                    ))}
+                    {promotionsList
+                      .filter(promo => promo.type?.toUpperCase() === 'BILL_CONDITION' || promo.type?.toUpperCase() === 'GLOBAL')
+                      .map(promo => (
+                        <option key={promo.id} value={promo.id}>{promo.name} (Code: {promo.code})</option>
+                      ))
+                    }
                   </select>
                 </div>
                 <div>

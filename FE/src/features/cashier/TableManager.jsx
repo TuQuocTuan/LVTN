@@ -195,11 +195,10 @@ const TableManager = () => {
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
 
-      if (phoneNumber.trim().length >= 10 || email.includes('@')) {
+      if (phoneNumber.trim().length >= 10) {
         try {
           const response = await axios.post(`${API_BASE_URL}/promotions/customer-voucher`, {
-            phone_number: phoneNumber.trim(),
-            email: email.trim()
+            phone_number: phoneNumber.trim()
           });
 
           if (response.data && response.data.success) {
@@ -223,7 +222,7 @@ const TableManager = () => {
     }, 800);
     return () => clearTimeout(delayDebounceFn);
 
-  }, [phoneNumber, email]);
+  }, [phoneNumber]);
 
   // Theo dõi sự thay đổi của mã voucher
   useEffect(() => {
@@ -680,28 +679,20 @@ const TableManager = () => {
                       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
                         <div className="space-y-3">
                           <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Khách hàng & Khuyến mãi</p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <input
-                              type="text"
-                              placeholder="Số điện thoại"
-                              value={phoneNumber}
-                              onChange={(e) => setPhoneNumber(e.target.value)}
-                              className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                            />
-                            <input
-                              type="email"
-                              placeholder="Email nhận hóa đơn"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                            />
-                          </div>
+                          <input
+                            type="text"
+                            placeholder="Số điện thoại khách hàng"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                            maxLength={10}
+                            className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          />
 
                           <div className="relative">
                             <select
                               value={voucherCode}
                               onChange={(e) => setVoucherCode(e.target.value)}
-                              className={`w-full px-3 py-2 text-xs bg-white border outline-none focus:ring-2 transition-all shadow-sm font-semibold rounded-xl cursor-pointer
+                              className={`w-full pl-3 pr-8 py-2 text-[10.5px] bg-white border outline-none focus:ring-2 transition-all shadow-sm font-semibold rounded-xl cursor-pointer
                             ${customerVouchers.length > 0 ? 'border-primary/50 text-primary focus:ring-primary/20 focus:border-primary' : 'border-neutralCustom/30 text-gray-500'}
                           `}
                             >
@@ -710,7 +701,7 @@ const TableManager = () => {
                               </option>
                               {customerVouchers.map((v) => (
                                 <option key={v.code || v.id} value={v.code || v.id}>
-                                  {v.code || v.id} - {v.name && v.name.length > 18 ? `${v.name.slice(0, 18)}...` : v.name} (Giảm: {v.discount_type === 'PERCENTAGE' ? `${v.discount_value}%` : `${Number(v.discount_value).toLocaleString('vi-VN')}đ`})
+                                  {v.code || v.id} - {v.name} (Giảm: {v.discount_type === 'PERCENTAGE' ? `${v.discount_value}%` : `${Number(v.discount_value).toLocaleString('vi-VN')}đ`})
                                 </option>
                               ))}
                             </select>

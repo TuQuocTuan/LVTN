@@ -70,16 +70,15 @@ const ReviewManagement = () => {
       if (!response.ok || (contentType && contentType.includes('text/html'))) {
         throw new Error('Tệp tin từ cấm không tồn tại hoặc trả về sai định dạng HTML');
       }
-      
       const text = await response.text();
       const words = [];
       
-      // Xử lý thông minh tách cả theo hàng (\n) lẫn dấu cách dòng gộp (space) nếu có dòng quá dài
-      text.split(/\r?\n/).forEach(line => {
-        const trimmed = line.trim();
+      // Tách các từ cấm phân cách bằng dấu phẩy
+      text.split(',').forEach(item => {
+        const trimmed = item.trim();
         if (!trimmed) return;
         
-        // Nếu dòng chứa quá nhiều từ cách nhau bởi khoảng trắng (ví dụ trên 4 từ dính nhau), tách ra làm từ cấm đơn lẻ
+        // Xử lý nếu từ chứa khoảng trắng dài dính nhau
         if (trimmed.includes(' ') && trimmed.split(/\s+/).length > 4) {
           trimmed.split(/\s+/).forEach(w => {
             const wordTrimmed = w.trim();

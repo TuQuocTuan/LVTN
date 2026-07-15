@@ -6,12 +6,14 @@ import nodemailer from 'nodemailer';
 
 export const getCustomerVoucher = async (req, res) => {
     try {
-        const { phone_number, email } = req.body;
+        const { phone_number } = req.body;
+        if (!phone_number) {
+            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp số điện thoại!' });
+        }
         const { data: customer, error: customerErr } = await supabase
             .from('customers')
             .select('id')
-            .eq('phone_number', phone_number)
-            .eq('email', email)
+            .eq('phone_number', phone_number.trim())
             .maybeSingle()
         if (customerErr) throw customerErr;
         if (!customer) {
@@ -32,7 +34,7 @@ export const getCustomerVoucher = async (req, res) => {
 
         const { data: promotions, error: promotionErr } = await supabase
             .from('promotions')
-            .select('id,code,name,discount_value,discount_type,is_active')
+            .select('id,code,name,discount_value,discount_type,is_active,created_at,start_date,end_date')
             .in('id', promotionsID)
             .eq('is_active', true);
         if (promotionErr) throw promotionErr;
@@ -48,7 +50,10 @@ export const getCustomerVoucher = async (req, res) => {
                     discount_value: promo.discount_value,
                     discount_type: promo.discount_type,
                     is_active: promo.is_active,
-                    is_used: cv.is_used
+                    is_used: cv.is_used,
+                    created_at: promo.created_at,
+                    start_date: promo.start_date,
+                    end_date: promo.end_date
                 });
             }
         });

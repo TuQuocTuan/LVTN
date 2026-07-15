@@ -59,6 +59,7 @@ const RoleManagement = () => {
         { id: 'checkout', name: 'Tính tiền & In hóa đơn', desc: 'Xử lý thanh toán', icon: 'point_of_sale' },
         { id: 'manage_tables', name: 'Quản lý bàn', desc: 'Mở bàn, đóng bàn', icon: 'table_restaurant' },
         { id: 'view_reviews', name: 'Xem đánh giá', desc: 'Đọc phản hồi khách hàng', icon: 'reviews' },
+        { id: 'close_shift', name: 'Kết ca', desc: 'Báo cáo và kết thúc ca làm việc', icon: 'work_history' },
       ]
     },
     {
@@ -148,7 +149,7 @@ const RoleManagement = () => {
 
     if (newRole === 'admin') newPerms = { manage_menu: true, view_reports: true, manage_ingredients: true, manage_news: true };
     if (newRole === 'chef') newPerms = { view_recipes: true, process_orders: true };
-    if (newRole === 'cashier') newPerms = { checkout: true, manage_tables: true, view_reviews: true };
+    if (newRole === 'cashier') newPerms = { checkout: true, manage_tables: true, view_reviews: true, close_shift: true };
     if (newRole === 'super_admin') {
       permissionCategories.forEach(cat => cat.items.forEach(item => newPerms[item.id] = true));
     }
@@ -238,7 +239,7 @@ const RoleManagement = () => {
       } else if (newUser.role === 'chef') {
         defaultPerms = { view_recipes: true, process_orders: true };
       } else if (newUser.role === 'cashier') {
-        defaultPerms = { checkout: true, manage_tables: true, view_reviews: true };
+        defaultPerms = { checkout: true, manage_tables: true, view_reviews: true, close_shift: true };
       }
 
       const payload = {

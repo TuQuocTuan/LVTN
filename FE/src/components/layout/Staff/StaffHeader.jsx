@@ -17,6 +17,7 @@ const StaffHeader = ({
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false); // Trạng thái xác nhận tắt ca / logout
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userRole, setUserRole] = useState('');
+  const [userPermissions, setUserPermissions] = useState({});
   const navigate = useNavigate();
 
   // States để lưu dữ liệu kết ca từ API
@@ -34,8 +35,23 @@ const StaffHeader = ({
         fullname: user.fullname || user.username,
         role: formatRole(user.role)
       });
+
+      let perms = {};
+      if (typeof user.permissions === 'string') {
+        try {
+          perms = JSON.parse(user.permissions);
+        } catch (e) {}
+      } else if (typeof user.permissions === 'object' && user.permissions !== null) {
+        perms = user.permissions;
+      }
+      setUserPermissions(perms);
     }
   }, []);
+
+  const hasPermission = (permissionKey) => {
+    if (userRole === 'super_admin') return true;
+    return !!userPermissions[permissionKey];
+  };
 
   const formatRole = (role) => {
     switch (role?.toLowerCase()) {
@@ -131,12 +147,16 @@ const StaffHeader = ({
 
       <div className="flex items-center gap-4 sm:gap-6">
 
-        {/* 🌟 STREAMING_CHUNK: Render nút KẾT CA chuyên dụng chỉ hiển thị cho Thu Ngân (Cashier) */}
+        {/* 🌟 STREAMING_CHUNK: Nút KẾT CA chỉ hiển thị cho Thu ngân (Cashier), vô hiệu hóa nếu bị tắt quyền close_shift */}
         {userRole === 'cashier' && (
           <button
             onClick={handleOpenKetCaModal}
-            disabled={isLoggingOut}
-            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-extrabold rounded-xl flex items-center gap-2 shadow-md hover:shadow-red-500/20 active:scale-95 text-xs transition-all cursor-pointer shrink-0"
+            disabled={isLoggingOut || !hasPermission('close_shift')}
+            className={`px-4 py-2 text-white font-extrabold rounded-xl flex items-center gap-2 shadow-md text-xs transition-all shrink-0
+              ${hasPermission('close_shift')
+                ? 'bg-red-500 hover:bg-red-600 hover:shadow-red-500/20 active:scale-95 cursor-pointer'
+                : 'bg-gray-300 text-gray-400 cursor-not-allowed opacity-60'}`}
+            title={hasPermission('close_shift') ? "Kết ca làm việc" : "Tài khoản bị giới hạn quyền kết ca"}
           >
             {isLoggingOut ? (
               <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
