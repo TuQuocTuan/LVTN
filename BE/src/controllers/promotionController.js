@@ -316,6 +316,7 @@ export const giftVoucherToCustomer = async (req, res) => {
         if (addErrCustomer) throw addErrCustomer;
 
         let mailSent = false;
+        console.log(`[MAIL] Khởi động luồng gửi mail cho: ${customer?.email || 'Trống'} (Tên: ${customer?.name})`);
         if (customer.email && customer.email.trim() !== '' && !customer.email.includes('mail-tester.com')) {
             try {
                 const transporter = nodemailer.createTransport({
