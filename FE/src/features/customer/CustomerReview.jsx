@@ -284,13 +284,19 @@ const CustomerReview = () => {
                       </p>
                       {renderInteractiveStars(dish)}
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Góp ý vị nướng, nước chấm... (Không bắt buộc)"
-                      value={dish.comment}
-                      onChange={(e) => handleCommentChange(dish.dish_id, e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-stone-200 focus:border-orange-500 rounded-xl text-xs outline-none transition-colors font-medium text-stone-950 shadow-inner"
-                    />
+                    <div className="relative">
+                      <textarea
+                        rows={2}
+                        maxLength={100}
+                        placeholder="Góp ý vị nướng, nước chấm... (Không bắt buộc)"
+                        value={dish.comment}
+                        onChange={(e) => handleCommentChange(dish.dish_id, e.target.value)}
+                        className="w-full px-3 py-2 pb-6 bg-white border border-stone-200 focus:border-orange-500 rounded-xl text-xs outline-none transition-colors font-medium text-stone-950 shadow-inner resize-none min-h-[60px]"
+                      />
+                      <span className="absolute bottom-2 right-3 text-[9px] font-black text-stone-400 select-none pointer-events-none">
+                        {(dish.comment || '').length}/100
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
