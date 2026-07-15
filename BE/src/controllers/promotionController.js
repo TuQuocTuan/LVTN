@@ -331,7 +331,9 @@ export const giftVoucherToCustomer = async (req, res) => {
                         rejectUnauthorized: false
                     },
                     connectionTimeout: 20000,
-                    pool: true
+                    dnsLookup: (hostname, options, callback) => {
+                        require('dns').lookup(hostname, { family: 4 }, callback);
+                    }
                 });
 
                 const mailOptions = {
