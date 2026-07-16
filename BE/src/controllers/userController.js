@@ -4,8 +4,7 @@
 import { supabase } from '../config/supabase.js';
 import bcrypt from 'bcrypt';
 import moment from 'moment';
-import nodemailer from 'nodemailer';
-
+import sgMail from '@sendgrid/mail';
 
 export const getAllUser = async (req, res) => {
     try {
@@ -73,50 +72,49 @@ export const addUser = async (req, res) => {
 
         if (addErr) throw addErr;
 
-        try {
-            const transporter = nodemailer.createTransport({
-                service: 'Gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
 
-            const mailOptions = {
-                from: `"Làng MÌXI Management" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject: '[Làng MÌXI] Thông báo cấp tài khoản nhân viên mới',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
-                        <h2 style="color: #ff6b00; text-align: center;">CHÀO MỪNG THÀNH VIÊN MỚI</h2>
-                        <p>Xin chào <b>${fullname}</b>,</p>
-                        <p>Tài khoản quản trị hệ thống nội bộ của bạn tại <b>Làng MÌXI</b> đã được khởi tạo thành công với vai trò: <span style="text-transform: uppercase; font-weight: bold; color: #ff6b00;">${role}</span>.</p>
-                        
-                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
-                            <p style="margin: 5px 0;"><b>Tên đăng nhập:</b> <code style="font-size: 14px; color: #333;">${username}</code></p>
-                            <p style="margin: 5px 0;"><b>Mật khẩu kích hoạt:</b> <code style="font-size: 14px; color: #333;">${password}</code></p>
-                        </div>
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-                        <p style="color: #dd2c00; font-size: 13px;"><i>* Lưu ý: Để đảm bảo an toàn bảo mật, vui lòng tiến hành đăng nhập và đổi lại mật khẩu cá nhân ngay trong phiên làm việc đầu tiên.</i></p>
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
-                    </div>
-                `
-            };
+        let mailSent = false;
+        console.log(`[MAIL] Khởi động luồng gửi mail bằng SendGrid cho: ${newUser?.email || 'Trống'} (Tên: ${newUser?.fullname})`);
+        if (newUser.email && newUser.email.trim() !== '') {
+            try {
+                console.log(`[MAIL] Email hợp lệ. Đang gọi API SendGrid...`);
 
-            await transporter.sendMail(mailOptions);
-            console.log(`Đã gửi mail cấp tài khoản thành công cho: ${email}`);
+                const msg = {
+                    to: newUser.email,
+                    from: process.env.EMAIL_USER,
+                    subject: '[Làng MÌXI] Thông báo: Bạn được cấp tài khoản!',
+                    html: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
+                                    <h2 style="color: #ff6b00; text-align: center;">TÀI KHOẢN </h2>
+                                    <p>Xin chào <b>${fullname}</b>,</p>
+                                    <p>Bạn vừa được hệ thống quản trị <b>Làng MÌXI</b> cấp tài khoản:</p>
+                                    
+                                    <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
+                                        <p style="margin: 5px 0;"><b>Tên tài khoản:</b> <code style="font-size: 14px; color: #333;">${newUser.username}</code></p>
+                                        <p style="margin: 5px 0;"><b>Mật khẩu:</b> <b style="font-size: 16px; color: #ff6b00;">123456</b></p>
+                                    </div>
 
-        } catch (mailError) {
-            console.error("Lỗi gửi mail tài khoản (DB vẫn lưu thành công):", mailError);
-            return res.status(200).json({
-                success: true,
-                data: newUser,
-                message: 'Thêm User thành công nhưng hệ thống gửi Mail thông báo gặp sự cố!'
-            });
+                                    <p style="font-size: 13px; color: #555;"><i>Vui lòng đổi mật khẩu sau khi nhận mail này.</i></p>
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                                    <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
+                                </div>
+                            `
+                };
+                await sgMail.send(msg);
+                mailSent = true;
+                console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${newUser.email}`);
+            } catch (mailError) {
+                console.error("[MAIL] Lỗi SendGrid API:", error.response ? error.response.body : error);
+            }
         }
 
-        return res.status(200).json({ success: true, message: 'Thêm User thành công' });
+        const successMessage = mailSent
+            ? 'Đã tạo tài khoản thành công và đã gửi thư chúc mừng tới Email của khách!'
+            : 'Đã tạo tài khoản thành công! (Nhân viên chưa đăng ký Email hoặc Email dùng thử nên không gửi thư thông báo)';
+
+        return res.status(200).json({ success: true, message: successMessage });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
@@ -158,48 +156,48 @@ export const changePassword = async (req, res) => {
 
         if (fetchErr) throw fetchErr;
 
-        try {
-            const transporter = nodemailer.createTransport({
-                service: 'Gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-            const mailOptions = {
-                from: `"Làng MÌXI Management" <${process.env.EMAIL_USER}>`,
-                to: emailhople,
-                subject: '[Làng MÌXI] Thông báo cấp tài khoản nhân viên mới',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
-                        <h2 style="color: #ff6b00; text-align: center;">CHÀO MỪNG THÀNH VIÊN MỚI</h2>
-                        <p>Xin chào <b>${fullname}</b>,</p>
-                        <p>Tài khoản quản trị hệ thống nội bộ của bạn tại <b>Làng MÌXI</b> đã được thay đổi mật khẩu thành công.</p>
-                        
-                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
-                            <p style="margin: 5px 0;"><b>Mật khẩu mới:</b> <code style="font-size: 14px; color: #333;">${password}</code></p>
-                        </div>
+        let mailSent = false;
+        console.log(`[MAIL] Khởi động luồng gửi mail bằng SendGrid cho: ${user?.email || 'Trống'} (Tên: ${user?.name})`);
+        if (user.email && user.email.trim() !== '') {
+            try {
+                console.log(`[MAIL] Email hợp lệ. Đang gọi API SendGrid...`);
 
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
-                    </div>
-                `
-            };
+                const msg = {
+                    to: user.email,
+                    from: process.env.EMAIL_USER,
+                    subject: '[Làng MÌXI] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
+                    html: `
+                               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
+                                    <h2 style="color: #ff6b00; text-align: center;">TÀI KHOẢN </h2>
+                                    <p>Xin chào <b>${user.fullname}</b>,</p>
+                                    <p>Bạn vừa được hệ thống quản trị <b>Làng MÌXI</b> cập nhật lại mật khẩu:</p>
+                                    
+                                    <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
+                                        <p style="margin: 5px 0;"><b>Tên tài khoản:</b> <code style="font-size: 14px; color: #333;">${user.fullname}</code></p>
+                                        <p style="margin: 5px 0;"><b>Mật khẩu mới:</b> <b style="font-size: 16px; color: #ff6b00;">${password}</b></p>
+                                    </div>
 
-            await transporter.sendMail(mailOptions);
-            console.log(`Đã gửi mail cấp tài khoản thành công cho: ${emailhople}`);
-
-        } catch (mailError) {
-            console.error("Lỗi gửi mail tài khoản (DB vẫn lưu thành công):", mailError);
-            return res.status(200).json({
-                success: true,
-                data: changePassword,
-                message: 'Thêm User thành công nhưng hệ thống gửi Mail thông báo gặp sự cố!'
-            });
+                                    <p style="font-size: 13px; color: #555;"><i>Vui lòng đổi mật khẩu sau khi nhận mail này.</i></p>
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                                    <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
+                                </div>
+                            `
+                };
+                await sgMail.send(msg);
+                mailSent = true;
+                console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${user.email}`);
+            } catch (mailError) {
+                console.error("[MAIL] Lỗi SendGrid API:", error.response ? error.response.body : error);
+            }
         }
 
-        return res.status(200).json({ success: true, message: 'Cập nhật mật khẩu thành công' });
+        const successMessage = mailSent
+            ? 'Đã cập nhật tài khoản thành công và đã gửi thư chúc mừng tới Email của khách!'
+            : 'Đã cập nhật khoản thành công! (Nhân viên chưa đăng ký Email hoặc Email dùng thử nên không gửi thư thông báo)';
+
+        return res.status(200).json({ success: true, message: successMessage });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
