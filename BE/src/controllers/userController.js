@@ -93,7 +93,7 @@ export const addUser = async (req, res) => {
                                     
                                     <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
                                         <p style="margin: 5px 0;"><b>Tên tài khoản:</b> <code style="font-size: 14px; color: #333;">${newUser.username}</code></p>
-                                        <p style="margin: 5px 0;"><b>Mật khẩu:</b> <b style="font-size: 16px; color: #ff6b00;">123456</b></p>
+                                        <p style="margin: 5px 0;"><b>Mật khẩu:</b> <b style="font-size: 16px; color: #ff6b00;">${password}</b></p>
                                     </div>
 
                                     <p style="font-size: 13px; color: #555;"><i>Vui lòng đổi mật khẩu sau khi nhận mail này.</i></p>
