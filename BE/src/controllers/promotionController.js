@@ -1,8 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
-import nodemailer from 'nodemailer';
-
-
+import sgMail from '@sendgrid/mail';
 
 export const getCustomerVoucher = async (req, res) => {
     try {
@@ -320,8 +318,6 @@ export const giftVoucherToCustomer = async (req, res) => {
 
         if (addErrCustomer) throw addErrCustomer;
 
-
-        const sgMail = require('@sendgrid/mail');
         sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
         let mailSent = false;
@@ -368,7 +364,7 @@ export const giftVoucherToCustomer = async (req, res) => {
 
         return res.status(200).json({ success: true, message: successMessage });
 
-    } catch (error) {
+    } catch (mailError) {
         console.error("Lỗi giftVoucherToCustomer:", error.message);
         return res.status(500).json({ success: false, message: error.message });
     }
