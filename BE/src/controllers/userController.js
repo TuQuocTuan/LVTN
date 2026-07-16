@@ -97,7 +97,6 @@ export const addUser = async (req, res) => {
                                         <p style="margin: 5px 0;"><b>Mật khẩu:</b> <b style="font-size: 16px; color: #ff6b00;">${password}</b></p>
                                     </div>
 
-                                    <p style="font-size: 13px; color: #555;"><i>Vui lòng đổi mật khẩu sau khi nhận mail này.</i></p>
                                     <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
                                     <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
                                 </div>
@@ -112,7 +111,7 @@ export const addUser = async (req, res) => {
         }
 
         const successMessage = mailSent
-            ? 'Đã tạo tài khoản thành công và đã gửi thư chúc mừng tới Email của khách!'
+            ? 'Đã tạo tài khoản thành công'
             : 'Đã tạo tài khoản thành công! (Nhân viên chưa đăng ký Email hoặc Email dùng thử nên không gửi thư thông báo)';
 
         return res.status(200).json({ success: true, message: successMessage });
