@@ -1,40 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import CustomerLayout from '../../components/layout/Customer/CustomerLayout';
 import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
+import { listenDatabaseChanges } from '../../utils/realtimeHelper';
+import { supabase } from '../../config/supabase';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { t } = useLanguage();
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) return;
+  const fetchOrders = useCallback(async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) return;
 
-      try {
-        // GỌI ĐÚNG API GET LẤY LỊCH SỬ ĐƠN HÀNG TỪ CONTROLLER getOrderBySession
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${sessionId}`);
-        const data = response.data;
+    try {
+      // GỌI ĐÚNG API GET LẤY LỊCH SỬ ĐƠN HÀNG TỪ CONTROLLER getOrderBySession
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${sessionId}`);
+      const data = response.data;
 
-        if (data.success) {
-          // Xử lý linh hoạt: backend có thể trả về 'detailed_orders' hoặc 'data'
-          const orderList = data.detailed_orders || data.data || [];
-          setOrders(orderList);
-        }
-      } catch (error) {
-        console.error("Lỗi tải đơn hàng:", error);
-      } finally {
-        setIsLoading(false);
+      if (data.success) {
+        // Xử lý linh hoạt: backend có thể trả về 'detailed_orders' hoặc 'data'
+        const orderList = data.detailed_orders || data.data || [];
+        setOrders(orderList);
       }
-    };
-
-    fetchOrders();
-    // Tự động làm mới dữ liệu mỗi 5 giây
-    const interval = setInterval(fetchOrders, 5000);
-    return () => clearInterval(interval);
+    } catch (error) {
+      console.error("Lỗi tải đơn hàng:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchOrders();
+
+    const sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) return;
+
+    // Lắng nghe thay đổi (INSERT, UPDATE, DELETE) liên quan đến session hiện tại từ bảng orders
+    const channel = listenDatabaseChanges('customer-orders-realtime', 'orders', '*', (payload) => {
+      const updatedSessionId = payload.new?.session_id || payload.old?.session_id;
+      if (updatedSessionId && String(updatedSessionId) === String(sessionId)) {
+        fetchOrders();
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOrders]);
 
   // LOGIC 3 TRẠNG THÁI (Sử dụng đúng bảng màu của bạn)
   const getStatusBadge = (status) => {
