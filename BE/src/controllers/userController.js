@@ -217,7 +217,7 @@ export const quanlythoigianlam1ca = async (req, res) => {
 
         const { data: shift } = await supabase
             .from('user_logs')
-            .select('user_id,action,created_at')
+            .select('user_id,username,action,created_at')
             .in('user_id', cashierIDs)
             .order('created_at', { ascending: true });
 
@@ -244,8 +244,8 @@ export const quanlythoigianlam1ca = async (req, res) => {
                     reportShifts.push({
                         user_id: userId,
                         username: item.username,
-                        login_time: logintime.toLocaleString('vi-VN'),
-                        logout_time: logouttime.toLocaleString('vi-VN'),
+                        login_time: loginlog.created_at,
+                        logout_time: item.created_at,
                         duration: `${sogio} giờ ${sophut} phút (${tongphut} phút)`,
                         date: logintime.toLocaleString('vi-VN').split(',')[0],
                     });
