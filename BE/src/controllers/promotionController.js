@@ -320,30 +320,19 @@ export const giftVoucherToCustomer = async (req, res) => {
 
         if (addErrCustomer) throw addErrCustomer;
 
+
+        const sgMail = require('@sendgrid/mail');
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
         let mailSent = false;
-        console.log(`[MAIL] Khởi động luồng gửi mail cho: ${customer?.email || 'Trống'} (Tên: ${customer?.name})`);
+        console.log(`[MAIL] Khởi động luồng gửi mail bằng SendGrid cho: ${customer?.email || 'Trống'} (Tên: ${customer?.name})`);
         if (customer.email && customer.email.trim() !== '') {
             try {
-                const transporter = nodemailer.createTransport({
-                    host: 'smtp.gmail.com',
-                    port: 465,
-                    secure: true,
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASS
-                    },
-                    tls: {
-                        rejectUnauthorized: false
-                    },
-                    connectionTimeout: 20000,
-                    dnsLookup: (hostname, options, callback) => {
-                        require('dns').lookup(hostname, { family: 4 }, callback);
-                    }
-                });
+                console.log(`[MAIL] Email hợp lệ. Đang gọi API SendGrid...`);
 
-                const mailOptions = {
-                    from: `"Làng MÌXI Management" <${process.env.EMAIL_USER}>`,
+                const msg = {
                     to: customer.email,
+                    from: process.env.EMAIL_USER,
                     subject: '[Làng MÌXI] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
                     html: `
                         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
@@ -365,12 +354,11 @@ export const giftVoucherToCustomer = async (req, res) => {
                         </div>
                     `
                 };
-
-                await transporter.sendMail(mailOptions);
+                await sgMail.send(msg);
                 mailSent = true;
-                console.log(`Đã gửi mail tặng voucher thành công cho: ${customer.email}`);
+                console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${customer.email}`);
             } catch (mailError) {
-                console.error("Lỗi gửi mail tặng voucher:", mailError);
+                console.error("[MAIL] Lỗi SendGrid API:", error.response ? error.response.body : error);
             }
         }
 
