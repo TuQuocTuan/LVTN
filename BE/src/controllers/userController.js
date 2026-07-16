@@ -68,7 +68,8 @@ export const addUser = async (req, res) => {
                 phone_number: phone_number,
                 permissions: permissions,
             })
-            .select();
+            .select()
+            .single();
 
         if (addErr) throw addErr;
 
@@ -106,7 +107,7 @@ export const addUser = async (req, res) => {
                 mailSent = true;
                 console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${newUser.email}`);
             } catch (mailError) {
-                console.error("[MAIL] Lỗi SendGrid API:", error.response ? error.response.body : error);
+                console.error("[MAIL] Lỗi SendGrid API:", mailError.response ? mailError.response.body : mailError);
             }
         }
 
@@ -167,7 +168,7 @@ export const changePassword = async (req, res) => {
                 const msg = {
                     to: user.email,
                     from: process.env.EMAIL_USER,
-                    subject: '[Làng MÌXI] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
+                    subject: '[Làng MÌXI] Thông báo: Mật khẩu của bạn đã được thay đổi!',
                     html: `
                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
                                     <h2 style="color: #ff6b00; text-align: center;">TÀI KHOẢN </h2>
