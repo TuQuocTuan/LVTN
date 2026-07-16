@@ -194,7 +194,7 @@ export const changePassword = async (req, res) => {
         }
 
         const successMessage = mailSent
-            ? 'Đã cập nhật tài khoản thành công và đã gửi thư chúc mừng tới Email của khách!'
+            ? 'Đã cập nhật tài khoản thành công!'
             : 'Đã cập nhật khoản thành công! (Nhân viên chưa đăng ký Email hoặc Email dùng thử nên không gửi thư thông báo)';
 
         return res.status(200).json({ success: true, message: successMessage });
@@ -281,6 +281,18 @@ export const ketCa = async (req, res) => {
         const tongTienTrongKet = tiendauca + tongTienBanDuoc;
 
         if (fetchErr) throw fetchErr;
+
+        const { error: insertErr } = await supabase
+            .from('shift_reports')
+            .insert({
+                user_id: req.body.user_id,
+                total_orders: soLuongDon,
+                initial_amount: tiendauca,
+                revenue_amount: tongTienBanDuoc,
+                total_amount: tongTienTrongKet
+            });
+
+        if (insertErr) throw insertErr;
 
         const html_bill = `
         <!DOCTYPE html>

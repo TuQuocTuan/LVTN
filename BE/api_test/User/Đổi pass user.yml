@@ -10,8 +10,8 @@ http:
     type: json
     data: |-
       {
-        "id":"9180de74-1ba7-4996-8848-f5dbb90fd0a5",
-        "password": "12345"
+        "id":"5f9e7404-5d76-497b-a171-3230b5e942d4",
+        "password": "123456"
       }
   auth: inherit
 
