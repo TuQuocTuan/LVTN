@@ -348,7 +348,7 @@ const AdminDashboard = () => {
                   <div className="flex items-end justify-center gap-1.5 sm:gap-2 h-full w-full relative pb-1">
                     {/* Cột Lợi nhuận ròng tạm tính 35% (Màu hồng cam thanh lịch) */}
                     <div 
-                      className="w-2.5 sm:w-4 bg-[#fca5a5]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300"
+                      className="w-2.5 sm:w-4 bg-[#000000]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300"
                       style={{ height: data.profitHeight }}
                     ></div>
                     {/* Cột Doanh thu thật (Màu cam đậm rực rỡ) */}
