@@ -279,7 +279,7 @@ export const ketCa = async (req, res) => {
 
         const soLuongDon = bills ? bills.length : 0;
         const tongTienBanDuoc = bills ? bills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
-        const tiendauca = 4000000;
+        const tiendauca = 1000000;
         const tongTienTrongKet = tiendauca + tongTienBanDuoc;
 
         if (fetchErr) throw fetchErr;

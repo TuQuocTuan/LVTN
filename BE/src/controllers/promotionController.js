@@ -1,8 +1,6 @@
 import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
-import nodemailer from 'nodemailer';
-
-
+import sgMail from '@sendgrid/mail';
 
 export const getCustomerVoucher = async (req, res) => {
     try {
@@ -320,30 +318,17 @@ export const giftVoucherToCustomer = async (req, res) => {
 
         if (addErrCustomer) throw addErrCustomer;
 
-        let mailSent = false;
-        console.log(`[MAIL] Khởi động luồng gửi mail cho: ${customer?.email || 'Trống'} (Tên: ${customer?.name})`);
-        if (customer.email && customer.email.trim() !== '' && !customer.email.includes('mail-tester.com')) {
-            try {
-                const transporter = nodemailer.createTransport({
-                    host: 'smtp.gmail.com',
-                    port: 465,
-                    secure: true,
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASS
-                    },
-                    tls: {
-                        rejectUnauthorized: false
-                    },
-                    connectionTimeout: 20000,
-                    dnsLookup: (hostname, options, callback) => {
-                        require('dns').lookup(hostname, { family: 4 }, callback);
-                    }
-                });
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-                const mailOptions = {
-                    from: `"Làng MÌXI Management" <${process.env.EMAIL_USER}>`,
+        let mailSent = false;
+        console.log(`[MAIL] Khởi động luồng gửi mail bằng SendGrid cho: ${customer?.email || 'Trống'} (Tên: ${customer?.name})`);
+        if (customer.email && customer.email.trim() !== '') {
+            try {
+                console.log(`[MAIL] Email hợp lệ. Đang gọi API SendGrid...`);
+
+                const msg = {
                     to: customer.email,
+                    from: process.env.EMAIL_USER,
                     subject: '[Làng MÌXI] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
                     html: `
                         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
@@ -365,12 +350,11 @@ export const giftVoucherToCustomer = async (req, res) => {
                         </div>
                     `
                 };
-
-                await transporter.sendMail(mailOptions);
+                await sgMail.send(msg);
                 mailSent = true;
-                console.log(`Đã gửi mail tặng voucher thành công cho: ${customer.email}`);
+                console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${customer.email}`);
             } catch (mailError) {
-                console.error("Lỗi gửi mail tặng voucher:", mailError);
+                console.error("[MAIL] Lỗi SendGrid API:", error.response ? error.response.body : error);
             }
         }
 
@@ -380,7 +364,7 @@ export const giftVoucherToCustomer = async (req, res) => {
 
         return res.status(200).json({ success: true, message: successMessage });
 
-    } catch (error) {
+    } catch (mailError) {
         console.error("Lỗi giftVoucherToCustomer:", error.message);
         return res.status(500).json({ success: false, message: error.message });
     }
