@@ -24,6 +24,11 @@ const RoleManagement = () => {
   // State cho phần Edit Quyền (Cột bên phải)
   const [editData, setEditData] = useState({ role: '', is_active: true, permissions: {} });
 
+  // State hiển thị/ẩn mật khẩu trong modal sửa thông tin
+  const [showPassword, setShowPassword] = useState(false);
+
+
+
   // --- STATES CHỐT CHẶN BẢO MẬT THAY THẾ ALERT/CONFIRM TRÌNH DUYỆT ---
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
@@ -58,7 +63,6 @@ const RoleManagement = () => {
       items: [
         { id: 'checkout', name: 'Tính tiền & In hóa đơn', desc: 'Xử lý thanh toán', icon: 'point_of_sale' },
         { id: 'manage_tables', name: 'Quản lý bàn', desc: 'Mở bàn, đóng bàn', icon: 'table_restaurant' },
-        { id: 'view_reviews', name: 'Xem đánh giá', desc: 'Đọc phản hồi khách hàng', icon: 'reviews' },
         { id: 'close_shift', name: 'Kết ca', desc: 'Báo cáo và kết thúc ca làm việc', icon: 'work_history' },
       ]
     },
@@ -149,7 +153,7 @@ const RoleManagement = () => {
 
     if (newRole === 'admin') newPerms = { manage_menu: true, view_reports: true, manage_ingredients: true, manage_news: true };
     if (newRole === 'chef') newPerms = { view_recipes: true, process_orders: true };
-    if (newRole === 'cashier') newPerms = { checkout: true, manage_tables: true, view_reviews: true, close_shift: true };
+    if (newRole === 'cashier') newPerms = { checkout: true, manage_tables: true, close_shift: true };
     if (newRole === 'super_admin') {
       permissionCategories.forEach(cat => cat.items.forEach(item => newPerms[item.id] = true));
     }
@@ -191,14 +195,24 @@ const RoleManagement = () => {
       fullname: emp.fullname,
       username: emp.username,
       email: emp.email || '',
-      phone_number: emp.phone_number || ''
+      phone_number: emp.phone_number || '',
+      password: ''
     });
+    setShowPassword(false);
     setIsEditInfoModalOpen(true);
   };
+
+
 
   // CẬP NHẬT THÔNG TIN CÁ NHÂN
   const handleUpdateInfoSubmit = async (e) => {
     e.preventDefault();
+
+    const hasPassword = editInfoForm.password && editInfoForm.password.trim() !== '';
+    if (hasPassword && editInfoForm.password.length < 6) {
+      return showAlert("Mật khẩu phải chứa ít nhất 6 ký tự!", "error", "Mật khẩu không hợp lệ");
+    }
+
     setIsSaving(true);
     try {
       // Vì API updateRoleUser đang dùng chung, cần gửi kèm lại role/permissions để ko bị mất
@@ -216,7 +230,18 @@ const RoleManagement = () => {
 
       const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
       if (res.data.success) {
-        showAlert("Cập nhật thông tin thành công!", "success", "Thành công");
+        if (hasPassword) {
+          await axios.put(`${import.meta.env.VITE_API_URL}/user/change`, {
+            id: editInfoForm.id,
+            password: editInfoForm.password
+          });
+        }
+
+        showAlert(
+          hasPassword ? "Cập nhật thông tin và mật khẩu thành công!" : "Cập nhật thông tin thành công!",
+          "success",
+          "Thành công"
+        );
         setIsEditInfoModalOpen(false);
         fetchUsers();
       }
@@ -239,7 +264,7 @@ const RoleManagement = () => {
       } else if (newUser.role === 'chef') {
         defaultPerms = { view_recipes: true, process_orders: true };
       } else if (newUser.role === 'cashier') {
-        defaultPerms = { checkout: true, manage_tables: true, view_reviews: true, close_shift: true };
+        defaultPerms = { checkout: true, manage_tables: true, close_shift: true };
       }
 
       const payload = {
@@ -362,10 +387,13 @@ const RoleManagement = () => {
                             <div className="flex items-center gap-2 shrink-0">
                               <div className="flex gap-1">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setIsEditInfoModalOpen(true); setEditInfoForm(emp); }}
+                                  onClick={(e) => { e.stopPropagation(); handleOpenEditInfo(emp); }}
                                   className="text-gray-500 hover:text-gray-700"
+                                  title="Sửa thông tin"
                                 >
-                                  <span className="material-symbols-outlined text-[16px]">edit</span></button>
+                                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                                </button>
+
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleToggleLockUser(emp); }}
                                   className={`transition-colors ${emp.is_active ? 'text-red-400 hover:text-red-650' : 'text-green-500 hover:text-green-700'}`}
@@ -515,7 +543,7 @@ const RoleManagement = () => {
 
       {/* MODAL THÊM USER MỚI */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsAddModalOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsAddModalOpen(false)}>
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-neutralCustom/20 flex justify-between items-center bg-gray-50">
               <h3 className="text-lg font-bold text-gray-900">Thêm nhân viên mới</h3>
@@ -570,7 +598,7 @@ const RoleManagement = () => {
 
       {/* MODAL SỬA THÔNG TIN CÁ NHÂN */}
       {isEditInfoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsEditInfoModalOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsEditInfoModalOpen(false)}>
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-neutralCustom/20 flex justify-between items-center bg-gray-50">
               <h3 className="text-lg font-bold text-gray-900">Sửa thông tin cá nhân</h3>
@@ -595,6 +623,28 @@ const RoleManagement = () => {
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Số điện thoại</label>
                   <input type="tel" value={editInfoForm.phone_number} onChange={(e) => setEditInfoForm({ ...editInfoForm, phone_number: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Mật khẩu mới (Để trống nếu không muốn thay đổi)</label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      value={editInfoForm.password || ''} 
+                      onChange={(e) => setEditInfoForm({ ...editInfoForm, password: e.target.value })} 
+                      className="w-full pl-4 pr-12 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" 
+                      placeholder="Nhập mật khẩu mới nếu cần đổi"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-650 focus:outline-none flex items-center justify-center p-1.5 rounded-full hover:bg-gray-100 transition-all"
+                      title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    >
+                      <span className="material-symbols-outlined text-[20px] select-none">
+                        {showPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </form>
 
@@ -608,6 +658,7 @@ const RoleManagement = () => {
           </div>
         </div>
       )}
+
 
       {/* 🌟 HỆ THỐNG ALERT MODAL THAY THẾ TOAST (Bảo mật, có nút bấm Đồng ý) */}
       {alertModal.show && (

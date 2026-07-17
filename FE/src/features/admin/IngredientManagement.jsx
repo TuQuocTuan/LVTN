@@ -500,7 +500,7 @@ const IngredientManagement = () => {
                     <input type="number" step="any" min="0" required value={editData.quantity} onChange={(e) => setEditData({ ...editData, quantity: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary font-bold text-primary" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Cảnh báo tồn *</label>
+                    <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Cảnh báo tồn kho *</label>
                     <input type="number" step="any" min="0" required value={editData.min_stock} onChange={(e) => setEditData({ ...editData, min_stock: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary font-bold text-red-500" />
                   </div>
                 </div>

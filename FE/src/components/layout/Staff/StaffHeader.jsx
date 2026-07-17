@@ -85,7 +85,11 @@ const StaffHeader = ({
   const handleOpenKetCaModal = async () => {
     try {
       setIsLoggingOut(true);
-      const response = await axios.get(`${API_BASE_URL}/user/ketca`);
+      const userStr = localStorage.getItem('user');
+      const userObj = userStr ? JSON.parse(userStr) : {};
+      const response = await axios.get(`${API_BASE_URL}/user/ketca`, {
+        params: { user_id: userObj.id }
+      });
       if (response.data && response.data.success) {
         setShiftReportData(response.data);
         // Ghi nhận mốc ngày giờ bấm kết ca hiện tại
@@ -110,15 +114,22 @@ const StaffHeader = ({
     setIsLoggingOut(true);
 
     try {
-      // Lệnh in bill kết ca tự động nếu có dữ liệu html_bill trả về từ API (Chỉ áp dụng với Thu ngân khi bấm Kết ca)
-      if (userRole === 'cashier' && shiftReportData?.html_bill) {
-        openSilentPrint(shiftReportData.html_bill);
-      }
-
-      // Gọi API Logout lưu Log vào hệ thống
       const userStr = localStorage.getItem('user');
       const userObj = userStr ? JSON.parse(userStr) : {};
 
+      // Nếu là thu ngân và có dữ liệu kết ca, thực hiện gửi yêu cầu chốt ca chính thức (lưu DB)
+      if (userRole === 'cashier' && shiftReportData) {
+        await axios.post(`${API_BASE_URL}/user/ketca`, {
+          user_id: userObj.id || userObj._id
+        });
+
+        // Lệnh in bill kết ca tự động
+        if (shiftReportData.html_bill) {
+          openSilentPrint(shiftReportData.html_bill);
+        }
+      }
+
+      // Gọi API Logout lưu Log vào hệ thống
       if (import.meta.env.VITE_API_URL) {
         await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`, {
           user_id: userObj.id || userObj._id,
@@ -127,7 +138,7 @@ const StaffHeader = ({
       }
       console.log("Đã gọi API logout thành công!");
     } catch (err) {
-      console.error("Lỗi ghi nhận LOGOUT xuống server:", err);
+      console.error("Lỗi chốt ca hoặc ghi nhận LOGOUT xuống server:", err);
     } finally {
       // Xóa bộ nhớ và điều hướng ra màn hình Đăng nhập
       localStorage.removeItem('token');

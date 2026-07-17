@@ -237,8 +237,6 @@ const ShiftManagement = () => {
     <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex overflow-x-hidden relative">
       <AdminSidebar currentTab="shift" />
       <AdminHeader />
-
-
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen">
 
         {/* Header Section */}
@@ -397,7 +395,7 @@ const ShiftManagement = () => {
           </div>
         </div>
 
-        {/* Danh sách bảng ca làm */}
+        {/* Danh sách bảng ca làm / báo cáo kết ca */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-neutralCustom/20 flex flex-col mb-8">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -436,7 +434,6 @@ const ShiftManagement = () => {
                       <td className="px-6 py-4 text-xs font-semibold text-gray-700 whitespace-nowrap">
                         {shift.check_out ? formatDate(shift.check_out) : <span className="text-green-500 font-bold animate-pulse flex items-center gap-1 whitespace-nowrap"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping"></span>Đang làm việc...</span>}
                       </td>
-                      { }
                       <td className="px-6 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
                         {formatDuration(shift.duration_hours)}
                       </td>
@@ -510,7 +507,6 @@ const ShiftManagement = () => {
                       <td className="py-3.5 font-semibold text-gray-700">
                         {staff.shift_count} ca làm
                       </td>
-                      { }
                       <td className="py-3.5 font-bold text-gray-900">
                         {formatDuration(staff.total_hours)}
                       </td>

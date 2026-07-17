@@ -189,7 +189,7 @@ export const changePassword = async (req, res) => {
                 mailSent = true;
                 console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${user.email}`);
             } catch (mailError) {
-                console.error("[MAIL] Lỗi SendGrid API:", error.response ? error.response.body : error);
+                console.error("[MAIL] Lỗi SendGrid API:", mailError.response ? mailError.response.body : mailError);
             }
         }
 
@@ -264,6 +264,7 @@ export const quanlythoigianlam1ca = async (req, res) => {
 
 export const ketCa = async (req, res) => {
     try {
+        const userId = req.body?.user_id || req.query?.user_id;
         const now = moment().tz("Asia/Ho_Chi_Minh");
         const startOfDay = moment().tz("Asia/Ho_Chi_Minh").startOf('day').toISOString();
         const endOfDay = moment().tz("Asia/Ho_Chi_Minh").endOf('day').toISOString();
@@ -281,18 +282,6 @@ export const ketCa = async (req, res) => {
         const tongTienTrongKet = tiendauca + tongTienBanDuoc;
 
         if (fetchErr) throw fetchErr;
-
-        const { error: insertErr } = await supabase
-            .from('shift_reports')
-            .insert({
-                user_id: req.body.user_id,
-                total_orders: soLuongDon,
-                initial_amount: tiendauca,
-                revenue_amount: tongTienBanDuoc,
-                total_amount: tongTienTrongKet
-            });
-
-        if (insertErr) throw insertErr;
 
         const html_bill = `
         <!DOCTYPE html>
@@ -364,5 +353,74 @@ export const ketCa = async (req, res) => {
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
-
 }
+
+export const finalizeKetCa = async (req, res) => {
+    try {
+        const userId = req.body?.user_id || req.query?.user_id;
+        if (!userId) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin user_id" });
+        }
+
+        const startOfDay = moment().tz("Asia/Ho_Chi_Minh").startOf('day').toISOString();
+        const endOfDay = moment().tz("Asia/Ho_Chi_Minh").endOf('day').toISOString();
+
+        const { data: bills, error: fetchErr } = await supabase
+            .from('bills')
+            .select('*')
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay);
+
+        if (fetchErr) throw fetchErr;
+
+        const soLuongDon = bills ? bills.length : 0;
+        const tongTienBanDuoc = bills ? bills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
+        const tiendauca = 1000000;
+        const tongTienTrongKet = tiendauca + tongTienBanDuoc;
+
+        const { error: insertErr } = await supabase
+            .from('shift_reports')
+            .insert({
+                user_id: userId,
+                total_orders: soLuongDon,
+                initial_amount: tiendauca,
+                revenue_amount: tongTienBanDuoc,
+                total_amount: tongTienTrongKet
+            });
+
+        if (insertErr) throw insertErr;
+
+        return res.status(200).json({
+            success: true,
+            message: "Lưu báo cáo kết ca thành công!"
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const getShiftReports = async (req, res) => {
+    try {
+        const { data: reports, error } = await supabase
+            .from('shift_reports')
+            .select(`
+                id,
+                user_id,
+                total_orders,
+                initial_amount,
+                revenue_amount,
+                total_amount,
+                created_at,
+                users (
+                    fullname,
+                    username
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return res.status(200).json({ success: true, data: reports });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};

@@ -53,43 +53,46 @@ const AdminHeader = () => {
   };
 
   return (
-    <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-16rem)] h-16 bg-white border-b border-neutralCustom/15 z-40 flex items-center justify-between px-6 sm:px-8 shadow-sm transition-all duration-300">
+    <>
+      <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-16rem)] h-16 bg-white border-b border-neutralCustom/15 z-40 flex items-center justify-between px-6 sm:px-8 shadow-sm transition-all duration-300">
 
-      {/* Cụm thông tin tài khoản người dùng và Menu rủ xuống */}
-      <div className="flex items-center gap-4 ml-auto">
-        <div className="flex items-center gap-3 pl-4 border-l border-neutralCustom/15 relative">
-          <div className="text-right hidden sm:block select-none">
-            <p className="text-sm font-bold leading-tight text-gray-950 truncate max-w-[150px]">{userInfo.fullname}</p>
-            <p className="text-[10px] text-primary uppercase font-extrabold tracking-wider mt-1">{userInfo.role}</p>
-          </div>
-
-          {/* Nút Avatar tài khoản bo tròn cao cấp */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white border-2 border-white ring-2 ring-primary/25 hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer"
-            title="Tài khoản cá nhân"
-          >
-            <span className="material-symbols-outlined text-xl">person</span>
-          </button>
-
-          {/* Menu Dropdown điều khiển an toàn */}
-          {isOpen && (
-            <div className="absolute right-0 top-[120%] mt-1 w-48 bg-white border border-neutralCustom/15 rounded-xl shadow-xl py-1.5 z-50 flex flex-col animate-scale-up origin-top-right">
-              <div className="px-4 py-2 border-b border-stone-100 sm:hidden">
-                <p className="text-xs font-bold text-gray-900 truncate">{userInfo.fullname}</p>
-                <p className="text-[9px] text-primary font-black uppercase mt-0.5">{userInfo.role}</p>
-              </div>
-              <button
-                onClick={() => { setIsOpen(false); setShowLogoutConfirm(true); }}
-                className="px-4 py-2.5 text-xs sm:text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 text-left transition-colors w-full cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-lg">logout</span>
-                Đăng xuất
-              </button>
+        {/* Cụm thông tin tài khoản người dùng và Menu rủ xuống */}
+        <div className="flex items-center gap-4 ml-auto">
+          <div className="flex items-center gap-3 pl-4 border-l border-neutralCustom/15 relative">
+            <div className="text-right hidden sm:block select-none">
+              <p className="text-sm font-bold leading-tight text-gray-950 truncate max-w-[150px]">{userInfo.fullname}</p>
+              <p className="text-[10px] text-primary uppercase font-extrabold tracking-wider mt-1">{userInfo.role}</p>
             </div>
-          )}
+
+            {/* Nút Avatar tài khoản bo tròn cao cấp */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center text-white border-2 border-white ring-2 ring-primary/25 hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer"
+              title="Tài khoản cá nhân"
+            >
+              <span className="material-symbols-outlined text-xl">person</span>
+            </button>
+
+            {/* Menu Dropdown điều khiển an toàn */}
+            {isOpen && (
+              <div className="absolute right-0 top-[120%] mt-1 w-48 bg-white border border-neutralCustom/15 rounded-xl shadow-xl py-1.5 z-50 flex flex-col animate-scale-up origin-top-right">
+                <div className="px-4 py-2 border-b border-stone-100 sm:hidden">
+                  <p className="text-xs font-bold text-gray-900 truncate">{userInfo.fullname}</p>
+                  <p className="text-[9px] text-primary font-black uppercase mt-0.5">{userInfo.role}</p>
+                </div>
+                <button
+                  onClick={() => { setIsOpen(false); setShowLogoutConfirm(true); }}
+                  className="px-4 py-2.5 text-xs sm:text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 text-left transition-colors w-full cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-lg">logout</span>
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </header>
+
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
@@ -123,7 +126,7 @@ const AdminHeader = () => {
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 };
 

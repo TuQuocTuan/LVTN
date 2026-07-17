@@ -14,11 +14,36 @@ const AdminDashboard = () => {
   const [weeklyData, setWeeklyData] = useState([]);
   const [hoveredBarIndex, setHoveredIndex] = useState(null);
 
+  // States cho danh sách báo cáo kết ca
+  const [shiftReportsList, setShiftReportsList] = useState([]);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [reportsSearchTerm, setReportsSearchTerm] = useState('');
+  const [reportsCurrentPage, setReportsCurrentPage] = useState(1);
+  const reportsItemsPerPage = 5;
+
   /* STREAMING_CHUNK: Gọi các API doanh thu thực tế khi thay đổi khoảng thời gian bộ lọc */
   useEffect(() => {
     fetchRealRevenue();
     fetchWeeklyChartData();
+    fetchShiftReports();
   }, [range]);
+
+  const fetchShiftReports = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/user/shift-reports`);
+      if (response.data && response.data.success && response.data.data) {
+        setShiftReportsList(response.data.data);
+      }
+    } catch (error) {
+      console.error("Lỗi đồng bộ danh sách kết ca:", error);
+    }
+  };
+
+  const formatDate = (isoString) => {
+    if (!isoString) return '---';
+    const date = new Date(isoString);
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} - ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+  };
 
   // Giao dịch gọi API lấy tổng doanh thu theo khoảng thời gian chọn lọc
   const fetchRealRevenue = async () => {
@@ -414,7 +439,257 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* NHẬT KÝ KẾT CA CỦA THU NGÂN */}
+        {(() => {
+          const getFilteredReports = () => {
+            return shiftReportsList.filter(r => {
+              const matchName = (r.users?.fullname || '').toLowerCase().includes(reportsSearchTerm.toLowerCase()) ||
+                (r.users?.username || '').toLowerCase().includes(reportsSearchTerm.toLowerCase());
+              return matchName;
+            });
+          };
+
+          const filteredReports = getFilteredReports();
+          const totalPages = Math.ceil(filteredReports.length / reportsItemsPerPage);
+          const currentReports = filteredReports.slice((reportsCurrentPage - 1) * reportsItemsPerPage, reportsCurrentPage * reportsItemsPerPage);
+
+          return (
+            <div className="bg-white p-6 rounded-2xl border border-neutralCustom/15 shadow-sm flex flex-col mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-100 pb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Nhật ký Kết ca của Thu ngân</h3>
+                  <p className="text-neutralCustom text-xs mt-0.5">Danh sách các ca làm việc đã đóng két và xác nhận doanh thu</p>
+                </div>
+                
+                <div className="relative w-full sm:max-w-xs">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">search</span>
+                  <input
+                    type="text"
+                    placeholder="Tìm tên thu ngân..."
+                    value={reportsSearchTerm}
+                    onChange={(e) => { setReportsSearchTerm(e.target.value); setReportsCurrentPage(1); }}
+                    className="w-full bg-gray-50 border border-neutralCustom/20 text-xs rounded-xl pl-10 pr-4 py-2 outline-none focus:border-primary focus:bg-white transition-all text-gray-900 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-culinaryBg/50 text-neutralCustom border-b border-neutralCustom/20 text-[11px] uppercase tracking-wider font-bold">
+                      <th className="px-5 py-3 whitespace-nowrap">Người kết ca</th>
+                      <th className="px-5 py-3 whitespace-nowrap">Thời gian kết thúc</th>
+                      <th className="px-5 py-3 whitespace-nowrap text-right">Tiền mặt đầu ca</th>
+                      <th className="px-5 py-3 whitespace-nowrap text-right">Doanh thu bán</th>
+                      <th className="px-5 py-3 whitespace-nowrap text-right">Tổng trong két</th>
+                      <th className="px-5 py-3 whitespace-nowrap text-center">Số đơn hàng</th>
+                      <th className="px-5 py-3 whitespace-nowrap text-center">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutralCustom/10 text-xs">
+                    {currentReports.length > 0 ? (
+                      currentReports.map((report) => (
+                        <tr key={report.id} className="hover:bg-culinaryBg/30 transition-colors group">
+                          <td className="px-5 py-3.5 whitespace-nowrap">
+                            <p className="font-bold text-gray-900">{report.users?.fullname || 'Ẩn danh'}</p>
+                            <p className="text-[10px] text-neutralCustom mt-0.5 font-mono">@{report.users?.username || 'no-username'}</p>
+                          </td>
+                          <td className="px-5 py-3.5 text-neutralCustom whitespace-nowrap">
+                            {formatDate(report.created_at)}
+                          </td>
+                          <td className="px-5 py-3.5 text-gray-900 text-right whitespace-nowrap font-medium">
+                            {Number(report.initial_amount || 0).toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="px-5 py-3.5 text-green-600 text-right whitespace-nowrap font-bold">
+                            +{Number(report.revenue_amount || 0).toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="px-5 py-3.5 text-primary text-right whitespace-nowrap font-black">
+                            {Number(report.total_amount || 0).toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="px-5 py-3.5 text-gray-800 text-center whitespace-nowrap font-semibold">
+                            {report.total_orders} đơn
+                          </td>
+                          <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                            <button
+                              onClick={() => setSelectedReport(report)}
+                              className="px-3 py-1.5 bg-primary/10 text-primary font-bold rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-all text-[11px] flex items-center gap-1.5 mx-auto active:scale-95 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-xs">receipt_long</span>
+                              Xem Bill
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="text-center py-8 text-neutralCustom italic bg-gray-50/50">Không tìm thấy báo cáo kết ca nào.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Phân trang */}
+              {filteredReports.length > 0 && (
+                <div className="p-4 border-t border-neutralCustom/10 flex justify-center items-center text-xs mt-2 shrink-0">
+                  <div className="flex gap-2">
+                    <button onClick={() => setReportsCurrentPage(prev => prev - 1)} disabled={reportsCurrentPage === 1} className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-stone-50 text-neutralCustom disabled:opacity-50"><span className="material-symbols-outlined text-sm">chevron_left</span></button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button key={page} onClick={() => setReportsCurrentPage(page)} className={`px-2.5 py-1 rounded-lg ${reportsCurrentPage === page ? 'bg-primary text-white font-bold' : 'hover:bg-stone-50 text-neutralCustom'}`}>{page}</button>
+                    ))}
+                    <button onClick={() => setReportsCurrentPage(prev => prev + 1)} disabled={reportsCurrentPage === totalPages || totalPages === 0} className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-stone-50 text-neutralCustom disabled:opacity-50"><span className="material-symbols-outlined text-sm">chevron_right</span></button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
       </main>
+
+      {/* MODAL XEM CHI TIẾT BILL KẾT CA */}
+      {selectedReport && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedReport(null)}>
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up border border-neutralCustom/10" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <span className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">receipt_long</span>
+                Hóa đơn kết ca
+              </span>
+              <button onClick={() => setSelectedReport(null)} className="text-neutralCustom hover:text-gray-900 p-1 rounded-full hover:bg-gray-200 transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-6 bg-stone-100 flex justify-center items-center overflow-y-auto max-h-[60vh] w-full">
+              <div className="bg-white p-5 w-full shadow-md border-t-8 border-primary rounded-b-xl font-mono text-[11px] text-gray-800 select-none">
+                <div className="text-center mb-4">
+                  <h3 className="text-sm font-bold text-gray-900">LÀNG MÌXI BBQ</h3>
+                  <p className="text-[10px] mt-0.5">BÁO CÁO KẾT CA LÀM VIỆC</p>
+                  <p className="text-[9px] text-neutralCustom mt-1">-----------------------------</p>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <p>Thời gian in: {new Date(selectedReport.created_at).toLocaleString('vi-VN')}</p>
+                  <p>Thu ngân: {selectedReport.users?.fullname || 'Ẩn danh'}</p>
+                  <p>Tổng số đơn hàng: {selectedReport.total_orders} đơn</p>
+                  <p className="text-[9px] text-neutralCustom">-----------------------------</p>
+                  
+                  <div className="flex justify-between">
+                    <span>Tiền đầu ca:</span>
+                    <span>{Number(selectedReport.initial_amount || 0).toLocaleString('vi-VN')}đ</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Doanh thu:</span>
+                    <span>{Number(selectedReport.revenue_amount || 0).toLocaleString('vi-VN')}đ</span>
+                  </div>
+                  <p className="text-[9px] text-neutralCustom">-----------------------------</p>
+                  <div className="flex justify-between font-bold text-gray-900 text-xs">
+                    <span>TỔNG TRONG KÉT:</span>
+                    <span>{Number(selectedReport.total_amount || 0).toLocaleString('vi-VN')}đ</span>
+                  </div>
+                </div>
+
+                <div className="text-center mt-6">
+                  <p className="font-bold text-[10px] uppercase">XÁC NHẬN CỦA QUẢN LÝ</p>
+                  <br /><br /><br />
+                  <p className="text-[9px] text-neutralCustom">(Ký và ghi rõ họ tên)</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2.5">
+              <button
+                onClick={() => setSelectedReport(null)}
+                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={() => {
+                  const thoigianin = new Date(selectedReport.created_at).toLocaleString('vi-VN');
+                  const html_bill = `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                      <style>
+                          @page {
+                              size: 80mm auto;
+                              margin: 0;
+                          }
+                          html, body {
+                              margin: 0;
+                              padding: 0;
+                              width: 80mm;
+                              height: auto;
+                              background-color: #fff;
+                          }
+                          body {
+                              font-family: 'Arial', sans-serif;
+                              font-size: 12px;
+                              padding: 8px;
+                              box-sizing: border-box;
+                          }
+                          .text-center { text-align: center; }
+                          .bold { font-weight: bold; }
+                          .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                          table { width: 100%; border-collapse: collapse; }
+                          .text-right { text-align: right; }
+                      </style>
+                  </head>
+                  <body>
+                      <div class="text-center">
+                          <h3 style="margin: 0; font-size: 16px;">MÌXI</h3>
+                          <p style="margin: 5px 0;" class="bold">BÁO CÁO KẾT CA</p>
+                      </div>
+                      <div class="divider"></div>
+                      <p>Thời gian in: ${thoigianin}</p>
+                      <p>Thu ngân: ${selectedReport.users?.fullname || 'Ẩn danh'}</p>
+                      <p>Tổng số đơn hàng: ${selectedReport.total_orders}</p>
+                      <div class="divider"></div>
+                      <table>
+                          <tr>
+                              <td>Tiền đầu ca:</td>
+                              <td class="text-right">${Number(selectedReport.initial_amount || 0).toLocaleString('vi-VN')}đ</td>
+                          </tr>
+                          <tr>
+                              <td>Tổng doanh thu:</td>
+                              <td class="text-right">${Number(selectedReport.revenue_amount || 0).toLocaleString('vi-VN')}đ</td>
+                          </tr>
+                          <tr class="bold" style="font-size: 14px;">
+                              <td>TỔNG TRONG KÉT:</td>
+                              <td class="text-right">${Number(selectedReport.total_amount || 0).toLocaleString('vi-VN')}đ</td>
+                          </tr>
+                      </table>
+                      <div class="divider"></div>
+                      <div class="text-center bold">XÁC NHẬN CỦA QUẢN LÝ</div>
+                      <br><br><br><br>
+                      <div class="text-center">(Ký và ghi rõ họ tên)</div>
+                  </body>
+                  </html>
+                  `;
+                  const iframe = document.createElement('iframe');
+                  iframe.style.display = 'none';
+                  document.body.appendChild(iframe);
+                  const doc = iframe.contentWindow.document;
+                  doc.open();
+                  doc.write(html_bill);
+                  doc.close();
+                  setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    setTimeout(() => document.body.removeChild(iframe), 2000);
+                  }, 500);
+                }}
+                className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-secondary transition-colors flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">print</span>
+                In hóa đơn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
