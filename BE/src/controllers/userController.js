@@ -342,7 +342,7 @@ export const ketCa = async (req, res) => {
                     <td class="text-right">${tongTienBanDuoc.toLocaleString('vi-VN')}đ</td>
                 </tr>
                 <tr>
-                    <td>Tổng doanh thu:</td>
+                    <td>Tổng doanh thu tiền mặt:</td>
                     <td class="text-right">${tongTienBanDuocCASH.toLocaleString('vi-VN')}đ</td>
                 </tr>
                 <tr>
@@ -366,6 +366,8 @@ export const ketCa = async (req, res) => {
             success: true,
             tien_dau_ca: tiendauca,
             tong_tien_ban_duoc: tongTienBanDuoc,
+            tongTienBanDuoc_CASH: tongTienBanDuocCASH,
+            tongTienBanDuoc_VNPAY: tongTienBanDuocVNPAY,
             tong_tien_trong_ket: tongTienTrongKet,
             html_bill: html_bill
         });

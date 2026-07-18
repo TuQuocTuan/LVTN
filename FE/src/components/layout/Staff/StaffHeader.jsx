@@ -40,7 +40,7 @@ const StaffHeader = ({
       if (typeof user.permissions === 'string') {
         try {
           perms = JSON.parse(user.permissions);
-        } catch (e) {}
+        } catch (e) { }
       } else if (typeof user.permissions === 'object' && user.permissions !== null) {
         perms = user.permissions;
       }
@@ -285,7 +285,7 @@ const StaffHeader = ({
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className={`bg-white rounded-3xl p-6 sm:p-8 shadow-2xl w-full border border-neutralCustom/10 animate-scale-up ${userRole === 'cashier' && shiftReportData ? 'max-w-md' : 'max-w-sm text-center'}`}>
-            
+
             {/* THIẾT KẾ CHO THU NGÂN (CHỈ KHI CÓ DỮ LIỆU KẾT CA THẬT) */}
             {userRole === 'cashier' && shiftReportData ? (
               <>
@@ -310,8 +310,12 @@ const StaffHeader = ({
                     <span className="font-bold text-gray-900">{Number(shiftReportData?.tien_dau_ca || 0).toLocaleString('vi-VN')} đ</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="font-bold text-gray-700">Tổng doanh thu bán được:</span>
-                    <span className="font-bold text-gray-900">{Number(shiftReportData?.tong_tien_ban_duoc || 0).toLocaleString('vi-VN')} đ</span>
+                    <span className="font-bold text-gray-700">Tổng doanh thu tiền mặt:</span>
+                    <span className="font-bold text-gray-900">{Number(shiftReportData?.tongTienBanDuoc_CASH || 0).toLocaleString('vi-VN')} đ</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold text-gray-700">Tổng doanh thu VNPAY:</span>
+                    <span className="font-bold text-gray-900">{Number(shiftReportData?.tongTienBanDuoc_VNPAY || 0).toLocaleString('vi-VN')} đ</span>
                   </div>
                   <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between items-center mt-2">
                     <span className="font-black text-gray-900 text-base uppercase">Tổng tiền trong két:</span>
@@ -320,14 +324,14 @@ const StaffHeader = ({
                 </div>
 
                 <div className="flex gap-3">
-                  <button 
+                  <button
                     disabled={isLoggingOut}
                     onClick={() => setShowLogoutConfirm(false)}
                     className="w-1/2 py-3 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-sm rounded-xl hover:bg-stone-50 active:scale-95 transition-all cursor-pointer"
                   >
                     Đóng cửa sổ
                   </button>
-                  <button 
+                  <button
                     disabled={isLoggingOut}
                     onClick={handleLogoutSubmit}
                     className="w-1/2 py-3 bg-primary text-white font-black text-sm rounded-xl hover:bg-secondary shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
@@ -356,14 +360,14 @@ const StaffHeader = ({
                   Bạn có chắc chắn muốn kết thúc ca làm việc và đăng xuất khỏi ứng dụng nghiệp vụ Làng MÌXI BBQ?
                 </p>
                 <div className="flex gap-3">
-                  <button 
+                  <button
                     disabled={isLoggingOut}
                     onClick={() => setShowLogoutConfirm(false)}
                     className="w-1/2 py-3 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-xs sm:text-sm rounded-xl hover:bg-stone-50 active:scale-95 transition-all cursor-pointer"
                   >
                     Hủy bỏ
                   </button>
-                  <button 
+                  <button
                     disabled={isLoggingOut}
                     onClick={handleLogoutSubmit}
                     className="w-1/2 py-3 bg-red-500 text-white font-black text-xs sm:text-sm rounded-xl hover:bg-red-600 shadow-md shadow-red-500/10 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1"
