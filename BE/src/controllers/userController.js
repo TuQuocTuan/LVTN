@@ -270,18 +270,29 @@ export const ketCa = async (req, res) => {
         const endOfDay = moment().tz("Asia/Ho_Chi_Minh").endOf('day').toISOString();
         const thoigianin = now.format("DD/MM/YYYY HH:mm:ss");
 
-        const { data: bills, error: fetchErr } = await supabase
+        const { data: billsCash, error: fetchErr } = await supabase
             .from('bills')
             .select('*')
+            .eq('payment_method', 'CASH')
             .gte('created_at', startOfDay)
             .lte('created_at', endOfDay);
 
-        const soLuongDon = bills ? bills.length : 0;
-        const tongTienBanDuoc = bills ? bills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
+        const { data: billsVnpay, error: fetchErr2 } = await supabase
+            .from('bills')
+            .select('*')
+            .eq('payment_method', 'VNPAY')
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay);
+
+        const soLuongDon = billsCash ? billsCash.length : 0;
+        const tongTienBanDuocCASH = billsCash ? billsCash.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
+        const tongTienBanDuocVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
         const tiendauca = 1000000;
+        const tongTienBanDuoc = tongTienBanDuocCASH + tongTienBanDuocVNPAY;
         const tongTienTrongKet = tiendauca + tongTienBanDuoc;
 
         if (fetchErr) throw fetchErr;
+        if (fetchErr2) throw fetchErr2;
 
         const html_bill = `
         <!DOCTYPE html>
@@ -329,6 +340,14 @@ export const ketCa = async (req, res) => {
                 <tr>
                     <td>Tổng doanh thu:</td>
                     <td class="text-right">${tongTienBanDuoc.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Tổng doanh thu:</td>
+                    <td class="text-right">${tongTienBanDuocCASH.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Tổng doanh thu VNPAY:</td>
+                    <td class="text-right">${tongTienBanDuocVNPAY.toLocaleString('vi-VN')}đ</td>
                 </tr>
                 <tr class="bold" style="font-size: 14px;">
                     <td>TỔNG TRONG KÉT:</td>
