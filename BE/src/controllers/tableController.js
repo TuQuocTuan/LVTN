@@ -34,3 +34,29 @@ export const getDanhSachBan = async (req, res) => {
         });
     }
 };
+
+export const getSessionByTable = async (req, res) => {
+    try {
+        const { table_id } = req.body;
+
+        const { data: dining_sessions, error } = await supabase
+            .from('dining_sessions')
+            .select('id, status, closed_at')
+            .eq('table_id', table_id)
+            .eq('status', 'closed')
+            .order('closed_at', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+        return res.status(200).json({
+            success: true,
+            dining_sessions,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Không lấy được thông tin phiên theo bàn",
+            error: error.message
+        });
+    }
+}
