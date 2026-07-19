@@ -1,0 +1,24 @@
+info:
+  name: Sửa khách hàng
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: http://localhost:5000/api/customers/edit
+  body:
+    type: json
+    data: |-
+      {
+        "id":"e40c90ec-24c9-4d0b-88cd-16b63673193f",
+        "name":"h",
+        "phone_number":"0998989889",
+        "email":"test-vlv58br8x@srv1.mail-tester.com"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

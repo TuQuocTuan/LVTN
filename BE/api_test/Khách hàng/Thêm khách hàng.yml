@@ -1,0 +1,27 @@
+info:
+  name: Thêm khách hàng
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5000/api/customers/create
+  params:
+    - name: ""
+      value: ""
+      type: query
+  body:
+    type: json
+    data: |-
+      {
+        "name":"ABC",
+        "phone_number":"0908384785",
+        "email":"abcdefe@test.com"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

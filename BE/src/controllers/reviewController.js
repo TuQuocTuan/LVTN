@@ -26,7 +26,7 @@ export const getReviewList = async (req, res) => {
 
 export const addReview = async (req, res) => {
     try {
-        const { session_id, customer_id, order_id, reviews } = req.body;
+        const { session_id, email, phone_number, order_id, reviews } = req.body;
 
         if (!session_id || !order_id || !reviews || !Array.isArray(reviews) || reviews.length === 0) {
             return res.status(400).json({ success: false, message: 'Thiếu thông tin hoặc mảng đánh giá không hợp lệ!' });
@@ -56,7 +56,8 @@ export const addReview = async (req, res) => {
 
         const reviewsToInsert = reviews.map(item => ({
             session_id: session_id,
-            customer_id: customer_id || null,
+            email: email || null,
+            phone_number: phone_number || null,
             dish_id: Number(item.dish_id),
             rating: Number(item.rating),
             comment: item.comment ? item.comment.trim() : null

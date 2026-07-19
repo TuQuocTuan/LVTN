@@ -16,6 +16,7 @@ import userRoutes from './src/routes/userRoutes.js';
 import authRoutes from './src/routes/authRoutes.js';
 import dashboardRoutes from './src/routes/dashboardRoutes.js';
 import billRoutes from './src/routes/billRoutes.js';
+import customerRoutes from './src/routes/customerRoutes.js';
 
 const app = express();
 
@@ -47,6 +48,6 @@ app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/bills', billRoutes);
-
+app.use('/api/customers', customerRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`BBQ Server chuẩn kiến trúc đang chạy tại cổng ${PORT}`));
