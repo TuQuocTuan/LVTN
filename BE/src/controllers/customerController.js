@@ -90,3 +90,46 @@ export const editCustomer = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Lỗi không cập nhật được khách hàng' });
     }
 }
+
+export const getCustomers = async (req, res) => {
+    try {
+        const { data: customers, error: fetchErr } = await supabase
+            .from('customers')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (fetchErr) throw fetchErr;
+
+        res.status(200).json({
+            success: true,
+            data: customers
+        });
+    } catch (error) {
+        console.error('Lỗi lấy danh sách khách hàng:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi không lấy được danh sách khách hàng' });
+    }
+}
+
+export const deleteCustomer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Thiếu ID khách hàng' });
+        }
+        const { data, error } = await supabase
+            .from('customers')
+            .delete()
+            .eq('id', id)
+            .select();
+        if (error) throw error;
+        
+        res.status(200).json({
+            success: true,
+            message: 'Xóa khách hàng thành công',
+            data
+        });
+    } catch (error) {
+        console.error('Lỗi xóa khách hàng:', error);
+        return res.status(500).json({ success: false, message: 'Lỗi không xóa được khách hàng' });
+    }
+}

@@ -31,6 +31,7 @@ const AdminSidebar = ({ currentTab }) => {
     { id: 'inventory', label: 'Quản lý nguyên vật liệu', icon: 'inventory', path: '/admin/ingredient-management', permissionKey: 'manage_ingredients' },
     { id: 'dish', label: 'Quản lý món ăn', icon: 'restaurant_menu', path: '/admin/dish-management', permissionKey: 'manage_menu' },
     { id: 'user', label: 'Quản lý nhân sự', icon: 'manage_accounts', path: '/admin/role-management', requiredRole: 'super_admin' },
+    { id: 'customer', label: 'Quản lý khách hàng', icon: 'group', path: '/admin/customer-management', permissionKey: 'manage_customers' },
     { id: 'promotion', label: 'Quản lý ưu đãi', icon: 'campaign', path: '/admin/promotion-management', permissionKey: 'promotions' },
     { id: 'news', label: 'Quản lý tin tức', icon: 'news', path: '/admin/news-management', permissionKey: 'manage_news' },
     { id: 'shift', label: 'Quản lý lịch làm', icon: 'shift', path: '/admin/shift-management', permissionKey: 'manage_shift' },

@@ -3,6 +3,8 @@ import AdminSidebar from '../../components/layout/Admin/AdminSidebar';
 import AdminHeader from '../../components/layout/Admin/AdminHeader';
 import axios from 'axios';
 
+const axiosConfig = { headers: { 'ngrok-skip-browser-warning': 'true' } };
+
 const PromotionManagement = () => {
   // State quản lý Tab: 'Khuyến mãi' hoặc 'Lịch sử tặng Voucher'
   const [activeTab, setActiveTab] = useState('Khuyến mãi');
@@ -41,11 +43,13 @@ const PromotionManagement = () => {
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const [giftData, setGiftData] = useState({ phone_number: '', bypass_limit: true, selectedPromo: null });
   const [isSendingGift, setIsSendingGift] = useState(false);
+  const [customersList, setCustomersList] = useState([]);
 
   // Tự động tải dữ liệu khi render
   useEffect(() => {
     fetchPromotions();
     fetchCustomerVouchers();
+    fetchCustomers();
   }, []);
 
   const showAlert = (message, type = 'success', title = 'Thông báo') => {
@@ -78,6 +82,17 @@ const PromotionManagement = () => {
       console.error("Lỗi tải lịch sử tặng voucher:", error);
     } finally {
       setIsLoadingCV(false);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/customers`, axiosConfig);
+      if (response.data && response.data.success) {
+        setCustomersList(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Lỗi tải danh sách khách hàng:", error);
     }
   };
 
@@ -564,17 +579,43 @@ const PromotionManagement = () => {
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Số điện thoại khách hàng <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">call</span>
-                  <input 
-                    type="text" 
-                    placeholder="VD: 0832071653" 
-                    value={giftData.phone_number} 
-                    onChange={(e) => setGiftData({ ...giftData, phone_number: e.target.value })} 
-                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-neutralCustom/20 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-bold text-gray-900" 
-                  />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl z-10">call</span>
+                  <select
+                    value={giftData.phone_number}
+                    onChange={(e) => setGiftData({ ...giftData, phone_number: e.target.value })}
+                    className="w-full pl-11 pr-10 py-3.5 bg-gray-50 border border-neutralCustom/20 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-semibold text-gray-900 cursor-pointer appearance-none"
+                  >
+                    <option value="">-- Chọn khách hàng nhận Voucher --</option>
+                    {customersList.map(cus => (
+                      <option key={cus.id} value={cus.phone_number}>
+                        {cus.phone_number} - {cus.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom pointer-events-none">arrow_drop_down</span>
                 </div>
-                <p className="text-[10.5px] text-neutralCustom mt-2 leading-relaxed">
-                  * Hệ thống sẽ tự động tra cứu khách hàng dựa trên Số điện thoại để cấp mã Voucher và gửi email phản hồi trực tiếp tới Email đăng ký của họ.
+
+                {giftData.phone_number && (() => {
+                  const selectedCustomer = customersList.find(c => c.phone_number === giftData.phone_number);
+                  if (!selectedCustomer) return null;
+                  return (
+                    <div className="mt-4 bg-stone-50/50 border border-stone-200/80 p-4 rounded-2xl space-y-2.5 animate-fade-in text-xs shadow-inner">
+                      <div className="flex justify-between items-center">
+                        <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px]">Tên khách hàng:</span>
+                        <span className="text-gray-900 font-extrabold">{selectedCustomer.name}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-stone-500 font-bold uppercase tracking-wider text-[10px]">Email đăng ký:</span>
+                        <span className="text-gray-900 font-semibold font-mono break-all max-w-[200px] text-right" title={selectedCustomer.email}>
+                          {selectedCustomer.email}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <p className="text-[10.5px] text-neutralCustom mt-3 leading-relaxed">
+                  * Hệ thống sẽ tự động gửi email thông báo kèm mã Voucher trực tiếp tới Email đăng ký ở trên của khách hàng sau khi tặng thành công.
                 </p>
               </div>
             </div>

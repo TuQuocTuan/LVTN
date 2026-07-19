@@ -117,8 +117,8 @@ const StaffHeader = ({
       const userStr = localStorage.getItem('user');
       const userObj = userStr ? JSON.parse(userStr) : {};
 
-      // Nếu là thu ngân và có dữ liệu kết ca, thực hiện gửi yêu cầu chốt ca chính thức (lưu DB)
-      if (userRole === 'cashier' && shiftReportData) {
+      // Nếu là thu ngân/quản lý và có dữ liệu kết ca, thực hiện gửi yêu cầu chốt ca chính thức (lưu DB)
+      if (['cashier', 'admin', 'super_admin'].includes(userRole) && shiftReportData) {
         await axios.post(`${API_BASE_URL}/user/ketca`, {
           user_id: userObj.id || userObj._id
         });
@@ -158,8 +158,8 @@ const StaffHeader = ({
 
       <div className="flex items-center gap-4 sm:gap-6">
 
-        {/* 🌟 STREAMING_CHUNK: Nút KẾT CA chỉ hiển thị cho Thu ngân (Cashier), vô hiệu hóa nếu bị tắt quyền close_shift */}
-        {userRole === 'cashier' && (
+        {/* 🌟 STREAMING_CHUNK: Nút KẾT CA hiển thị cho Thu ngân, Admin và Super Admin */}
+        {['cashier', 'admin', 'super_admin'].includes(userRole) && !window.location.pathname.startsWith('/kitchen') && (
           <button
             onClick={handleOpenKetCaModal}
             disabled={isLoggingOut || !hasPermission('close_shift')}
@@ -187,7 +187,7 @@ const StaffHeader = ({
           >
             <span className="material-symbols-outlined text-2xl">notifications</span>
             {notifications.length > 0 && (
-              <span className="absolute top-1 right-1 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm border-2 border-white animate-pulse">
+              <span className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm border-2 border-white animate-pulse">
                 {notifications.length}
               </span>
             )}
@@ -284,10 +284,10 @@ const StaffHeader = ({
       {/* 🌟 STREAMING_CHUNK: Render hộp thoại Modal Kết ca hoặc Đăng xuất tùy thuộc vào dữ liệu shiftReportData */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div className={`bg-white rounded-3xl p-6 sm:p-8 shadow-2xl w-full border border-neutralCustom/10 animate-scale-up ${userRole === 'cashier' && shiftReportData ? 'max-w-md' : 'max-w-sm text-center'}`}>
+          <div className={`bg-white rounded-3xl p-6 sm:p-8 shadow-2xl w-full border border-neutralCustom/10 animate-scale-up ${['cashier', 'admin', 'super_admin'].includes(userRole) && shiftReportData ? 'max-w-md' : 'max-w-sm text-center'}`}>
 
-            {/* THIẾT KẾ CHO THU NGÂN (CHỈ KHI CÓ DỮ LIỆU KẾT CA THẬT) */}
-            {userRole === 'cashier' && shiftReportData ? (
+            {/* THIẾT KẾ CHO THU NGÂN/QUẢN LÝ (CHỈ KHI CÓ DỮ LIỆU KẾT CA THẬT) */}
+            {['cashier', 'admin', 'super_admin'].includes(userRole) && shiftReportData ? (
               <>
                 <div className="flex items-center gap-3 mb-5 border-b border-gray-100 pb-4">
                   <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center border border-primary/20 shrink-0">

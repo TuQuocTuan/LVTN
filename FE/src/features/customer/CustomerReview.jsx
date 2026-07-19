@@ -14,6 +14,8 @@ const CustomerReview = () => {
 
   const [tableName, setTableName] = useState('');
   const [dishList, setDishList] = useState([]);
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -163,6 +165,8 @@ const CustomerReview = () => {
           session_id: urlSessionId,
           order_id: Number(orderIdKey),
           customer_id: null,
+          email: email.trim() || null,
+          phone_number: phone.trim() || null,
           reviews: reviewsPayload
         };
         return axios.post(`${API_URL}/review/add`, payload, axiosConfig);
@@ -269,6 +273,43 @@ const CustomerReview = () => {
                   </span>
                 </div>
               )}
+
+              {/* Thông tin liên hệ khách hàng */}
+              <div className="bg-stone-50 border border-stone-200/80 p-3.5 rounded-2xl shadow-sm space-y-3">
+                <label className="block text-xs font-black text-orange-600 uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px]">contact_mail</span> Thông tin liên hệ
+                </label>
+                <div className="grid grid-cols-1 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase tracking-wide mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="Nhập email của bạn (Ví dụ: nguyenvan@gmail.com)"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-white border border-stone-200 focus:border-orange-500 rounded-xl text-xs outline-none transition-colors font-semibold text-stone-950 shadow-inner"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase tracking-wide mb-1">
+                      Số điện thoại <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      pattern="[0-9]{10,11}"
+                      title="Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số)"
+                      placeholder="Nhập số điện thoại (Ví dụ: 0987654321)"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-white border border-stone-200 focus:border-orange-500 rounded-xl text-xs outline-none transition-colors font-semibold text-stone-950 shadow-inner"
+                    />
+                  </div>
+                </div>
+              </div>
 
               {/* Danh sách các món ăn cần khảo sát */}
               <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1.5 custom-scrollbar">

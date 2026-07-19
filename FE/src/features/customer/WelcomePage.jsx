@@ -94,7 +94,11 @@ const WelcomePage = () => {
         </div>
 
         <div className={`w-full max-w-md flex flex-col items-center z-10 transition-all duration-700 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <div className="relative mb-12 group transition-transform duration-500 hover:scale-105">
+          <div 
+            onClick={() => navigate('/about')}
+            className="relative mb-12 group transition-transform duration-500 hover:scale-105 cursor-pointer"
+            title="Xem giới thiệu nhà hàng"
+          >
             <div className="absolute inset-0 bg-primary pulse-soft rounded-full -m-4"></div>
             <div className="relative w-48 h-48 rounded-full overflow-hidden border-4 border-white shadow-xl">
               <img alt="Restaurant" className="w-full h-full object-cover" src="https://images.unsplash.com/photo-1544025162-d76694265947?w=300&h=300&fit=crop" />
@@ -105,7 +109,13 @@ const WelcomePage = () => {
             <h2 className="text-neutralCustom font-bold opacity-80 uppercase tracking-widest text-xs">{t('welcome')}</h2>
             <h1 className="text-3xl text-gray-900 leading-tight px-4 font-semibold">
               {t('subtitle')} <br />
-              <span className="text-primary font-bold">{t('brandName')}</span>
+              <span 
+                onClick={() => navigate('/about')}
+                className="text-primary font-black cursor-pointer hover:underline hover:opacity-90 active:scale-95 transition-all inline-block"
+                title="Xem giới thiệu nhà hàng"
+              >
+                {t('brandName')}
+              </span>
             </h1>
           </div>
 

@@ -22,6 +22,7 @@ import PromotionManagement from '../features/admin/PromotionManagement';
 import NewsManagement from '../features/admin/NewsManagement';
 import ShiftManagement from '../features/admin/ShiftManagement';
 import ReviewManagement from '../features/admin/ReviewManagement';
+import CustomerManagement from '../features/admin/CustomerManagement';
 
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const token = localStorage.getItem('token');
@@ -165,6 +166,12 @@ const AppRoutes = () => {
       <Route path="/admin/review-management" element={
         <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_review">
           <ReviewManagement />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/admin/customer-management" element={
+        <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermission="manage_customers">
+          <CustomerManagement />
         </ProtectedRoute>
       } />
 

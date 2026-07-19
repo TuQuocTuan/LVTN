@@ -15,6 +15,7 @@ const resources = {
             loadingMenu: 'Đang mở thực đơn...',
             startOrdering: 'Bắt đầu gọi món',
             langLabel: 'TIẾNG VIỆT',
+            aboutUs: 'Giới thiệu nhà hàng',
 
             // --- Khung Layout chung (CustomerLayout) ---
             connected: 'Đã kết nối',
@@ -105,6 +106,7 @@ const resources = {
             loadingMenu: 'Opening menu...',
             startOrdering: 'Start Ordering',
             langLabel: 'ENGLISH',
+            aboutUs: 'About Restaurant',
 
             // --- CustomerLayout ---
             connected: 'Connected',

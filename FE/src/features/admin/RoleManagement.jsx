@@ -49,6 +49,7 @@ const RoleManagement = () => {
         { id: 'manage_news', name: 'Quản lý tin tức', desc: 'Quản lý các bài viết, tin tức,...', icon: 'news' },
         { id: 'manage_shift', name: 'Quản lý lịch làm', desc: 'Quản lý ca làm việc của nhân viên,...', icon: 'shift' },
         { id: 'manage_review', name: 'Quản lý đánh giá khách hàng', desc: 'Quản lý và phản hồi các đánh giá của khách hàng,...', icon: 'comment' },
+        { id: 'manage_customers', name: 'Quản lý khách hàng', desc: 'Xem, sửa và xóa danh sách khách hàng', icon: 'group' },
       ]
     },
     {
@@ -64,6 +65,7 @@ const RoleManagement = () => {
         { id: 'checkout', name: 'Tính tiền & In hóa đơn', desc: 'Xử lý thanh toán', icon: 'point_of_sale' },
         { id: 'manage_tables', name: 'Quản lý bàn', desc: 'Mở bàn, đóng bàn', icon: 'table_restaurant' },
         { id: 'close_shift', name: 'Kết ca', desc: 'Báo cáo và kết thúc ca làm việc', icon: 'work_history' },
+        { id: 'create_customer', name: 'Đăng ký khách hàng mới', desc: 'Tạo thông tin khách hàng mới tại quầy', icon: 'person_add' },
       ]
     },
     {

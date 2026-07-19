@@ -186,8 +186,12 @@ const ReviewManagement = () => {
 
     const dishName = getDishNameById(r.dish_id);
     const commentText = r.comment || '';
+    const emailText = r.email || '';
+    const phoneText = r.phone_number || '';
     const matchSearch = dishName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         commentText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        emailText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        phoneText.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         String(r.session_id).toLowerCase().includes(searchTerm.toLowerCase());
 
     let matchDate = true;
@@ -508,6 +512,7 @@ const ReviewManagement = () => {
                         <thead>
                           <tr className="bg-stone-50 border-b border-neutralCustom/10 text-neutralCustom text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                             <th className="px-4 py-3">Phiên ăn / Thời gian</th>
+                            <th className="px-4 py-3">Khách hàng</th>
                             <th className="px-4 py-3">Món ăn nướng lẩu</th>
                             <th className="px-4 py-3 text-center">Xếp hạng</th>
                             <th className="px-4 py-3">Bình luận góp ý</th>
@@ -529,6 +534,22 @@ const ReviewManagement = () => {
                                     <span className="text-[10px] font-mono text-neutralCustom/85 mt-0.5" title={review.session_id}>
                                       #{String(review.session_id).slice(0, 8)}...
                                     </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <div className="flex flex-col min-w-[140px]">
+                                    {review.email ? (
+                                      <span className="text-xs font-semibold text-gray-800 break-all" title={review.email}>
+                                        {review.email}
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-gray-400 italic">Ẩn danh</span>
+                                    )}
+                                    {review.phone_number && (
+                                      <span className="text-[10px] font-mono text-neutralCustom/85 mt-0.5">
+                                        {review.phone_number}
+                                      </span>
+                                    )}
                                   </div>
                                 </td>
                                 <td className="px-4 py-3.5">
@@ -578,6 +599,22 @@ const ReviewManagement = () => {
                                 Bill #{String(review.session_id).slice(0, 8)}...
                               </span>
                               <span className="text-[10px] text-gray-400 font-mono font-bold uppercase tracking-wider">{formatDate(review.created_at)}</span>
+                            </div>
+
+                            {/* Thông tin khách hàng */}
+                            <div className="mb-3 text-xs flex flex-wrap gap-2 items-center text-gray-650 bg-stone-50 border border-stone-200/50 p-2 rounded-xl">
+                              <span className="material-symbols-outlined text-[16px] text-orange-500">contact_mail</span>
+                              {review.email ? (
+                                <span className="font-semibold text-gray-800 break-all" title={review.email}>{review.email}</span>
+                              ) : (
+                                <span className="italic text-gray-400">Ẩn danh</span>
+                              )}
+                              {review.phone_number && (
+                                <>
+                                  <span className="text-gray-300">|</span>
+                                  <span className="font-mono text-gray-800">{review.phone_number}</span>
+                                </>
+                              )}
                             </div>
 
                             {/* Món ăn và sao */}

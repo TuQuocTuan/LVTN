@@ -8,7 +8,7 @@ export const getReviewList = async (req, res) => {
     try {
         const { data: review, error: fetchErr } = await supabase
             .from('reviews')
-            .select('session_id,customer_id,created_at,dish_id,rating,comment')
+            .select('session_id,customer_id,created_at,dish_id,rating,comment,email,phone_number')
         if (fetchErr) throw fetchErr;
 
         const formatReview = review.map(item => {

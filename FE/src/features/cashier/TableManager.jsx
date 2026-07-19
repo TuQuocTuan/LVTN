@@ -62,6 +62,13 @@ const TableManager = () => {
   const [voucherCode, setVoucherCode] = useState('');
   const [customerVouchers, setCustomerVouchers] = useState([]);
 
+  // State cho modal tạo khách hàng mới
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
+  const [newCustomerEmail, setNewCustomerEmail] = useState('');
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+
   const [showPrintVnpayBtn, setShowPrintVnpayBtn] = useState(false);
   const [vnpayHtmlBill, setVnpayHtmlBill] = useState('');
 
@@ -254,6 +261,49 @@ const TableManager = () => {
 
     updatePreviewBill();
   }, [voucherCode, billData?.subTotal]);
+
+  // Gọi API tạo khách hàng mới
+  const handleCreateCustomer = async (e) => {
+    if (e) e.preventDefault();
+
+    if (!newCustomerName.trim()) {
+      return showAlert("Vui lòng nhập họ và tên khách hàng!", "warning");
+    }
+    if (!newCustomerPhone.trim() || newCustomerPhone.trim().length < 10) {
+      return showAlert("Vui lòng nhập số điện thoại hợp lệ!", "warning");
+    }
+    if (!newCustomerEmail.trim()) {
+      return showAlert("Vui lòng nhập địa chỉ email!", "warning");
+    }
+
+    setIsCreatingCustomer(true);
+    try {
+      const response = await axios.post(`${API_BASE_URL}/customers/create`, {
+        name: newCustomerName.trim(),
+        phone_number: newCustomerPhone.trim(),
+        email: newCustomerEmail.trim()
+      });
+
+      if (response.data && response.data.success) {
+        showAlert("Thêm khách hàng thành công!", "success");
+        // Tự động gán sđt vừa tạo vào ô tìm kiếm để tự lấy voucher
+        // setPhoneNumber(newCustomerPhone.trim());
+        
+        // Reset form và đóng modal
+        setNewCustomerName('');
+        setNewCustomerPhone('');
+        setNewCustomerEmail('');
+        setIsCustomerModalOpen(false);
+      } else {
+        showAlert(response.data?.message || "Lỗi tạo khách hàng", "error");
+      }
+    } catch (error) {
+      console.error("Lỗi khi thêm khách hàng:", error);
+      showAlert(error.response?.data?.message || "Không thể kết nối đến máy chủ để tạo khách hàng.", "error");
+    } finally {
+      setIsCreatingCustomer(false);
+    }
+  };
 
   // Gọi API Mở Bàn Mới
   const handleOpenTable = async (tableId) => {
@@ -679,14 +729,31 @@ const TableManager = () => {
                       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
                         <div className="space-y-3">
                           <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Khách hàng & Khuyến mãi</p>
-                          <input
-                            type="text"
-                            placeholder="Số điện thoại khách hàng"
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                            maxLength={10}
-                            className="w-full px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                          />
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Số điện thoại khách hàng"
+                              value={phoneNumber}
+                              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                              maxLength={10}
+                              className="flex-1 px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-semibold"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!hasPermission('create_customer')) {
+                                  return showAlert("Tài khoản của bạn đã bị giới hạn, không có quyền đăng ký khách hàng mới!", "warning");
+                                }
+                                setNewCustomerPhone(phoneNumber);
+                                setIsCustomerModalOpen(true);
+                              }}
+                              className="px-3.5 py-2 bg-stone-100 hover:bg-stone-250 border border-neutralCustom/25 text-gray-700 font-extrabold rounded-xl text-xs flex items-center gap-1 transition-all shadow-sm shrink-0 cursor-pointer"
+                              title="Đăng ký thông tin khách hàng mới"
+                            >
+                              <span className="material-symbols-outlined text-[16px] text-primary">person_add</span>
+                              Tạo mới
+                            </button>
+                          </div>
 
                           <div className="relative">
                             <select
@@ -856,9 +923,9 @@ const TableManager = () => {
 
       {/* Hộp thoại thông báo tùy chỉnh (Custom Dialog) */}
       {dialog.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={closeDialog}></div>
-          <div className="relative bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up z-[110]">
+          <div className="relative bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up z-[210]">
             <div className="mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center border border-neutralCustom/10">
               {dialog.type === 'success' && (
                 <span className="material-symbols-outlined text-4xl text-green-500 bg-green-50 w-full h-full rounded-full flex items-center justify-center">check_circle</span>
@@ -909,6 +976,104 @@ const TableManager = () => {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal đăng ký khách hàng mới */}
+      {isCustomerModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" 
+            onClick={() => setIsCustomerModalOpen(false)}
+          ></div>
+          
+          <div className="relative bg-white rounded-3xl p-6 shadow-2xl max-w-md w-full border border-neutralCustom/10 animate-scale-up z-[130]">
+            <div className="flex justify-between items-center pb-4 border-b border-gray-100 mb-4">
+              <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-2xl">person_add</span>
+                Đăng ký Khách hàng mới
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setIsCustomerModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-250 text-stone-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCustomer} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+                  Họ và tên <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Nhập họ và tên (VD: Nguyễn Văn A)"
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+                  Số điện thoại <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  pattern="[0-9]{10,11}"
+                  placeholder="Nhập số điện thoại (VD: 0987654321)"
+                  value={newCustomerPhone}
+                  onChange={(e) => setNewCustomerPhone(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-3.5 py-2.5 bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">
+                  Địa chỉ Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="Nhập địa chỉ email (VD: khachhang@gmail.com)"
+                  value={newCustomerEmail}
+                  onChange={(e) => setNewCustomerEmail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-semibold"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCustomerModalOpen(false)}
+                  className="w-1/2 py-3 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-sm rounded-xl hover:bg-stone-50 transition-all cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingCustomer}
+                  className="w-1/2 py-3 bg-primary text-white font-black text-sm rounded-xl hover:bg-secondary transition-all cursor-pointer shadow-md shadow-primary/10 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  {isCreatingCustomer ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                      <span>Đang tạo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-[18px]">check</span>
+                      <span>Xác nhận</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
