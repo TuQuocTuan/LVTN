@@ -24,6 +24,19 @@ const RoleManagement = () => {
   // State cho phần Edit Quyền (Cột bên phải)
   const [editData, setEditData] = useState({ role: '', is_active: true, permissions: {} });
 
+  // State hiển thị/ẩn mật khẩu trong modal sửa thông tin
+  const [showPassword, setShowPassword] = useState(false);
+
+
+
+  // --- STATES CHỐT CHẶN BẢO MẬT THAY THẾ ALERT/CONFIRM TRÌNH DUYỆT ---
+  const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
+
+  const showAlert = (message, type = 'success', title = 'Thông báo') => {
+    setAlertModal({ show: true, message, title, type });
+  };
+
   // ĐỊNH NGHĨA CÁC QUYỀN
   const permissionCategories = [
     {
@@ -50,7 +63,7 @@ const RoleManagement = () => {
       items: [
         { id: 'checkout', name: 'Tính tiền & In hóa đơn', desc: 'Xử lý thanh toán', icon: 'point_of_sale' },
         { id: 'manage_tables', name: 'Quản lý bàn', desc: 'Mở bàn, đóng bàn', icon: 'table_restaurant' },
-        { id: 'view_reviews', name: 'Xem đánh giá', desc: 'Đọc phản hồi khách hàng', icon: 'reviews' },
+        { id: 'close_shift', name: 'Kết ca', desc: 'Báo cáo và kết thúc ca làm việc', icon: 'work_history' },
       ]
     },
     {
@@ -140,7 +153,7 @@ const RoleManagement = () => {
 
     if (newRole === 'admin') newPerms = { manage_menu: true, view_reports: true, manage_ingredients: true, manage_news: true };
     if (newRole === 'chef') newPerms = { view_recipes: true, process_orders: true };
-    if (newRole === 'cashier') newPerms = { checkout: true, manage_tables: true, view_reviews: true };
+    if (newRole === 'cashier') newPerms = { checkout: true, manage_tables: true, close_shift: true };
     if (newRole === 'super_admin') {
       permissionCategories.forEach(cat => cat.items.forEach(item => newPerms[item.id] = true));
     }
@@ -165,11 +178,11 @@ const RoleManagement = () => {
 
       const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
       if (res.data.success) {
-        alert("Cập nhật phân quyền thành công!");
+        showAlert("Cập nhật phân quyền thành công!", "success", "Thành công");
         fetchUsers();
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Lỗi cập nhật!");
+      showAlert(error.response?.data?.message || "Lỗi cập nhật!", "error", "Thất bại");
     } finally {
       setIsSaving(false);
     }
@@ -182,14 +195,24 @@ const RoleManagement = () => {
       fullname: emp.fullname,
       username: emp.username,
       email: emp.email || '',
-      phone_number: emp.phone_number || ''
+      phone_number: emp.phone_number || '',
+      password: ''
     });
+    setShowPassword(false);
     setIsEditInfoModalOpen(true);
   };
+
+
 
   // CẬP NHẬT THÔNG TIN CÁ NHÂN
   const handleUpdateInfoSubmit = async (e) => {
     e.preventDefault();
+
+    const hasPassword = editInfoForm.password && editInfoForm.password.trim() !== '';
+    if (hasPassword && editInfoForm.password.length < 6) {
+      return showAlert("Mật khẩu phải chứa ít nhất 6 ký tự!", "error", "Mật khẩu không hợp lệ");
+    }
+
     setIsSaving(true);
     try {
       // Vì API updateRoleUser đang dùng chung, cần gửi kèm lại role/permissions để ko bị mất
@@ -207,12 +230,23 @@ const RoleManagement = () => {
 
       const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
       if (res.data.success) {
-        alert("Cập nhật thông tin thành công!");
+        if (hasPassword) {
+          await axios.put(`${import.meta.env.VITE_API_URL}/user/change`, {
+            id: editInfoForm.id,
+            password: editInfoForm.password
+          });
+        }
+
+        showAlert(
+          hasPassword ? "Cập nhật thông tin và mật khẩu thành công!" : "Cập nhật thông tin thành công!",
+          "success",
+          "Thành công"
+        );
         setIsEditInfoModalOpen(false);
         fetchUsers();
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Lỗi khi cập nhật thông tin!");
+      showAlert(error.response?.data?.message || "Lỗi khi cập nhật thông tin!", "error", "Thất bại");
     } finally {
       setIsSaving(false);
     }
@@ -230,7 +264,7 @@ const RoleManagement = () => {
       } else if (newUser.role === 'chef') {
         defaultPerms = { view_recipes: true, process_orders: true };
       } else if (newUser.role === 'cashier') {
-        defaultPerms = { checkout: true, manage_tables: true, view_reviews: true };
+        defaultPerms = { checkout: true, manage_tables: true, close_shift: true };
       }
 
       const payload = {
@@ -241,89 +275,95 @@ const RoleManagement = () => {
 
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/user/add`, payload);
       if (res.data.success) {
-        alert(res.data.message || "Đã thêm nhân viên và gửi Email thành công!");
+        showAlert(res.data.message || "Đã thêm nhân viên và gửi Email thành công!", "success", "Thành công");
         setIsAddModalOpen(false);
         setNewUser({ username: '', password: '', fullname: '', role: 'cashier', email: '', phone_number: '', is_active: true });
         fetchUsers();
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Lỗi khi thêm nhân viên!");
+      showAlert(error.response?.data?.message || "Lỗi khi thêm nhân viên!", "error", "Thất bại");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleToggleLockUser = async (emp) => {
-    if (emp.role?.toLowerCase() === 'super_admin') return alert("Không thể thao tác trên tài khoản Super Admin!");
+    if (emp.role?.toLowerCase() === 'super_admin') return showAlert("Không thể thao tác trên tài khoản Super Admin!", "error", "Không cho phép");
 
     const confirmMessage = emp.is_active
       ? `Bạn có chắc chắn muốn KHÓA tài khoản của "${emp.fullname}"?`
       : `Bạn có chắc chắn muốn MỞ KHÓA tài khoản của "${emp.fullname}"?`;
 
-    if (window.confirm(confirmMessage)) {
-      try {
-        if (emp.is_active) {
-          // Trường hợp KHÓA: Gọi API delete để soft lock (Backend sẽ đổi is_active = false)
-          const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/delete/${emp.id}`);
-          if (res.data.success) {
-            alert("Đã khóa tài khoản thành công!");
-            fetchUsers();
+    setConfirmModal({
+      show: true,
+      title: emp.is_active ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
+      message: confirmMessage,
+      onConfirm: async () => {
+        try {
+          if (emp.is_active) {
+            // Trường hợp KHÓA: Gọi API delete để soft lock (Backend sẽ đổi is_active = false)
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/delete/${emp.id}`);
+            if (res.data.success) {
+              showAlert("Đã khóa tài khoản thành công!", "success", "Khóa thành công");
+              fetchUsers();
+            }
+          } else {
+            // Trường hợp MỞ KHÓA: Gọi API update truyền is_active = true
+            const payload = {
+              id: emp.id,
+              role: emp.role,
+              is_active: true,
+              permissions: typeof emp.permissions === 'string' ? emp.permissions : JSON.stringify(emp.permissions || {})
+            };
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
+            if (res.data.success) {
+              showAlert("Đã mở khóa tài khoản thành công!", "success", "Mở khóa thành công");
+              fetchUsers();
+            }
           }
-        } else {
-          // Trường hợp MỞ KHÓA: Gọi API update truyền is_active = true
-          const payload = {
-            id: emp.id,
-            role: emp.role,
-            is_active: true,
-            permissions: typeof emp.permissions === 'string' ? emp.permissions : JSON.stringify(emp.permissions || {})
-          };
-          const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/update`, payload);
-          if (res.data.success) {
-            alert("Đã mở khóa tài khoản thành công!");
-            fetchUsers();
-          }
+        } catch (error) {
+          showAlert("Lỗi khi cập nhật trạng thái hoạt động tài khoản!", "error", "Lỗi cập nhật");
         }
-      } catch (error) {
-        alert("Lỗi khi cập nhật trạng thái hoạt động tài khoản!");
+        setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
       }
-    }
+    });
   };
 
   return (
-    <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex">
+    <div className="bg-culinaryBg text-gray-900 font-sans h-screen flex overflow-hidden">
       <AdminSidebar currentTab="user" />
       <AdminHeader />
 
-      <main className="flex-1 ml-64 pt-24 p-8 min-h-screen bg-culinaryBg w-full">
-        <div className="w-full">
+      <main className="flex-1 ml-64 pt-20 p-6 h-screen flex flex-col bg-culinaryBg w-[calc(100%-16rem)] overflow-hidden">
+        <div className="w-full flex flex-col h-full overflow-hidden">
           {/* Page Header */}
-          <header className="mb-8 flex justify-between items-end">
+          <header className="mb-4 flex justify-between items-end shrink-0">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-1">Người dùng & Phân quyền</h2>
-              <p className="text-neutralCustom text-base">Quản lý nhân viên, gán vai trò và thiết lập quyền truy cập bằng Checkbox.</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Người dùng & Phân quyền</h2>
+              <p className="text-neutralCustom text-xs md:text-sm">Quản lý nhân viên, gán vai trò và thiết lập quyền truy cập bằng Checkbox.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setIsAddModalOpen(true)} className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-secondary transition-all flex items-center gap-2 shadow-md active:scale-95">
-                <span className="material-symbols-outlined text-[20px]">person_add</span>
+              <button onClick={() => setIsAddModalOpen(true)} className="px-5 py-2 md:px-6 md:py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-secondary transition-all flex items-center gap-2 shadow-md active:scale-95 text-xs md:text-sm">
+                <span className="material-symbols-outlined text-[18px] md:text-[20px]">person_add</span>
                 Thêm nhân viên mới
               </button>
             </div>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden mb-4">
             {/* CỘT TRÁI: DANH SÁCH NHÂN VIÊN */}
-            <section className="md:col-span-4 flex flex-col gap-4">
-              <div className="bg-white border border-neutralCustom/20 rounded-2xl overflow-hidden shadow-sm flex flex-col h-[calc(100vh-200px)]">
-                <div className="p-4 bg-culinaryBg/50 border-b border-neutralCustom/20 flex justify-between items-center shrink-0">
-                  <h3 className="text-lg font-bold text-gray-900">Danh sách tài khoản</h3>
-                  <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">{users.length} User</span>
+            <section className="md:col-span-4 flex flex-col h-full overflow-hidden">
+              <div className="bg-white border border-neutralCustom/20 rounded-2xl overflow-hidden shadow-sm flex flex-col h-full">
+                <div className="p-3.5 bg-culinaryBg/50 border-b border-neutralCustom/20 flex justify-between items-center shrink-0">
+                  <h3 className="text-base font-bold text-gray-900">Danh sách tài khoản</h3>
+                  <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[11px] font-bold">{users.length} User</span>
                 </div>
 
                 <div className="divide-y divide-neutralCustom/10 overflow-y-auto flex-1 custom-scrollbar">
                   {isLoading ? (
-                    <div className="p-8 text-center text-neutralCustom">Đang tải dữ liệu...</div>
+                    <div className="p-6 text-center text-neutralCustom text-xs">Đang tải dữ liệu...</div>
                   ) : users.length === 0 ? (
-                    <div className="p-8 text-center text-neutralCustom">Chưa có dữ liệu nhân viên.</div>
+                    <div className="p-6 text-center text-neutralCustom text-xs">Chưa có dữ liệu nhân viên.</div>
                   ) : (
                     users.map((emp) => {
                       const colorClass = roleColors[emp.role?.toLowerCase()] || 'bg-gray-100 text-gray-700';
@@ -331,37 +371,40 @@ const RoleManagement = () => {
                         <div
                           key={emp.id}
                           onClick={() => handleSelectUser(emp)}
-                          className={`relative p-4 flex flex-col gap-2 cursor-pointer transition-all group ${activeUserId === emp.id ? 'bg-primary/5 shadow-inner' : 'hover:bg-culinaryBg/50'} ${!emp.is_active ? 'opacity-60' : ''}`}
+                          className={`relative p-2.5 flex flex-col gap-1 cursor-pointer transition-all group ${activeUserId === emp.id ? 'bg-primary/5 shadow-inner' : 'hover:bg-culinaryBg/50'} ${!emp.is_active ? 'opacity-60' : ''}`}
                         >
                           {activeUserId === emp.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>}
 
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className={`text-base font-bold leading-tight flex items-center gap-2 ${activeUserId === emp.id ? 'text-primary' : 'text-gray-900 group-hover:text-primary'}`}>
+                          <div className="flex justify-between items-center">
+                            <div className="min-w-0 pr-2">
+                              <h4 className={`text-sm md:text-base font-bold leading-tight flex items-center gap-1.5 truncate ${activeUserId === emp.id ? 'text-primary' : 'text-gray-900 group-hover:text-primary'}`}>
                                 {emp.fullname}
-                                {!emp.is_active && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase">Khóa</span>}
+                                {!emp.is_active && <span className="text-[9px] bg-red-50 text-red-650 px-1 py-0.2 rounded font-extrabold uppercase scale-90">Khóa</span>}
                               </h4>
-                              <p className="text-xs text-neutralCustom mt-1">Username: <b>{emp.username}</b></p>
+                              <p className="text-[10px] md:text-xs text-neutralCustom mt-0.5 font-medium">Username: <b>{emp.username}</b></p>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <div className="flex gap-1.5">
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex gap-1">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setIsEditInfoModalOpen(true); setEditInfoForm(emp); }}
+                                  onClick={(e) => { e.stopPropagation(); handleOpenEditInfo(emp); }}
                                   className="text-gray-500 hover:text-gray-700"
+                                  title="Sửa thông tin"
                                 >
-                                  <span className="material-symbols-outlined text-[18px]">edit</span></button>
+                                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                                </button>
+
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleToggleLockUser(emp); }}
-                                  className={`transition-colors ${emp.is_active ? 'text-red-400 hover:text-red-600' : 'text-green-500 hover:text-green-700'}`}
+                                  className={`transition-colors ${emp.is_active ? 'text-red-400 hover:text-red-650' : 'text-green-500 hover:text-green-700'}`}
                                   title={emp.is_active ? "Khóa tài khoản" : "Mở khóa tài khoản"}
                                 >
-                                  <span className="material-symbols-outlined text-[18px]">
+                                  <span className="material-symbols-outlined text-[16px]">
                                     {emp.is_active ? 'lock' : 'lock_open'}
                                   </span>
                                 </button>
                               </div>
-                              <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${roleColors[emp.role] || 'bg-gray-100'}`}>{emp.role}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${roleColors[emp.role] || 'bg-gray-100'}`}>{emp.role}</span>
                             </div>
                           </div>
                         </div>
@@ -373,28 +416,28 @@ const RoleManagement = () => {
             </section>
 
             {/* CỘT PHẢI: GÁN QUYỀN (CHECKBOX) & TRẠNG THÁI */}
-            <section className="md:col-span-8">
+            <section className="md:col-span-8 flex flex-col h-full overflow-hidden">
               {activeUser ? (
-                <div className="bg-white border border-neutralCustom/20 rounded-2xl shadow-md flex flex-col h-[calc(100vh-200px)] overflow-hidden">
+                <div className="bg-white border border-neutralCustom/20 rounded-2xl shadow-md flex flex-col h-full overflow-hidden">
 
                   {/* Header info */}
-                  <div className="p-6 bg-culinaryBg/30 border-b border-neutralCustom/20 flex justify-between items-start shrink-0">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-tertiary/10 text-tertiary flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[32px]">manage_accounts</span>
+                  <div className="p-4 bg-culinaryBg/30 border-b border-neutralCustom/20 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[24px]">manage_accounts</span>
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900">{activeUser.fullname}</h3>
-                        <p className="text-sm text-neutralCustom mt-1">Tick chọn để bật/tắt quyền truy cập từng tính năng.</p>
+                        <h3 className="text-base font-bold text-gray-900">{activeUser.fullname}</h3>
+                        <p className="text-xs text-neutralCustom mt-0.5">Tick chọn để bật/tắt quyền truy cập từng tính năng.</p>
                       </div>
                     </div>
                     {/* Trạng thái hoạt động */}
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2">
                       <select
                         value={editData.role}
                         onChange={(e) => handleRoleChange(e.target.value)}
                         disabled={isSuperAdmin}
-                        className="px-3 py-1.5 text-xs font-bold border border-neutralCustom/30 rounded-lg outline-none bg-white cursor-pointer disabled:opacity-50"
+                        className="px-2.5 py-1 text-xs font-bold border border-neutralCustom/30 rounded-lg outline-none bg-white cursor-pointer disabled:opacity-50"
                       >
                         <option value="super_admin">Super Admin</option>
                         <option value="admin">Quản lý (Admin)</option>
@@ -405,21 +448,21 @@ const RoleManagement = () => {
                   </div>
 
                   {/* Body: Form Gán Quyền (CHECKBOX) */}
-                  <div className="p-6 flex-grow overflow-y-auto custom-scrollbar">
+                  <div className="p-4 flex-grow overflow-y-auto custom-scrollbar">
                     {isSuperAdmin && (
-                      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-center gap-2">
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-center gap-2">
                         <span className="material-symbols-outlined text-[18px]">gpp_good</span>
                         Tài khoản Super Admin mặc định sở hữu toàn bộ đặc quyền (đã được tick sẵn) và không thể thay đổi.
                       </div>
                     )}
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {permissionCategories.map((category, catIdx) => (
                         <div key={catIdx}>
-                          <h4 className="text-xs font-bold text-neutralCustom uppercase tracking-widest mb-3 border-b border-neutralCustom/10 pb-2">
+                          <h4 className="text-[10px] md:text-xs font-bold text-neutralCustom uppercase tracking-wider mb-2 border-b border-neutralCustom/10 pb-1.5">
                             {category.title}
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                             {category.items.map((item) => {
                               // Dùng biến isSuperAdmin (dựa theo Role đang sửa) để quyết định tick
                               const isChecked = isSuperAdmin ? true : !!editData.permissions?.[item.id];
@@ -428,22 +471,22 @@ const RoleManagement = () => {
                                 <div
                                   key={item.id}
                                   onClick={() => handleTogglePermission(item.id)}
-                                  className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none
-                                    ${isChecked ? 'bg-primary/5 border-primary/30' : 'bg-white border-neutralCustom/20 hover:border-primary/40'}
-                                    ${isSuperAdmin ? 'opacity-60 cursor-not-allowed' : ''}
+                                  className={`flex items-start gap-2.5 p-2.5 md:p-3 rounded-xl border transition-all cursor-pointer select-none
+                                    ${isChecked ? 'bg-primary/5 border-primary/30' : 'bg-white border-neutralCustom/15 hover:border-primary/40'}
+                                    ${isSuperAdmin ? 'opacity-65 cursor-not-allowed' : ''}
                                   `}
                                 >
-                                  <div className="mt-0.5">
+                                  <div className="mt-0.5 shrink-0">
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
                                       readOnly
-                                      className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary accent-primary pointer-events-none"
+                                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary pointer-events-none"
                                     />
                                   </div>
-                                  <div>
-                                    <p className={`font-bold text-sm ${isChecked ? 'text-primary' : 'text-gray-900'}`}>{item.name}</p>
-                                    <p className="text-xs text-neutralCustom mt-0.5 leading-tight">{item.desc}</p>
+                                  <div className="min-w-0">
+                                    <p className={`font-bold text-xs md:text-sm truncate ${isChecked ? 'text-primary' : 'text-gray-900'}`}>{item.name}</p>
+                                    <p className="text-[10px] md:text-xs text-neutralCustom mt-0.5 leading-tight">{item.desc}</p>
                                   </div>
                                 </div>
                               );
@@ -454,17 +497,17 @@ const RoleManagement = () => {
                     </div>
 
                     {/* Trạng thái tài khoản */}
-                    <div className="mt-8 border-t border-neutralCustom/10 pt-6">
-                      <h4 className="text-xs font-bold text-neutralCustom uppercase tracking-widest mb-3">Trạng thái đăng nhập</h4>
-                      <div className={`flex items-center gap-3 p-4 rounded-xl border w-fit transition-all ${editData.is_active ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} ${isSuperAdmin ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <div className="mt-6 border-t border-neutralCustom/10 pt-4">
+                      <h4 className="text-[10px] font-bold text-neutralCustom uppercase tracking-wider mb-2">Trạng thái đăng nhập</h4>
+                      <div className={`flex items-center gap-2.5 p-3 rounded-xl border w-fit transition-all ${editData.is_active ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} ${isSuperAdmin ? 'opacity-50 pointer-events-none' : ''}`}>
                         <input
                           type="checkbox"
                           id="acc_active"
                           checked={editData.is_active}
                           onChange={(e) => setEditData({ ...editData, is_active: e.target.checked })}
-                          className="w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer"
+                          className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
                         />
-                        <label htmlFor="acc_active" className={`font-bold text-sm cursor-pointer ${editData.is_active ? 'text-green-700' : 'text-red-700'}`}>
+                        <label htmlFor="acc_active" className={`font-bold text-xs cursor-pointer ${editData.is_active ? 'text-green-700' : 'text-red-750'}`}>
                           {editData.is_active ? 'Tài khoản đang Hoạt động (Cho phép Login)' : 'Tài khoản đã bị Khóa (Không thể Login)'}
                         </label>
                       </div>
@@ -473,22 +516,22 @@ const RoleManagement = () => {
                   </div>
 
                   {/* Footer Actions */}
-                  <div className="p-5 bg-culinaryBg/50 border-t border-neutralCustom/20 flex justify-between items-center shrink-0">
-                    <span className="text-xs text-neutralCustom italic">
+                  <div className="p-4 bg-culinaryBg/50 border-t border-neutralCustom/20 flex justify-between items-center shrink-0">
+                    <span className="text-[11px] text-neutralCustom italic">
                       Quyền sẽ có tác dụng khi nhân viên tải lại trang.
                     </span>
                     <button
                       onClick={handleUpdateRole}
                       disabled={isSuperAdmin || isSaving} // Không cho phép Lưu nếu đang là Super Admin
-                      className="px-8 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-secondary active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-6 py-2 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-secondary active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-xs"
                     >
-                      {isSaving ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
+                      {isSaving ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">save</span>}
                       {isSaving ? 'Đang lưu...' : 'Lưu cấu hình quyền'}
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white border border-neutralCustom/20 rounded-2xl h-[calc(100vh-200px)] flex flex-col items-center justify-center text-neutralCustom">
+                <div className="bg-white border border-neutralCustom/20 rounded-2xl h-full flex flex-col items-center justify-center text-neutralCustom">
                   <span className="material-symbols-outlined text-6xl opacity-20 mb-4">manage_accounts</span>
                   <p>Chọn một nhân viên bên trái để xem và gán quyền.</p>
                 </div>
@@ -500,7 +543,7 @@ const RoleManagement = () => {
 
       {/* MODAL THÊM USER MỚI */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsAddModalOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsAddModalOpen(false)}>
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-neutralCustom/20 flex justify-between items-center bg-gray-50">
               <h3 className="text-lg font-bold text-gray-900">Thêm nhân viên mới</h3>
@@ -555,7 +598,7 @@ const RoleManagement = () => {
 
       {/* MODAL SỬA THÔNG TIN CÁ NHÂN */}
       {isEditInfoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsEditInfoModalOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsEditInfoModalOpen(false)}>
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-neutralCustom/20 flex justify-between items-center bg-gray-50">
               <h3 className="text-lg font-bold text-gray-900">Sửa thông tin cá nhân</h3>
@@ -580,6 +623,28 @@ const RoleManagement = () => {
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Số điện thoại</label>
                   <input type="tel" value={editInfoForm.phone_number} onChange={(e) => setEditInfoForm({ ...editInfoForm, phone_number: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Mật khẩu mới (Để trống nếu không muốn thay đổi)</label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      value={editInfoForm.password || ''} 
+                      onChange={(e) => setEditInfoForm({ ...editInfoForm, password: e.target.value })} 
+                      className="w-full pl-4 pr-12 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" 
+                      placeholder="Nhập mật khẩu mới nếu cần đổi"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-650 focus:outline-none flex items-center justify-center p-1.5 rounded-full hover:bg-gray-100 transition-all"
+                      title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    >
+                      <span className="material-symbols-outlined text-[20px] select-none">
+                        {showPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </form>
 
@@ -588,6 +653,59 @@ const RoleManagement = () => {
               <button onClick={handleUpdateInfoSubmit} disabled={isSaving} className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-primary hover:bg-secondary shadow-md flex items-center gap-2 transition-all disabled:opacity-50">
                 {isSaving ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
                 {isSaving ? 'Đang xử lý...' : 'Lưu thay đổi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* 🌟 HỆ THỐNG ALERT MODAL THAY THẾ TOAST (Bảo mật, có nút bấm Đồng ý) */}
+      {alertModal.show && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
+            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
+              alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+            }`}>
+              <span className="material-symbols-outlined text-3xl">
+                {alertModal.type === 'success' ? 'check_circle' : 'error'}
+              </span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
+            <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{alertModal.message}</p>
+            <button 
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'success' })} 
+              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${
+                alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
+              }`}
+            >
+              Đồng ý
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 HỆ THỐNG HỘP THOẠI XÁC NHẬN THAY THẾ CONFIRM */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
+            <div className="w-16 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+              <span className="material-symbols-outlined text-3xl">info</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
+            <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{confirmModal.message}</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })} 
+                className="w-1/2 py-3 border border-neutralCustom/20 rounded-xl font-bold text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={confirmModal.onConfirm} 
+                className="w-1/2 py-3 bg-primary text-white font-bold rounded-xl text-sm hover:bg-secondary transition-all"
+              >
+                Xác nhận
               </button>
             </div>
           </div>

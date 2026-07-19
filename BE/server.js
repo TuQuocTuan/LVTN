@@ -20,7 +20,10 @@ import billRoutes from './src/routes/billRoutes.js';
 const app = express();
 
 app.use(cors({
-    origin: '*',
+    origin: [
+        'http://localhost:5173', // Dành cho lúc test ở máy tính
+        'https://lvtn-sable.vercel.app'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
 }));

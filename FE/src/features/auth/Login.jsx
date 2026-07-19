@@ -66,7 +66,7 @@ const Login = () => {
                 {/* Logo & Tiêu đề */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-2">
-                        LÀNG <span className="text-primary">MÌXÌ</span>
+                        LÀNG <span className="text-primary">MÌXI</span>
                     </h1>
                     <div className="h-1 w-12 bg-primary rounded-full mx-auto mb-4"></div>
                     <p className="text-sm font-medium text-neutralCustom">Hệ thống quản trị và vận hành nội bộ</p>
@@ -143,7 +143,7 @@ const Login = () => {
 
                 {/* Bản quyền dưới chân */}
                 <div className="mt-8 text-center text-[11px] text-neutralCustom/60 font-medium border-t border-gray-100 pt-4">
-                    © 2026 BBQ Làng MìXì. All rights reserved.
+                    © 2026 BBQ Làng MìXi. All rights reserved.
                 </div>
 
             </div>

@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "range":"year"
+        "range":""
       }
   auth: inherit
 

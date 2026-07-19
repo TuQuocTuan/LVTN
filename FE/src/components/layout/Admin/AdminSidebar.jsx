@@ -38,20 +38,23 @@ const AdminSidebar = ({ currentTab }) => {
   ];
 
   return (
-    <aside className="h-screen w-64 fixed left-0 top-0 bg-white border-r border-neutralCustom/20 shadow-sm flex flex-col p-4 gap-2 z-50">
-      <div className="mb-8 px-2">
-        <h1 className="text-3xl font-bold text-primary">Làng MÌXI</h1>
-        <p className="text-neutralCustom text-sm">Quản trị hệ thống</p>
+    <aside className="h-screen w-64 fixed left-0 top-0 bg-white border-r border-neutralCustom/15 shadow-sm flex flex-col p-5 gap-2 z-50 transition-all duration-300">
+
+      {/* Thương hiệu Làng MÌXI */}
+      <div className="mb-6 px-2 select-none shrink-0">
+        <h1 className="text-2xl font-black text-primary tracking-tight uppercase">Làng MÌXI</h1>
+        <p className="text-neutralCustom text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Quản trị hệ thống</p>
       </div>
 
-      <nav className="flex flex-col gap-2 flex-grow">
+      {/* Danh mục chuyển đổi liên kết thông minh */}
+      <nav className="flex flex-col gap-1.5 flex-grow overflow-y-auto custom-scrollbar pr-1">
         {menuItems.map((item) => {
-          // Kiểm tra vai trò bắt buộc (vd: trang quản lý nhân sự chỉ super_admin mới thấy)
+          // Kiểm tra điều kiện vai trò bắt buộc
           if (item.requiredRole && item.requiredRole !== userRole) {
             return null;
           }
 
-          // Kiểm tra phân quyền chi tiết (Nếu không phải super_admin thì bắt buộc phải có key quyền hoạt động)
+          // Kiểm tra phân quyền chi tiết (Checkbox-based)
           if (userRole !== 'super_admin' && item.permissionKey && !userPermissions[item.permissionKey]) {
             return null;
           }
@@ -61,18 +64,18 @@ const AdminSidebar = ({ currentTab }) => {
             <Link
               key={item.id}
               to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all active:scale-95 ${isActive
-                  ? 'bg-primary/10 text-primary border-r-4 border-primary font-bold shadow-sm'
-                  : 'text-neutralCustom hover:bg-culinaryBg'
+              className={`flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] ${isActive
+                  ? 'bg-primary/10 text-primary border-r-4 border-primary font-black shadow-sm'
+                  : 'text-neutralCustom hover:bg-stone-50 hover:text-gray-900 font-bold'
                 }`}
             >
               <span
-                className="material-symbols-outlined"
+                className="material-symbols-outlined text-[20px]"
                 style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
               >
                 {item.icon}
               </span>
-              <span className="font-semibold text-base">{item.label}</span>
+              <span className="text-xs sm:text-sm tracking-wide">{item.label}</span>
             </Link>
           );
         })}

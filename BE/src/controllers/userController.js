@@ -4,7 +4,7 @@
 import { supabase } from '../config/supabase.js';
 import bcrypt from 'bcrypt';
 import moment from 'moment';
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 
 export const getAllUser = async (req, res) => {
     try {
@@ -68,54 +68,53 @@ export const addUser = async (req, res) => {
                 phone_number: phone_number,
                 permissions: permissions,
             })
-            .select();
+            .select()
+            .single();
 
         if (addErr) throw addErr;
 
-        try {
-            const transporter = nodemailer.createTransport({
-                service: 'Gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
 
-            const mailOptions = {
-                from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject: '[Làng Mixi] Thông báo cấp tài khoản nhân viên mới',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
-                        <h2 style="color: #ff6b00; text-align: center;">CHÀO MỪNG THÀNH VIÊN MỚI</h2>
-                        <p>Xin chào <b>${fullname}</b>,</p>
-                        <p>Tài khoản quản trị hệ thống nội bộ của bạn tại <b>Làng Mixi</b> đã được khởi tạo thành công với vai trò: <span style="text-transform: uppercase; font-weight: bold; color: #ff6b00;">${role}</span>.</p>
-                        
-                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
-                            <p style="margin: 5px 0;"><b>Tên đăng nhập:</b> <code style="font-size: 14px; color: #333;">${username}</code></p>
-                            <p style="margin: 5px 0;"><b>Mật khẩu kích hoạt:</b> <code style="font-size: 14px; color: #333;">${password}</code></p>
-                        </div>
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-                        <p style="color: #dd2c00; font-size: 13px;"><i>* Lưu ý: Để đảm bảo an toàn bảo mật, vui lòng tiến hành đăng nhập và đổi lại mật khẩu cá nhân ngay trong phiên làm việc đầu tiên.</i></p>
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
-                    </div>
-                `
-            };
+        let mailSent = false;
+        console.log(`[MAIL] Khởi động luồng gửi mail bằng SendGrid cho: ${newUser?.email || 'Trống'} (Tên: ${newUser?.fullname})`);
+        if (newUser.email && newUser.email.trim() !== '') {
+            try {
+                console.log(`[MAIL] Email hợp lệ. Đang gọi API SendGrid...`);
 
-            await transporter.sendMail(mailOptions);
-            console.log(`Đã gửi mail cấp tài khoản thành công cho: ${email}`);
+                const msg = {
+                    to: newUser.email,
+                    from: process.env.EMAIL_USER,
+                    subject: '[Làng MÌXI] Thông báo: Bạn được cấp tài khoản!',
+                    html: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
+                                    <h2 style="color: #ff6b00; text-align: center;">TÀI KHOẢN </h2>
+                                    <p>Xin chào <b>${fullname}</b>,</p>
+                                    <p>Bạn vừa được hệ thống quản trị <b>Làng MÌXI</b> cấp tài khoản:</p>
+                                    
+                                    <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
+                                        <p style="margin: 5px 0;"><b>Tên tài khoản:</b> <code style="font-size: 14px; color: #333;">${newUser.username}</code></p>
+                                        <p style="margin: 5px 0;"><b>Mật khẩu:</b> <b style="font-size: 16px; color: #ff6b00;">${password}</b></p>
+                                    </div>
 
-        } catch (mailError) {
-            console.error("Lỗi gửi mail tài khoản (DB vẫn lưu thành công):", mailError);
-            return res.status(200).json({
-                success: true,
-                data: newUser,
-                message: 'Thêm User thành công nhưng hệ thống gửi Mail thông báo gặp sự cố!'
-            });
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                                    <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
+                                </div>
+                            `
+                };
+                await sgMail.send(msg);
+                mailSent = true;
+                console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${newUser.email}`);
+            } catch (mailError) {
+                console.error("[MAIL] Lỗi SendGrid API:", mailError.response ? mailError.response.body : mailError);
+            }
         }
 
-        return res.status(200).json({ success: true, message: 'Thêm User thành công' });
+        const successMessage = mailSent
+            ? 'Đã tạo tài khoản thành công'
+            : 'Đã tạo tài khoản thành công! (Nhân viên chưa đăng ký Email hoặc Email dùng thử nên không gửi thư thông báo)';
+
+        return res.status(200).json({ success: true, message: successMessage });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
@@ -157,48 +156,48 @@ export const changePassword = async (req, res) => {
 
         if (fetchErr) throw fetchErr;
 
-        try {
-            const transporter = nodemailer.createTransport({
-                service: 'Gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-            const mailOptions = {
-                from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
-                to: emailhople,
-                subject: '[Làng Mixi] Thông báo cấp tài khoản nhân viên mới',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
-                        <h2 style="color: #ff6b00; text-align: center;">CHÀO MỪNG THÀNH VIÊN MỚI</h2>
-                        <p>Xin chào <b>${fullname}</b>,</p>
-                        <p>Tài khoản quản trị hệ thống nội bộ của bạn tại <b>Làng Mixi</b> đã được thay đổi mật khẩu thành công.</p>
-                        
-                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
-                            <p style="margin: 5px 0;"><b>Mật khẩu mới:</b> <code style="font-size: 14px; color: #333;">${password}</code></p>
-                        </div>
+        let mailSent = false;
+        console.log(`[MAIL] Khởi động luồng gửi mail bằng SendGrid cho: ${user?.email || 'Trống'} (Tên: ${user?.name})`);
+        if (user.email && user.email.trim() !== '') {
+            try {
+                console.log(`[MAIL] Email hợp lệ. Đang gọi API SendGrid...`);
 
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
-                    </div>
-                `
-            };
+                const msg = {
+                    to: user.email,
+                    from: process.env.EMAIL_USER,
+                    subject: '[Làng MÌXI] Thông báo: Mật khẩu của bạn đã được thay đổi!',
+                    html: `
+                               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
+                                    <h2 style="color: #ff6b00; text-align: center;">TÀI KHOẢN </h2>
+                                    <p>Xin chào <b>${user.fullname}</b>,</p>
+                                    <p>Bạn vừa được hệ thống quản trị <b>Làng MÌXI</b> cập nhật lại mật khẩu:</p>
+                                    
+                                    <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
+                                        <p style="margin: 5px 0;"><b>Tên tài khoản:</b> <code style="font-size: 14px; color: #333;">${user.fullname}</code></p>
+                                        <p style="margin: 5px 0;"><b>Mật khẩu mới:</b> <b style="font-size: 16px; color: #ff6b00;">${password}</b></p>
+                                    </div>
 
-            await transporter.sendMail(mailOptions);
-            console.log(`Đã gửi mail cấp tài khoản thành công cho: ${emailhople}`);
-
-        } catch (mailError) {
-            console.error("Lỗi gửi mail tài khoản (DB vẫn lưu thành công):", mailError);
-            return res.status(200).json({
-                success: true,
-                data: changePassword,
-                message: 'Thêm User thành công nhưng hệ thống gửi Mail thông báo gặp sự cố!'
-            });
+                                    <p style="font-size: 13px; color: #555;"><i>Vui lòng đổi mật khẩu sau khi nhận mail này.</i></p>
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                                    <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
+                                </div>
+                            `
+                };
+                await sgMail.send(msg);
+                mailSent = true;
+                console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${user.email}`);
+            } catch (mailError) {
+                console.error("[MAIL] Lỗi SendGrid API:", mailError.response ? mailError.response.body : mailError);
+            }
         }
 
-        return res.status(200).json({ success: true, message: 'Cập nhật mật khẩu thành công' });
+        const successMessage = mailSent
+            ? 'Đã cập nhật tài khoản thành công!'
+            : 'Đã cập nhật khoản thành công! (Nhân viên chưa đăng ký Email hoặc Email dùng thử nên không gửi thư thông báo)';
+
+        return res.status(200).json({ success: true, message: successMessage });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
@@ -206,9 +205,20 @@ export const changePassword = async (req, res) => {
 
 export const quanlythoigianlam1ca = async (req, res) => {
     try {
+
+        const { data: cashiers, error: fetchErr } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'cashier')
+            .eq('is_active', true);
+        if (fetchErr) throw fetchErr;
+
+        const cashierIDs = cashiers.map(cashier => cashier.id);
+
         const { data: shift } = await supabase
             .from('user_logs')
-            .select('user_id,action,created_at')
+            .select('user_id,username,action,created_at')
+            .in('user_id', cashierIDs)
             .order('created_at', { ascending: true });
 
         if (!shift) return res.status(404).json({ success: false, message: 'Ca không tồn tại' });
@@ -234,8 +244,8 @@ export const quanlythoigianlam1ca = async (req, res) => {
                     reportShifts.push({
                         user_id: userId,
                         username: item.username,
-                        login_time: logintime.toLocaleString('vi-VN'),
-                        logout_time: logouttime.toLocaleString('vi-VN'),
+                        login_time: loginlog.created_at,
+                        logout_time: item.created_at,
                         duration: `${sogio} giờ ${sophut} phút (${tongphut} phút)`,
                         date: logintime.toLocaleString('vi-VN').split(',')[0],
                     });
@@ -251,3 +261,187 @@ export const quanlythoigianlam1ca = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+export const ketCa = async (req, res) => {
+    try {
+        const userId = req.body?.user_id || req.query?.user_id;
+        const now = moment().tz("Asia/Ho_Chi_Minh");
+        const startOfDay = moment().tz("Asia/Ho_Chi_Minh").startOf('day').toISOString();
+        const endOfDay = moment().tz("Asia/Ho_Chi_Minh").endOf('day').toISOString();
+        const thoigianin = now.format("DD/MM/YYYY HH:mm:ss");
+
+        const { data: billsCash, error: fetchErr } = await supabase
+            .from('bills')
+            .select('*')
+            .eq('payment_method', 'CASH')
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay);
+
+        const { data: billsVnpay, error: fetchErr2 } = await supabase
+            .from('bills')
+            .select('*')
+            .eq('payment_method', 'VNPAY')
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay);
+
+        const soLuongDon = billsCash ? billsCash.length : 0;
+        const tongTienBanDuocCASH = billsCash ? billsCash.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
+        const tongTienBanDuocVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
+        const tiendauca = 1000000;
+        const tongTienBanDuoc = tongTienBanDuocCASH + tongTienBanDuocVNPAY;
+        const tongTienTrongKet = tiendauca + tongTienBanDuoc;
+
+        if (fetchErr) throw fetchErr;
+        if (fetchErr2) throw fetchErr2;
+
+        const html_bill = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                @page {
+                    size: 80mm auto;
+                    margin: 0;
+                }
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    width: 80mm;
+                    height: auto;
+                    background-color: #fff;
+                }
+                body {
+                    font-family: 'Arial', sans-serif;
+                    font-size: 12px;
+                    padding: 8px;
+                    box-sizing: border-box;
+                }
+                .text-center { text-align: center; }
+                .bold { font-weight: bold; }
+                .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                table { width: 100%; border-collapse: collapse; }
+                .text-right { text-align: right; }
+            </style>
+        </head>
+        <body>
+            <div class="text-center">
+                <h3 style="margin: 0; font-size: 16px;">MÌXI</h3>
+                <p style="margin: 5px 0;" class="bold">BÁO CÁO KẾT CA</p>
+            </div>
+            <div class="divider"></div>
+            <p>Thời gian in: ${thoigianin}</p>
+            <p>Tổng số đơn hàng: ${soLuongDon}</p>
+            <div class="divider"></div>
+            <table>
+                <tr>
+                    <td>Tiền đầu ca:</td>
+                    <td class="text-right">${tiendauca.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Tổng doanh thu:</td>
+                    <td class="text-right">${tongTienBanDuoc.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Tổng doanh thu tiền mặt:</td>
+                    <td class="text-right">${tongTienBanDuocCASH.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Tổng doanh thu VNPAY:</td>
+                    <td class="text-right">${tongTienBanDuocVNPAY.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr class="bold" style="font-size: 14px;">
+                    <td>TỔNG TRONG KÉT:</td>
+                    <td class="text-right">${tongTienTrongKet.toLocaleString('vi-VN')}đ</td>
+                </tr>
+            </table>
+            <div class="divider"></div>
+            <div class="text-center bold">XÁC NHẬN CỦA QUẢN LÝ</div>
+            <br><br><br><br>
+            <div class="text-center">(Ký và ghi rõ họ tên)</div>
+        </body>
+        </html>
+        `;
+
+        return res.status(200).json({
+            success: true,
+            tien_dau_ca: tiendauca,
+            tong_tien_ban_duoc: tongTienBanDuoc,
+            tongTienBanDuoc_CASH: tongTienBanDuocCASH,
+            tongTienBanDuoc_VNPAY: tongTienBanDuocVNPAY,
+            tong_tien_trong_ket: tongTienTrongKet,
+            html_bill: html_bill
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const finalizeKetCa = async (req, res) => {
+    try {
+        const userId = req.body?.user_id || req.query?.user_id;
+        if (!userId) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin user_id" });
+        }
+
+        const startOfDay = moment().tz("Asia/Ho_Chi_Minh").startOf('day').toISOString();
+        const endOfDay = moment().tz("Asia/Ho_Chi_Minh").endOf('day').toISOString();
+
+        const { data: bills, error: fetchErr } = await supabase
+            .from('bills')
+            .select('*')
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay);
+
+        if (fetchErr) throw fetchErr;
+
+        const soLuongDon = bills ? bills.length : 0;
+        const tongTienBanDuoc = bills ? bills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
+        const tiendauca = 1000000;
+        const tongTienTrongKet = tiendauca + tongTienBanDuoc;
+
+        const { error: insertErr } = await supabase
+            .from('shift_reports')
+            .insert({
+                user_id: userId,
+                total_orders: soLuongDon,
+                initial_amount: tiendauca,
+                revenue_amount: tongTienBanDuoc,
+                total_amount: tongTienTrongKet
+            });
+
+        if (insertErr) throw insertErr;
+
+        return res.status(200).json({
+            success: true,
+            message: "Lưu báo cáo kết ca thành công!"
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const getShiftReports = async (req, res) => {
+    try {
+        const { data: reports, error } = await supabase
+            .from('shift_reports')
+            .select(`
+                id,
+                user_id,
+                total_orders,
+                initial_amount,
+                revenue_amount,
+                total_amount,
+                created_at,
+                users (
+                    fullname,
+                    username
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return res.status(200).json({ success: true, data: reports });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};

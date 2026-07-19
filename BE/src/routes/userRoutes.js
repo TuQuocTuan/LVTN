@@ -1,9 +1,12 @@
 import express from 'express';
-import { getAllUser, updateRoleUser, addUser, deleteUser, changePassword, quanlythoigianlam1ca } from '../controllers/userController.js';
+import { getAllUser, updateRoleUser, addUser, deleteUser, changePassword, ketCa, finalizeKetCa, quanlythoigianlam1ca, getShiftReports } from '../controllers/userController.js';
 const router = express.Router();
 
 router.get('/', getAllUser);
+router.get('/ketca', ketCa);
+router.post('/ketca', finalizeKetCa);
 router.get('/shift', quanlythoigianlam1ca);
+router.get('/shift-reports', getShiftReports);
 router.post('/add', addUser);
 router.put('/update', updateRoleUser);
 router.put('/change', changePassword);

@@ -1,207 +1,329 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import axios from 'axios';
+
+// Thiết lập URL kết nối đến API Backend của Tuấn
+
+const API_URL = import.meta.env.VITE_API_URL;
+const axiosConfig = { headers: { 'ngrok-skip-browser-warning': 'true' } };
 
 const CustomerReview = () => {
-  // 🌟 Mô phỏng lấy các ID từ URL hóa đơn (Ví dụ khách quét mã QR: ?session_id=1&order_id=5)
-  // Trong môi trường thực tế, dùng: const [searchParams] = useSearchParams();
-  const [demoMode, setDemoMode] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  
-  const [formData, setFormData] = useState({
-    customer_name: '',
-    phone: '',
-    comment: ''
-  });
+  const [searchParams] = useSearchParams();
+  // 🌟 Đọc trực tiếp mã session_id được sinh ra tự động từ QR trên hóa đơn
+  const urlSessionId = searchParams.get('session_id');
 
+  const [tableName, setTableName] = useState('');
+  const [dishList, setDishList] = useState([]);
+
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isAlreadyReviewed, setIsAlreadyReviewed] = useState(false);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    if (urlSessionId) {
+      checkSessionReviewStatus(urlSessionId);
+    } else {
+      setErrorMsg("Vui lòng quét mã QR in trên hóa đơn thanh toán để thực hiện đánh giá món ăn!");
+    }
+  }, [urlSessionId]);
+
+  // Hàm check xem session_id này đã được gửi đánh giá lên Database của Tuấn chưa
+  const checkSessionReviewStatus = async (targetSessionId) => {
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const response = await axios.get(`${API_URL}/review`, axiosConfig);
+      if (response.data && response.data.success) {
+        const reviews = response.data.data || [];
+        // Tìm xem đã có bản ghi đánh giá nào trùng với session_id này chưa
+        const hasReviewed = reviews.some(r => r.session_id === targetSessionId);
+
+        if (hasReviewed) {
+          setIsAlreadyReviewed(true);
+          setIsSuccess(true); // Hiển thị thẳng màn hình Cảm ơn
+        } else {
+          // Nếu chưa đánh giá thì mới đi lấy danh sách món ăn của hóa đơn
+          fetchDishesFromSession(targetSessionId);
+        }
+      } else {
+        fetchDishesFromSession(targetSessionId);
+      }
+    } catch (error) {
+      console.error("Lỗi kiểm tra trạng thái đánh giá:", error);
+      // Fallback: nếu lỗi API kiểm tra thì vẫn cho khách tải danh sách món ăn để đánh giá bình thường
+      fetchDishesFromSession(targetSessionId);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const fetchDishesFromSession = async (targetSessionId) => {
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const response = await axios.get(`${API_URL}/orders/${targetSessionId}`, axiosConfig);
+
+      if (response.data && response.data.success && response.data.data.length > 0) {
+        const orderDataList = response.data.data;
+
+        // Lấy thông tin tên bàn nướng tự động
+        const firstOrder = orderDataList[0];
+        if (firstOrder.dining_sessions?.tables?.name) {
+          setTableName(firstOrder.dining_sessions.tables.name);
+        } else {
+          setTableName('Bàn ăn');
+        }
+
+        // Bóc tách toàn bộ món ăn từ các order_details
+        let rawDishes = [];
+        orderDataList.forEach(order => {
+          // Chỉ lấy các món ăn đã được bếp báo hoàn thành chế biến xong phục vụ (completed)
+          if (order.status === 'completed' && order.order_details) {
+            order.order_details.forEach(detail => {
+              rawDishes.push({
+                dish_id: detail.dish_id,
+                dish_name: detail.dishes?.name || 'Món ăn',
+                quantity: detail.quantity,
+                rating: 5, // 🌟 Mặc định 5 sao cho tất cả món ăn xuất hiện
+                comment: '',
+                order_id: order.id // Lưu lại order_id để xử lý gửi đánh giá an toàn
+              });
+            });
+          }
+        });
+
+        // Gộp các món ăn trùng lặp (trường hợp khách gọi cùng một món nhiều lần trong bữa)
+        const mergedDishes = [];
+        rawDishes.forEach(item => {
+          const exist = mergedDishes.find(d => d.dish_id === item.dish_id);
+          if (exist) {
+            exist.quantity += item.quantity;
+          } else {
+            mergedDishes.push(item);
+          }
+        });
+
+        if (mergedDishes.length === 0) {
+          setErrorMsg("Hóa đơn này chưa có món ăn nào được hoàn thành để thực hiện đánh giá!");
+        } else {
+          setDishList(mergedDishes);
+        }
+      } else {
+        setErrorMsg("Không tìm thấy thông tin đơn hàng nào cho hóa đơn này.");
+      }
+    } catch (error) {
+      console.error("Lỗi lấy đơn hàng:", error);
+      setErrorMsg("Không thể đồng bộ dữ liệu hóa đơn nướng. Vui lòng quét lại mã QR!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRatingChange = (dishId, newRating) => {
+    setDishList(prev => prev.map(dish =>
+      dish.dish_id === dishId ? { ...dish, rating: newRating } : dish
+    ));
+  };
+
+  const handleCommentChange = (dishId, newComment) => {
+    setDishList(prev => prev.map(dish =>
+      dish.dish_id === dishId ? { ...dish, comment: newComment } : dish
+    ));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (rating === 0) {
-      return alert('Vui lòng chọn số sao đánh giá món ăn và dịch vụ của Làng MìXì nhé!');
+    if (dishList.length === 0) {
+      return setErrorMsg("Chưa tải xong dữ liệu món ăn, không thể gửi đánh giá!");
     }
 
     setIsSubmitting(true);
+    setErrorMsg('');
 
-    // Mô phỏng hiệu ứng gửi dữ liệu lên Backend
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // 🌟 KHẮC PHỤC LỖI CHỒNG CHÉO SUPABASE: Phân nhóm mảng gửi theo từng order_id riêng biệt
+      const orderGroups = {};
+      dishList.forEach(dish => {
+        if (!orderGroups[dish.order_id]) {
+          orderGroups[dish.order_id] = [];
+        }
+        orderGroups[dish.order_id].push({
+          dish_id: dish.dish_id,
+          rating: dish.rating,
+          // Gửi trực tiếp comment thuần túy, không chèn thêm SĐT rườm rà
+          comment: dish.comment.trim()
+        });
+      });
+
+      // Thực hiện gửi đồng loạt bằng Promise.all
+      const submitPromises = Object.entries(orderGroups).map(([orderIdKey, reviewsPayload]) => {
+        const payload = {
+          session_id: urlSessionId,
+          order_id: Number(orderIdKey),
+          customer_id: null,
+          reviews: reviewsPayload
+        };
+        return axios.post(`${API_URL}/review/add`, payload, axiosConfig);
+      });
+
+      await Promise.all(submitPromises);
       setIsSuccess(true);
-      alert("Cảm ơn đóng góp quý báu của Quý khách!\nLàng MìXì chúc bạn một ngày tốt lành và hẹn gặp lại!");
-    }, 1500);
+    } catch (error) {
+      console.error("Lỗi khi gửi đánh giá:", error);
+      setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi truyền thông tin lên máy chủ!');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // 1. MÀN HÌNH CHẶN: Nếu khách tự gõ URL mà không có tham số QR (Chỉ cho phép chạy tiếp khi bật Demo Mode)
-  const hasParams = false; // Giả lập chưa quét QR thực tế
-  if (!hasParams && !demoMode && !isSuccess) {
+  const renderInteractiveStars = (dish) => {
     return (
-      <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4 font-sans">
-        <div className="bg-white max-w-md w-full rounded-3xl p-8 text-center shadow-xl border border-gray-150">
-          <div className="w-20 h-24 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-orange-100">
-            <span className="material-symbols-outlined text-5xl text-primary">qr_code_scanner</span>
-          </div>
-          <h2 className="text-xl font-black text-gray-900 mb-2">Chưa tìm thấy hóa đơn!</h2>
-          <p className="text-gray-500 mb-8 text-sm leading-relaxed">
-            Vui lòng sử dụng camera trên điện thoại để quét <b>Mã QR</b> được in ở cuối tờ hóa đơn thanh toán tại bàn của bạn nhé.
-          </p>
-          <div className="space-y-3">
-            <button 
-              onClick={() => setDemoMode(true)}
-              className="w-full bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-secondary transition-all active:scale-95 shadow-md text-sm"
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            className="transition-transform active:scale-90 p-1"
+            onClick={() => handleRatingChange(dish.dish_id, star)}
+          >
+            <span
+              className={`material-symbols-outlined text-[32px] sm:text-[38px] ${dish.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`}
+              style={{ fontVariationSettings: dish.rating >= star ? "'FILL' 1" : "'FILL' 0" }}
             >
-              Chạy thử giao diện (Demo Mode)
-            </button>
-            <button 
-              onClick={() => window.location.href = '/'}
-              className="w-full bg-gray-100 text-gray-600 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-all text-sm"
-            >
-              Quay về trang chủ
-            </button>
-          </div>
-        </div>
+              star
+            </span>
+          </button>
+        ))}
       </div>
     );
-  }
+  };
 
-  // 2. MÀN HÌNH THÀNH CÔNG: Sau khi khách gửi đánh giá thành công
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4 font-sans">
-        <div className="bg-white max-w-md w-full rounded-3xl p-8 text-center shadow-xl border border-gray-150">
-          <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-100">
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4 font-sans w-full selection:bg-orange-600 selection:text-white">
+        <div className="bg-white max-w-md w-full rounded-3xl p-8 sm:p-10 text-center shadow-xl border border-stone-200/60 animate-scale-up">
+          <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-green-100 animate-bounce">
             <span className="material-symbols-outlined text-5xl text-green-500">check_circle</span>
           </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-2">Gửi thành công!</h2>
-          <p className="text-gray-600 mb-8 text-sm leading-relaxed">
-            Ý kiến của bạn đã được gửi trực tiếp đến Ban Quản Lý Làng MìXì. Chúng tôi sẽ liên tục cải thiện để mang lại trải nghiệm ẩm thực tuyệt vời nhất cho bạn.
+          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-3 tracking-tight">
+            {isAlreadyReviewed ? 'Đã ghi nhận đánh giá!' : 'Gửi thành công!'}
+          </h2>
+          <p className="text-stone-600 mb-2 text-sm leading-relaxed font-semibold">
+            {isAlreadyReviewed
+              ? 'Hóa đơn này của bạn đã được thực hiện đánh giá trước đó.'
+              : 'Làng MÌXI BBQ chân thành cảm ơn ý kiến đóng góp quý báu của bạn!'}
           </p>
-          <button 
-            onClick={() => {
-              setIsSuccess(false);
-              setRating(0);
-              setFormData({ customer_name: '', phone: '', comment: '' });
-            }}
-            className="w-full bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-secondary transition-all text-sm shadow-md"
-          >
-            Đánh giá hóa đơn khác
-          </button>
+          <p className="text-stone-500 text-xs leading-relaxed">
+            Mọi ý kiến của quý khách là nguồn động lực và tư liệu to lớn giúp đội ngũ phát triển món ăn cải thiện dịch vụ nướng lẩu ngày một tốt hơn. Chúc bạn có một ngày vui vẻ!
+          </p>
         </div>
       </div>
     );
   }
 
-  // 3. GIAO DIỆN ĐÁNH GIÁ CHÍNH (Mobile-first, warm tone)
   return (
-    <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4 sm:p-8 font-sans">
-      <div className="bg-white max-w-md w-full rounded-3xl shadow-xl overflow-hidden border border-gray-150 relative">
-        
-        {/* Banner Cover */}
-        <div className="h-36 bg-gradient-to-r from-primary to-secondary relative flex items-center justify-center overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-md"></div>
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-lg"></div>
-          
-          <div className="relative z-10 text-center">
-            <h1 className="text-2xl font-black text-white tracking-tight uppercase mb-1">
-              LÀNG <span className="text-yellow-300">MÌXÌ</span>
-            </h1>
-            <p className="text-white/90 text-xs font-semibold uppercase tracking-widest">Ý kiến & Góp ý dịch vụ</p>
-          </div>
+    <div className="min-h-screen bg-stone-50 py-6 px-4 font-sans flex items-center justify-center w-full selection:bg-orange-600 selection:text-white">
+      <div className="bg-white max-w-md w-full rounded-3xl shadow-xl border border-stone-200/60 overflow-hidden">
+
+        {/* Banner tiêu đề BBQ ấm áp */}
+        <div className="bg-gradient-to-r from-orange-600 to-amber-500 p-6 text-white text-center relative">
+          <span className="text-[9px] font-black uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full">
+            Khảo sát ý kiến khách hàng
+          </span>
+          <h1 className="text-2xl font-black uppercase mt-3 tracking-tight">LÀNG MÌXI BBQ</h1>
+          <p className="text-xs text-orange-100/90 mt-1 leading-relaxed max-w-xs mx-auto">
+            Hãy để lại cảm nhận chân thực nhất của bạn để Làng MÌXI ngày một phục vụ tốt hơn nhé!
+          </p>
         </div>
 
-        <div className="p-6">
-          <div className="text-center mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Trải nghiệm của bạn thế nào?</h2>
-            <p className="text-xs text-gray-500">Chạm vào các ngôi sao để đánh giá chất lượng món ăn và dịch vụ phục vụ</p>
-          </div>
+        <div className="p-5">
+          {/* Hộp thoại thông báo lỗi khi đường dẫn hỏng hoặc QR thiếu thông số */}
+          {errorMsg && (
+            <div className="mb-4 bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-bold text-center border border-red-100 flex items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-lg">error</span> {errorMsg}
+            </div>
+          )}
 
-          {/* Interactive Star Rating */}
-          <div className="flex justify-center gap-2.5 mb-8" onMouseLeave={() => setHoverRating(0)}>
-            {[1, 2, 3, 4, 5].map((star) => (
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <span className="material-symbols-outlined animate-spin text-orange-500 text-4xl mb-3">progress_activity</span>
+              <p className="text-xs font-bold text-stone-500 animate-pulse">Đang đồng bộ thực đơn hóa đơn của bạn...</p>
+            </div>
+          )}
+
+          {/* Form chính chỉ hiển thị khi đã bóc tách thành công món ăn */}
+          {!isLoading && dishList.length > 0 && (
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* Thẻ hiển thị số bàn nướng dùng bữa tự động */}
+              {tableName && (
+                <div className="bg-stone-50 border border-stone-200 p-3.5 rounded-2xl flex justify-between items-center shadow-inner">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-orange-500">table_restaurant</span>
+                    <span className="text-xs font-black text-stone-700 uppercase tracking-wider">Bàn dùng bữa hôm nay:</span>
+                  </div>
+                  <span className="bg-orange-600 text-white font-black text-xs px-3.5 py-1.5 rounded-xl shadow-sm">
+                    {tableName}
+                  </span>
+                </div>
+              )}
+
+              {/* Danh sách các món ăn cần khảo sát */}
+              <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1.5 custom-scrollbar">
+                <label className="block text-xs font-black text-orange-600 uppercase tracking-wide flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[18px]">star</span> Chấm điểm món ăn (Mặc định 5 sao)
+                </label>
+
+                {dishList.map((dish, idx) => (
+                  <div key={idx} className="bg-stone-50 border border-stone-200/80 p-3.5 rounded-2xl shadow-sm space-y-2.5">
+                    <div className="flex justify-between items-start">
+                      <p className="font-extrabold text-stone-900 text-xs sm:text-sm pr-2 leading-tight">
+                        {dish.dish_name} <span className="text-xs text-orange-500 font-bold ml-0.5">(x{dish.quantity})</span>
+                      </p>
+                      {renderInteractiveStars(dish)}
+                    </div>
+                    <div className="relative">
+                      <textarea
+                        rows={2}
+                        maxLength={100}
+                        placeholder="Góp ý vị nướng, nước chấm... (Không bắt buộc)"
+                        value={dish.comment}
+                        onChange={(e) => handleCommentChange(dish.dish_id, e.target.value)}
+                        className="w-full px-3 py-2 pb-6 bg-white border border-stone-200 focus:border-orange-500 rounded-xl text-xs outline-none transition-colors font-medium text-stone-950 shadow-inner resize-none min-h-[60px]"
+                      />
+                      <span className="absolute bottom-2 right-3 text-[9px] font-black text-stone-400 select-none pointer-events-none">
+                        {(dish.comment || '').length}/100
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Nút gửi đánh giá */}
               <button
-                key={star}
-                type="button"
-                className={`p-0.5 transition-all duration-200 active:scale-90 ${
-                  (hoverRating || rating) >= star ? 'scale-110' : 'scale-100 opacity-60'
-                }`}
-                onClick={() => setRating(star)}
-                onMouseEnter={() => setHoverRating(star)}
+                type="submit"
+                disabled={isSubmitting || dishList.length === 0}
+                className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white font-black py-3.5 rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-1.5 uppercase tracking-wide text-xs sm:text-sm"
               >
-                <span 
-                  className={`material-symbols-outlined text-4xl cursor-pointer ${
-                    (hoverRating || rating) >= star ? 'text-yellow-400' : 'text-gray-300'
-                  }`}
-                  style={{ fontVariationSettings: (hoverRating || rating) >= star ? "'FILL' 1" : "'FILL' 0" }}
-                >
-                  star
-                </span>
+                {isSubmitting ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                    <span>Đang truyền thông tin...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">send</span>
+                    <span>Gửi Đánh Giá Ngay</span>
+                  </>
+                )}
               </button>
-            ))}
-          </div>
 
-          {/* Form Góp ý */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Tên của bạn</label>
-                <input 
-                  type="text" 
-                  name="customer_name"
-                  placeholder="VD: Anh Tuấn"
-                  value={formData.customer_name} 
-                  onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all font-medium text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Số điện thoại</label>
-                <input 
-                  type="tel" 
-                  name="phone"
-                  placeholder="Để nhận quà tri ân"
-                  value={formData.phone} 
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all font-medium text-gray-900"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Nội dung góp ý chi tiết</label>
-              <textarea 
-                name="comment" 
-                rows="4"
-                placeholder="Món mì xá xíu có hợp khẩu vị bạn không? Nhân viên phục vụ thế nào? Hãy chia sẻ cho chúng mình biết nhé..."
-                value={formData.comment} 
-                onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all font-medium text-gray-900 resize-none"
-              ></textarea>
-            </div>
-
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              className="w-full bg-primary text-white font-bold py-3.5 rounded-xl mt-4 shadow-lg shadow-primary/20 hover:bg-secondary transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-            >
-              {isSubmitting ? 'ĐANG GỬI GÓP Ý...' : 'GỬI ĐÁNH GIÁ NGAY'}
-            </button>
-          </form>
-
-          {demoMode && (
-            <button 
-              onClick={() => setDemoMode(false)}
-              className="w-full mt-4 text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              Thoát Demo Mode
-            </button>
+            </form>
           )}
         </div>
+
       </div>
     </div>
   );

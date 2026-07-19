@@ -19,7 +19,7 @@ http:
         "start_date": "2026-06-13",
         "end_date": "2026-06-30",
         "is_active": true,
-        "customer_id": "c1f67a75-c704-4ecd-b6fe-2db96668c1fe"
+        "customer_id": "cc3fbd02-da92-4924-81c5-8eb655c1070e"
       }
   auth: inherit
 

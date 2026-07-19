@@ -9,7 +9,7 @@ export const getRecipeByDish = async (req, res) => {
         const { dish_id } = req.params;
         const { data, error } = await supabase
             .from('recipes')
-            .select('*')
+            .select('*, ingredients(name, unit)')
             .eq('dish_id', dish_id);
 
         if (error) throw error;

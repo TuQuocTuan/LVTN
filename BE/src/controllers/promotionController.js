@@ -1,17 +1,17 @@
 import { supabase } from '../config/supabase.js';
 import moment from 'moment-timezone';
-import nodemailer from 'nodemailer';
-
-
+import sgMail from '@sendgrid/mail';
 
 export const getCustomerVoucher = async (req, res) => {
     try {
-        const { phone_number, email } = req.body;
+        const { phone_number } = req.body;
+        if (!phone_number) {
+            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp số điện thoại!' });
+        }
         const { data: customer, error: customerErr } = await supabase
             .from('customers')
             .select('id')
-            .eq('phone_number', phone_number)
-            .eq('email', email)
+            .eq('phone_number', phone_number.trim())
             .maybeSingle()
         if (customerErr) throw customerErr;
         if (!customer) {
@@ -20,20 +20,43 @@ export const getCustomerVoucher = async (req, res) => {
         const { data: cusVoucher, error: cusVoucherErr } = await supabase
             .from('customer_vouchers')
             .select('customer_id, promotion_id, is_used')
-            .eq('customer_id', customer.id)
-            .eq('is_used', false)
+            // .eq('customer_id', customer.id)
+            // .eq('is_used', false)
+            .eq('customer_id', customer.id);
+        if (cusVoucherErr) throw cusVoucherErr;
         if (!cusVoucher || cusVoucher.length === 0) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy voucher cho khách hàng này!' });
         }
 
         let promotionsID = cusVoucher.map(voucher => voucher.promotion_id);
 
-        const { data: promotion, error: promotionErr } = await supabase
+        const { data: promotions, error: promotionErr } = await supabase
             .from('promotions')
-            .select('code,name,discount_value,is_active')
+            .select('id,code,name,discount_value,discount_type,is_active,created_at,start_date,end_date')
             .in('id', promotionsID)
-            .eq('is_active', true)
-        return res.status(200).json({ success: true, message: 'Voucher của khách hàng', promotion });
+            .eq('is_active', true);
+        if (promotionErr) throw promotionErr;
+
+        const promotionResult = [];
+        cusVoucher.forEach(cv => {
+            const promo = promotions.find(p => p.id === cv.promotion_id);
+            if (promo) {
+                promotionResult.push({
+                    id: promo.id,
+                    code: promo.code,
+                    name: promo.name,
+                    discount_value: promo.discount_value,
+                    discount_type: promo.discount_type,
+                    is_active: promo.is_active,
+                    is_used: cv.is_used,
+                    created_at: promo.created_at,
+                    start_date: promo.start_date,
+                    end_date: promo.end_date
+                });
+            }
+        });
+
+        return res.status(200).json({ success: true, message: 'Voucher của khách hàng', promotion: promotionResult });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
@@ -272,16 +295,6 @@ export const giftVoucherToCustomer = async (req, res) => {
 
         if (promoErr) throw promoErr;
 
-        if (promotion.type === "VOUCHER" && !bypass_limit) {
-            const totalBill = await calculateCustomerTotalBill(customer_id);
-            if (totalBill < 5000000) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Khách hàng chưa đủ điều kiện chi tiêu tích lũy 5 triệu đồng! (Tích lũy hiện tại của khách: ${totalBill.toLocaleString('vi-VN')} đ)`
-                });
-            }
-        }
-
         const { data: hasVoucher, error: checkVoucherErr } = await supabase
             .from('customer_vouchers')
             .select('id')
@@ -305,26 +318,23 @@ export const giftVoucherToCustomer = async (req, res) => {
 
         if (addErrCustomer) throw addErrCustomer;
 
-        let mailSent = false;
-        if (customer.email && customer.email.trim() !== '' && !customer.email.includes('mail-tester.com')) {
-            try {
-                const transporter = nodemailer.createTransport({
-                    service: 'Gmail',
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASS
-                    }
-                });
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-                const mailOptions = {
-                    from: `"Làng Mixi Management" <${process.env.EMAIL_USER}>`,
+        let mailSent = false;
+        console.log(`[MAIL] Khởi động luồng gửi mail bằng SendGrid cho: ${customer?.email || 'Trống'} (Tên: ${customer?.name})`);
+        if (customer.email && customer.email.trim() !== '') {
+            try {
+                console.log(`[MAIL] Email hợp lệ. Đang gọi API SendGrid...`);
+
+                const msg = {
                     to: customer.email,
-                    subject: '[Làng Mixi] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
+                    from: process.env.EMAIL_USER,
+                    subject: '[Làng MÌXI] Thông báo: Bạn nhận được Voucher tri ân đặc biệt!',
                     html: `
                         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 12px;">
                             <h2 style="color: #ff6b00; text-align: center;">MÓN QUÀ TRI ÂN KHÁCH HÀNG</h2>
                             <p>Xin chào <b>${customer.name}</b>,</p>
-                            <p>Bạn vừa được hệ thống quản trị <b>Làng Mixi</b> gửi tặng một phần quà tri ân đặc biệt:</p>
+                            <p>Bạn vừa được hệ thống quản trị <b>Làng MÌXI</b> gửi tặng một phần quà tri ân đặc biệt:</p>
                             
                             <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #ff6b00; margin: 20px 0; border-radius: 4px;">
                                 <p style="margin: 5px 0;"><b>Tên Voucher:</b> <code style="font-size: 14px; color: #333;">${promotion.name}</code></p>
@@ -334,18 +344,17 @@ export const giftVoucherToCustomer = async (req, res) => {
                                 <p style="margin: 5px 0;"><b>Hạn sử dụng:</b> <code style="font-size: 14px; color: #333;">Đến hết ngày ${moment(promotion.end_date).format('DD/MM/YYYY HH:mm')}</code></p>
                             </div>
 
-                            <p style="font-size: 13px; color: #555;"><i>Cảm ơn bạn đã luôn đồng hành và ủng hộ Làng Mixi! Vui lòng xuất trình mã này khi thanh toán tại quầy.</i></p>
+                            <p style="font-size: 13px; color: #555;"><i>Cảm ơn bạn đã luôn đồng hành và ủng hộ Làng MÌXI! Vui lòng xuất trình mã này khi thanh toán tại quầy.</i></p>
                             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                            <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng Mixi. Vui lòng không trả lời email này.</p>
+                            <p style="font-size: 12px; color: #999; text-align: center;">Đây là email tự động từ hệ thống quản lý Làng MÌXI. Vui lòng không trả lời email này.</p>
                         </div>
                     `
                 };
-
-                await transporter.sendMail(mailOptions);
+                await sgMail.send(msg);
                 mailSent = true;
-                console.log(`Đã gửi mail tặng voucher thành công cho: ${customer.email}`);
+                console.log(`[MAIL] Đã gửi mail qua SendGrid thành công tới: ${customer.email}`);
             } catch (mailError) {
-                console.error("Lỗi gửi mail tặng voucher:", mailError);
+                console.error("[MAIL] Lỗi SendGrid API:", error.response ? error.response.body : error);
             }
         }
 
@@ -355,7 +364,7 @@ export const giftVoucherToCustomer = async (req, res) => {
 
         return res.status(200).json({ success: true, message: successMessage });
 
-    } catch (error) {
+    } catch (mailError) {
         console.error("Lỗi giftVoucherToCustomer:", error.message);
         return res.status(500).json({ success: false, message: error.message });
     }

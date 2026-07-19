@@ -27,6 +27,32 @@ const CartPage = () => {
   const [isStockModalOpen, setIsStockModalOpen] = useState(false); // Đóng/mở Popup thiếu kho
   const [outOfStockItems, setOutOfStockItems] = useState([]); // Chứa danh sách các món bị quá tải kho
 
+  // Hộp thoại Alert tùy biến
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    icon: 'info', // 'info', 'warning', 'error'
+    onConfirm: null
+  });
+
+  const showAlert = (message, title = 'Thông báo', icon = 'info', onConfirm = null) => {
+    setAlertModal({
+      isOpen: true,
+      title,
+      message,
+      icon,
+      onConfirm
+    });
+  };
+
+  const handleCloseAlertModal = () => {
+    if (alertModal.onConfirm) {
+      alertModal.onConfirm();
+    }
+    setAlertModal(prev => ({ ...prev, isOpen: false }));
+  };
+
   // Tính tiền tự động thời gian thực dựa trên các món có trong giỏ
   const subTotal = cartItems.reduce((total, item) => total + (item.rawPrice * item.quantity), 0);
   const vat = subTotal * 0.1;
@@ -43,7 +69,11 @@ const CartPage = () => {
       const creatorId = localStorage.getItem('creatorId');
 
       if (!sessionId || !tableId) {
-        alert("Lỗi: Không tìm thấy phiên ăn hoặc mã bàn. Vui lòng quét lại mã QR!");
+        showAlert(
+          "Không tìm thấy phiên ăn hoặc mã bàn. Vui lòng quét lại mã QR!",
+          "Lỗi hệ thống",
+          "error"
+        );
         setSubmitStatus('idle');
         return;
       }
@@ -75,26 +105,34 @@ const CartPage = () => {
       }
     } catch (error) {
       if (error.response && error.response.status === 403 && error.response.data.is_expired_session) {
-        alert('🚨 Lượt ăn cũ của bạn đã kết thúc hoặc bàn đã chuyển sang phiên mới! Vui lòng quét lại mã QR.');
-
-        // Dọn sạch dữ liệu phiên cũ đang bị kẹt
-        localStorage.removeItem('sessionId');
-        clearCart();
-
+        showAlert(
+          'Lượt ăn cũ của bạn đã kết thúc hoặc bàn đã chuyển sang phiên mới! Vui lòng quét lại mã QR.',
+          'Thông báo',
+          'warning',
+          () => {
+            // Dọn sạch dữ liệu phiên cũ đang bị kẹt
+            localStorage.removeItem('sessionId');
+            clearCart();
+            navigate('/'); // Đá khách ra màn hình quét mã/chọn bàn
+          }
+        );
         setSubmitStatus('idle');
-        navigate('/'); // Đá khách ra màn hình quét mã/chọn bàn
         return;
       }
 
       // KHO KHÔNG ĐỦ SỐ LƯỢNG
       if (error.response && error.response.data && error.response.data.code === 'INSUFFICIENT_STOCK') {
         // Nạp mảng danh sách lỗi vào state
-        setOutOfStockItems(error.response.data.danhsachDatLo);
+        setOutOfStockItems(error.response.data.danhsachDatLo);  
         // Mở Bung chiếc Popup Modal tùy biến lên thay vì dùng alert/confirm rác
         setIsStockModalOpen(true);
       } else {
         console.error("Lỗi hệ thống:", error);
-        alert(error.response?.data?.message || "Không thể kết nối đến máy chủ nhà bếp!");
+        showAlert(
+          error.response?.data?.message || "Không thể kết nối đến máy chủ nhà bếp!",
+          "Lỗi hệ thống",
+          "error"
+        );
       }
       setSubmitStatus('idle');
     }
@@ -210,6 +248,37 @@ const CartPage = () => {
                 {t('btnAccept')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP ALERT MODAL */}
+      {alertModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-neutralCustom/10 text-center animate-scale-up relative">
+            
+            {/* Icon tương ứng với loại cảnh báo */}
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border shadow-sm ${
+              alertModal.icon === 'error' 
+                ? 'bg-red-50 text-red-500 border-red-100' 
+                : alertModal.icon === 'warning'
+                ? 'bg-amber-50 text-amber-500 border-amber-100'
+                : 'bg-blue-50 text-blue-500 border-blue-100'
+            }`}>
+              <span className="material-symbols-outlined text-3xl">
+                {alertModal.icon === 'error' ? 'error' : alertModal.icon === 'warning' ? 'warning' : 'info'}
+              </span>
+            </div>
+
+            <h3 className="text-xl font-black text-gray-950 mb-2">{alertModal.title}</h3>
+            <p className="text-xs text-neutralCustom leading-relaxed mb-6 px-2">{alertModal.message}</p>
+
+            <button
+              onClick={handleCloseAlertModal}
+              className="w-full py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-secondary active:scale-95 transition-all"
+            >
+              Đồng ý
+            </button>
           </div>
         </div>
       )}

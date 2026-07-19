@@ -8,7 +8,7 @@ const AboutPage = () => {
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [news, setNews] = useState([]);
   const [promotions, setPromotions] = useState([]);
-  
+
   const [isLoadingDishes, setIsLoadingDishes] = useState(false);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
 
@@ -27,6 +27,9 @@ const AboutPage = () => {
   const [newsCurrentPage, setNewsCurrentPage] = useState(1);
   const newsPerPage = 4;
 
+  const [voucherCurrentPage, setVoucherCurrentPage] = useState(1);
+  const vouchersPerPage = 5;
+
   // --- STATES MODAL CHI TIẾT TIN TỨC ---
   const [activeNewsDetail, setActiveNewsDetail] = useState(null);
 
@@ -37,6 +40,22 @@ const AboutPage = () => {
     fetchPublishedNews();
     fetchPromotionsList();
   }, []);
+
+
+  // Định dạng ngày giờ sang định dạng Việt Nam (DD/MM/YYYY).
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return 'N/A';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (e) {
+      return 'N/A';
+    }
+  };
 
   // Gọi API lấy danh sách món ăn
   const fetchFeaturedDishes = async () => {
@@ -97,9 +116,9 @@ const AboutPage = () => {
   const handleVoucherLookup = async (e) => {
     e.preventDefault();
     setLookupError('');
-    
-    if (!phoneNumber.trim() || !email.trim()) {
-      setLookupError("Vui lòng nhập đầy đủ cả Số điện thoại và Email đăng ký!");
+
+    if (!phoneNumber.trim()) {
+      setLookupError("Vui lòng nhập Số điện thoại đăng ký!");
       return;
     }
 
@@ -109,12 +128,21 @@ const AboutPage = () => {
 
     try {
       const response = await axios.post(`${API_URL}/promotions/customer-voucher`, {
-        phone_number: phoneNumber.trim(),
-        email: email.trim()
+        phone_number: phoneNumber.trim()
       });
 
       if (response.data && response.data.success) {
-        setSearchResult(response.data.promotion || []);
+        const rawPromotions = response.data.promotion || [];
+        const sortedPromotions = [...rawPromotions].sort((a, b) => {
+          if (a.is_used !== b.is_used) {
+            return a.is_used ? 1 : -1;
+          }
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA;
+        });
+        setSearchResult(sortedPromotions);
+        setVoucherCurrentPage(1);
       } else {
         setSearchResult([]);
       }
@@ -138,8 +166,8 @@ const AboutPage = () => {
   };
 
   // Lọc món ăn hiển thị theo danh mục được chọn
-  const displayedDishes = activeCategory === 'ALL' 
-    ? dishes 
+  const displayedDishes = activeCategory === 'ALL'
+    ? dishes
     : dishes.filter(dish => dish.categories?.name === activeCategory);
 
   // Phân trang Món ăn
@@ -154,20 +182,26 @@ const AboutPage = () => {
   const indexOfFirstNews = indexOfLastNews - newsPerPage;
   const currentNewsList = news.slice(indexOfFirstNews, indexOfLastNews);
 
+  // Phân trang Voucher
+  const totalVoucherPages = searchResult ? Math.ceil(searchResult.length / vouchersPerPage) : 0;
+  const indexOfLastVoucher = voucherCurrentPage * vouchersPerPage;
+  const indexOfFirstVoucher = indexOfLastVoucher - vouchersPerPage;
+  const currentVouchersList = searchResult ? searchResult.slice(indexOfFirstVoucher, indexOfLastVoucher) : [];
+
   return (
     <div className="bg-stone-50 text-gray-800 font-sans min-h-screen selection:bg-orange-600 selection:text-white">
-      
+
       {/* BANNER HERO COVER (PHONG CÁCH QUÁN NƯỚNG BBQ CHUYÊN NGHIỆP) */}
       <section className="relative h-[480px] bg-stone-900 flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-40">
-          <img 
-            src="https://images.unsplash.com/photo-1544025162-d76694265947?w=1600&h=800&fit=crop" 
-            alt="Làng Mixi BBQ Background" 
+          <img
+            src="https://images.unsplash.com/photo-1544025162-d76694265947?w=1600&h=800&fit=crop"
+            alt="Làng MÌXI BBQ Background"
             className="w-full h-full object-cover scale-105 filter blur-[0.5px]"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-900/65 to-transparent z-10"></div>
-        
+
         <div className="relative z-20 px-4 max-w-2xl mx-auto">
           <span className="text-orange-500 font-black tracking-widest text-xs uppercase bg-orange-600/10 px-3.5 py-1.5 rounded-full border border-orange-500/25">Nướng ngon tròn vị</span>
           <h1 className="text-4xl sm:text-5xl font-black text-white mt-4 tracking-tight leading-tight">
@@ -186,9 +220,9 @@ const AboutPage = () => {
       {/* CÂU CHUYỆN THƯƠNG HIỆU */}
       <section className="py-24 px-4 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
         <div className="relative rounded-3xl overflow-hidden shadow-xl border border-stone-200">
-          <img 
-            src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&h=450&fit=crop" 
-            alt="Premium BBQ Grilling" 
+          <img
+            src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&h=450&fit=crop"
+            alt="Premium BBQ Grilling"
             className="w-full h-[340px] object-cover hover:scale-102 transition-transform duration-500"
           />
           <div className="absolute bottom-4 left-4 bg-stone-950/70 backdrop-blur-sm text-white text-[10px] px-3.5 py-2 rounded-lg font-bold">
@@ -220,25 +254,23 @@ const AboutPage = () => {
           {/* TAB CATEGORIES LOAD ĐỘNG TỪ DB */}
           {categories.length > 0 && (
             <div className="flex justify-center flex-wrap gap-2.5 mb-10">
-              <button 
+              <button
                 onClick={() => handleCategoryChange('ALL')}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-wider transition-all duration-300 ${
-                  activeCategory === 'ALL' 
-                    ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20' 
+                className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-wider transition-all duration-300 ${activeCategory === 'ALL'
+                    ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20'
                     : 'bg-stone-50 text-stone-600 hover:bg-stone-100 border border-stone-200'
-                }`}
+                  }`}
               >
                 Tất cả
               </button>
               {categories.map((cat, idx) => (
-                <button 
+                <button
                   key={idx}
                   onClick={() => handleCategoryChange(cat)}
-                  className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-wider transition-all duration-300 ${
-                    activeCategory === cat 
-                      ? 'bg-orange-600 text-white shadow-md' 
+                  className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-wider transition-all duration-300 ${activeCategory === cat
+                      ? 'bg-orange-600 text-white shadow-md'
                       : 'bg-stone-50 text-stone-600 hover:bg-stone-100 border border-stone-200'
-                  }`}
+                    }`}
                 >
                   {cat}
                 </button>
@@ -278,7 +310,7 @@ const AboutPage = () => {
               {/* Phân trang Thực đơn */}
               {totalDishesPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-12">
-                  <button 
+                  <button
                     onClick={() => setDishesCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={dishesCurrentPage === 1}
                     className="p-2 border border-stone-200 rounded-xl hover:bg-stone-100 text-stone-600 disabled:opacity-40 transition-colors"
@@ -286,19 +318,18 @@ const AboutPage = () => {
                     <span className="material-symbols-outlined text-sm">chevron_left</span>
                   </button>
                   {Array.from({ length: totalDishesPages }, (_, i) => i + 1).map((page) => (
-                    <button 
+                    <button
                       key={page}
                       onClick={() => setDishesCurrentPage(page)}
-                      className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
-                        dishesCurrentPage === page 
-                          ? 'bg-orange-600 text-white shadow-md shadow-orange-600/25' 
+                      className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${dishesCurrentPage === page
+                          ? 'bg-orange-600 text-white shadow-md shadow-orange-600/25'
                           : 'bg-stone-50 text-stone-600 hover:bg-stone-100'
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>
                   ))}
-                  <button 
+                  <button
                     onClick={() => setDishesCurrentPage(prev => Math.min(prev + 1, totalDishesPages))}
                     disabled={dishesCurrentPage === totalDishesPages}
                     className="p-2 border border-stone-200 rounded-xl hover:bg-stone-100 text-stone-600 disabled:opacity-40 transition-colors"
@@ -317,7 +348,7 @@ const AboutPage = () => {
       {/* BẢNG TIN & SỰ KIỆN */}
       <section className="py-24 max-w-5xl mx-auto px-4">
         <div className="text-center max-w-xl mx-auto mb-16">
-          <span className="text-orange-500 font-bold text-xs uppercase tracking-widest">Tin tức & Sự kiện Làng Mixi</span>
+          <span className="text-orange-500 font-bold text-xs uppercase tracking-widest">Tin tức & Sự kiện Làng MÌXI</span>
           <h2 className="text-3xl sm:text-4xl font-black text-stone-900 mt-1 tracking-tight">Sự Kiện Đồng Hành</h2>
           <p className="text-stone-500 text-xs sm:text-sm mt-3 leading-relaxed">
             Cập nhật thường xuyên các chương trình ưu đãi, ngày hội ẩm thực và đặc quyền tặng kèm voucher đặc biệt.
@@ -337,8 +368,8 @@ const AboutPage = () => {
                 const attachedPromo = promotions.find(p => p.id === item.promotion_id);
 
                 return (
-                  <div 
-                    key={item.id} 
+                  <div
+                    key={item.id}
                     className="bg-white rounded-3xl overflow-hidden border border-stone-200/80 shadow-sm flex flex-col hover:shadow-md transition-all group cursor-pointer"
                     onClick={() => { setActiveNewsDetail(item); }}
                   >
@@ -371,11 +402,11 @@ const AboutPage = () => {
                         )}
                       </div>
 
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); setActiveNewsDetail(item); }}
                         className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors flex items-center gap-1 self-start mt-2"
                       >
-                        Đọc bài viết chi tiết 
+                        Đọc bài viết chi tiết
                         <span className="material-symbols-outlined text-[16px] mt-0.5">chevron_right</span>
                       </button>
                     </div>
@@ -387,7 +418,7 @@ const AboutPage = () => {
             {/* Phân trang Tin tức */}
             {totalNewsPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-12">
-                <button 
+                <button
                   onClick={() => setNewsCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={newsCurrentPage === 1}
                   className="p-2 border border-stone-200 rounded-xl hover:bg-stone-50 text-stone-600 disabled:opacity-40 transition-colors"
@@ -395,19 +426,18 @@ const AboutPage = () => {
                   <span className="material-symbols-outlined text-sm">chevron_left</span>
                 </button>
                 {Array.from({ length: totalNewsPages }, (_, i) => i + 1).map((page) => (
-                  <button 
+                  <button
                     key={page}
                     onClick={() => setNewsCurrentPage(page)}
-                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
-                      newsCurrentPage === page 
-                        ? 'bg-orange-600 text-white shadow-md shadow-orange-600/25' 
+                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${newsCurrentPage === page
+                        ? 'bg-orange-600 text-white shadow-md shadow-orange-600/25'
                         : 'bg-stone-50 text-stone-600 hover:bg-stone-100'
-                    }`}
+                      }`}
                   >
                     {page}
                   </button>
                 ))}
-                <button 
+                <button
                   onClick={() => setNewsCurrentPage(prev => Math.min(prev + 1, totalNewsPages))}
                   disabled={newsCurrentPage === totalNewsPages}
                   className="p-2 border border-stone-200 rounded-xl hover:bg-stone-50 text-stone-600 disabled:opacity-40 transition-colors"
@@ -427,34 +457,26 @@ const AboutPage = () => {
         <div className="max-w-xl mx-auto px-4">
           <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-xl border border-stone-200/70 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-orange-600/5 rounded-full translate-x-1/3 -translate-y-1/3"></div>
-            
+
             <div className="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-orange-200/50">
               <span className="material-symbols-outlined text-[32px]">card_giftcard</span>
             </div>
-            
+
             <h3 className="text-xl sm:text-2xl font-black text-stone-900 mb-1">Cổng Tra Cứu Ưu Đãi</h3>
             <p className="text-xs text-stone-500 leading-relaxed mb-6">
-              Vui lòng nhập chính xác Số điện thoại và Email đăng ký lúc đặt bàn để rà soát hòm thư voucher tri ân của bạn tại Làng Mixi BBQ.
+              Vui lòng nhập chính xác Số điện thoại đăng ký lúc đặt bàn để rà soát hòm thư voucher tri ân của bạn tại Làng MÌXI BBQ.
             </p>
 
             <form onSubmit={handleVoucherLookup} className="space-y-3 max-w-md mx-auto mb-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input 
-                  type="tel" 
-                  placeholder="Số điện thoại đăng ký" 
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full px-4 py-3 bg-stone-50 border border-stone-200 hover:border-orange-500/50 focus:bg-white rounded-xl text-xs font-bold text-stone-900 outline-none focus:border-orange-500 transition-all"
-                />
-                <input 
-                  type="email" 
-                  placeholder="Địa chỉ Email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-stone-50 border border-stone-200 hover:border-orange-500/50 focus:bg-white rounded-xl text-xs font-bold text-stone-900 outline-none focus:border-orange-500 transition-all"
-                />
-              </div>
-              <button 
+              <input
+                type="tel"
+                placeholder="Nhập số điện thoại đăng ký"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                maxLength={10}
+                className="w-full px-4 py-3 bg-stone-50 border border-stone-200 hover:border-orange-500/50 focus:bg-white rounded-xl text-xs font-bold text-stone-900 outline-none focus:border-orange-500 transition-all text-center"
+              />
+              <button
                 type="submit"
                 disabled={isSearching}
                 className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-xs transition-all shadow-md active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
@@ -483,30 +505,90 @@ const AboutPage = () => {
                       <span className="material-symbols-outlined text-[16px]">task_alt</span>
                       Đã tìm thấy ưu đãi của bạn:
                     </h5>
-                    
-                    {searchResult.map((voucher, index) => (
-                      <div key={index} className="bg-orange-50/40 border border-orange-100 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute top-0 right-0 bg-orange-600 text-white font-mono font-bold text-[9px] px-2.5 py-0.5 rounded-bl uppercase">
-                          {voucher.code}
+
+                    {currentVouchersList.map((voucher, index) => {
+                      const isUsed = voucher.is_used;
+                      return (
+                        <div
+                          key={index}
+                          className={`p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden border transition-all ${isUsed
+                              ? 'bg-stone-100/60 border-stone-200 opacity-70'
+                              : 'bg-orange-50/40 border-orange-100 shadow-sm hover:shadow-md'
+                            }`}
+                        >
+                          <div className={`absolute top-0 right-0 font-mono font-bold text-[9px] px-2.5 py-0.5 rounded-bl uppercase ${isUsed ? 'bg-stone-400 text-white' : 'bg-orange-600 text-white'
+                            }`}>
+                            {voucher.code}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${isUsed ? 'bg-stone-200 text-stone-600' : 'bg-green-100 text-green-700'
+                                }`}>
+                                {isUsed ? 'Đã dùng' : 'Khả dụng'}
+                              </span>
+                              <p className={`font-black text-xs sm:text-sm pr-20 ${isUsed ? 'text-stone-500 line-through' : 'text-stone-900'}`}>
+                                {voucher.name}
+                              </p>
+                            </div>
+                            <p className="text-[11px] text-stone-550 mt-1 leading-relaxed">
+                              {isUsed
+                                ? 'Ưu đãi này đã được áp dụng cho hóa đơn thanh toán trước đó.'
+                                : 'Ưu đãi áp dụng cho hóa đơn dùng bữa tại quán.'
+                              }
+                            </p>
+                          </div>
+                          <div className={`flex justify-between items-center mt-3 border-t pt-2.5 ${isUsed ? 'border-stone-200' : 'border-orange-100/50'}`}>
+                            <div className="flex flex-col gap-0.5 text-[10px] text-stone-500 font-medium">
+                              <span>Ngày cấp: <strong className="text-stone-700 font-semibold">{formatDate(voucher.start_date)}</strong></span>
+                              <span>Hạn dùng: <strong className="text-stone-700 font-semibold">{formatDate(voucher.end_date)}</strong></span>
+                            </div>
+                             <span className={`text-xs sm:text-sm font-black ${isUsed ? 'text-stone-400 line-through' : 'text-orange-600'}`}>
+                              Giảm -{voucher.discount_type === 'PERCENTAGE' ? `${voucher.discount_value}%` : `${Number(voucher.discount_value).toLocaleString('vi-VN')}đ`}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-black text-stone-900 text-xs sm:text-sm pr-20">{voucher.name}</p>
-                          <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
-                            Ưu đãi áp dụng nướng lẩu thả ga cho hóa đơn dùng bữa tại quầy. Xuất trình mã này cho thu ngân khi thanh toán ca làm.
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center mt-3 border-t border-orange-100/50 pt-2.5">
-                          <span className="text-[10px] text-stone-500 font-medium">Hạn sử dụng: <strong className="text-stone-700">Theo chương trình</strong></span>
-                          <span className="text-xs sm:text-sm font-black text-orange-600">Giảm -{Number(voucher.discount_value).toLocaleString('vi-VN')}đ</span>
-                        </div>
+                      );
+                    })}
+
+                    {/* Phân trang Voucher */}
+                    {totalVoucherPages > 1 && (
+                      <div className="flex justify-center items-center gap-2 mt-6">
+                        <button
+                          type="button"
+                          onClick={() => setVoucherCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={voucherCurrentPage === 1}
+                          className="p-1.5 border border-stone-200 rounded-lg hover:bg-stone-100 text-stone-600 disabled:opacity-40 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-xs">chevron_left</span>
+                        </button>
+                        {Array.from({ length: totalVoucherPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            type="button"
+                            key={page}
+                            onClick={() => setVoucherCurrentPage(page)}
+                            className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-all ${voucherCurrentPage === page
+                                ? 'bg-orange-600 text-white shadow-md shadow-orange-600/25'
+                                : 'bg-stone-50 text-stone-600 hover:bg-stone-100 border border-stone-200'
+                              }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setVoucherCurrentPage(prev => Math.min(prev + 1, totalVoucherPages))}
+                          disabled={voucherCurrentPage === totalVoucherPages}
+                          className="p-1.5 border border-stone-200 rounded-lg hover:bg-stone-100 text-stone-600 disabled:opacity-40 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-xs">chevron_right</span>
+                        </button>
                       </div>
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl text-center">
                     <span className="material-symbols-outlined text-stone-400 text-3xl mb-1.5">sentiment_dissatisfied</span>
-                    <p className="text-xs font-bold text-stone-600">SĐT hoặc Email này hiện chưa có Voucher khả dụng!</p>
-                    <p className="text-[10px] text-stone-400 mt-1">Gợi ý: Chỉ các khách hàng có SĐT & Email đã đăng ký trong cơ sở dữ liệu và tích lũy đủ mốc chi tiêu mới hiển thị.</p>
+                    <p className="text-xs font-bold text-stone-600">Số điện thoại này hiện chưa có Voucher khả dụng!</p>
                   </div>
                 )}
               </div>
@@ -521,10 +603,10 @@ const AboutPage = () => {
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <div className="w-full bg-stone-100 flex justify-center items-center relative shrink-0 border-b border-stone-200/30">
               {activeNewsDetail.image_url ? (
-                <img 
-                  src={activeNewsDetail.image_url} 
-                  alt={activeNewsDetail.title} 
-                  className="w-full h-64 object-cover" 
+                <img
+                  src={activeNewsDetail.image_url}
+                  alt={activeNewsDetail.title}
+                  className="w-full h-64 object-cover"
                 />
               ) : (
                 <div className="w-full h-48 flex flex-col items-center justify-center text-stone-400">
@@ -532,8 +614,8 @@ const AboutPage = () => {
                   <span className="text-sm font-medium">Không có ảnh bìa</span>
                 </div>
               )}
-              <button 
-                onClick={() => { setActiveNewsDetail(null); }} 
+              <button
+                onClick={() => { setActiveNewsDetail(null); }}
                 className="absolute top-4 right-4 p-2 bg-stone-900/60 hover:bg-stone-900/80 backdrop-blur-md rounded-full text-white transition-all shadow-md"
               >
                 <span className="material-symbols-outlined">close</span>
@@ -578,8 +660,8 @@ const AboutPage = () => {
             </div>
 
             <div className="p-4 border-t border-stone-200/50 bg-stone-50 flex justify-end shrink-0">
-              <button 
-                onClick={() => { setActiveNewsDetail(null); }} 
+              <button
+                onClick={() => { setActiveNewsDetail(null); }}
                 className="px-6 py-2.5 rounded-xl font-bold text-xs text-stone-700 bg-white border border-stone-200 hover:bg-stone-100 transition-colors shadow-sm"
               >
                 Đóng bài viết
@@ -603,14 +685,14 @@ const AboutPage = () => {
           <div>
             <h5 className="font-bold text-white text-xs uppercase tracking-widest mb-4">Thời gian mở cửa</h5>
             <p className="text-xs text-stone-400/80 leading-relaxed">
-              Thứ Hai - Chủ Nhật: 09:30 - 22:30 <br/>
+              Thứ Hai - Chủ Nhật: 09:30 - 22:30 <br />
               *Thời gian nhận order nướng lẩu cuối cùng lúc 22:15 hàng ngày.
             </p>
           </div>
           <div>
             <h5 className="font-bold text-white text-xs uppercase tracking-widest mb-4">Địa chỉ liên hệ</h5>
             <p className="text-xs text-stone-400/80 leading-relaxed">
-              180 Cao Lỗ, Thành phố Hồ Chí Minh, Việt Nam.<br/>
+              180 Cao Lỗ, Thành phố Hồ Chí Minh, Việt Nam.<br />
               Hotline hỗ trợ: <strong className="text-orange-500 font-bold">1900 6868</strong>
             </p>
           </div>

@@ -1,759 +1,757 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminSidebar from '../../components/layout/Admin/AdminSidebar';
 import AdminHeader from '../../components/layout/Admin/AdminHeader';
-
-// --- MOCK COMPONENTS DÙNG CHO PREVIEW SANDBOX (Bỏ qua khi chạy local) ---
-const MOCK_REVIEWS = [
-    {
-        id: 'rev-1',
-        customer_name: 'Nguyễn Minh Quân',
-        phone: '0983207432',
-        rating: 5,
-        dish_name: 'Mì Xá Xíu Quảng Đông',
-        comment: 'Đồ ăn cực ngon, mì xá xíu đậm đà chuẩn vị. Nước dùng thanh ngọt húp cạn tô luôn. Phục vụ nhanh nhẹn dù quán đang rất đông. Sẽ quay lại ủng hộ!',
-        created_at: '2026-07-02T19:30:00.000Z', // Hôm nay
-        is_replied: true,
-        reply: 'Dạ, Làng MìXì chân thành cảm ơn đánh giá 5 sao của anh Quân ạ. Rất hân hạnh được tiếp tục phục vụ anh trong các lần ghé quán tiếp theo!'
-    },
-    {
-        id: 'rev-2',
-        customer_name: 'Trần Thị Thu Thảo',
-        phone: '0901234567',
-        rating: 3,
-        dish_name: 'Sủi Cảo Tôm Thịt',
-        comment: 'Sủi cảo nhân tôm thịt tươi ngon nhưng phần nước dùng hôm nay hơi mặn một chút so với mọi khi. Mong quán chú ý gia giảm gia vị hơn nhé.',
-        created_at: '2026-07-02T12:15:00.000Z', // Hôm nay
-        is_replied: false,
-        reply: ''
-    },
-    {
-        id: 'rev-3',
-        customer_name: 'Khách ẩn danh',
-        phone: 'Chưa cung cấp SĐT',
-        rating: 2,
-        dish_name: 'Mì Trộn Xốt Cay',
-        comment: 'Mì trộn hơi nhão quá, nước xốt cay thì quá ngọt. Phục vụ hôm nay hơi chậm, gọi món 20 phút mới có mì mang ra bàn.',
-        created_at: '2026-07-01T20:45:00.000Z', // Hôm qua
-        is_replied: false,
-        reply: ''
-    },
-    {
-        id: 'rev-4',
-        customer_name: 'Phạm Hoàng Hải',
-        phone: '0912456789',
-        rating: 5,
-        dish_name: 'Hoành Thánh Chiên Giòn',
-        comment: 'Hoành thánh chiên siêu giòn, ráo dầu không bị ngấy, chấm xốt xí muội rất cuốn. Không gian quán sạch sẽ, decor mang đậm phong cách Trung Hoa.',
-        created_at: '2026-06-25T11:00:00.000Z', // Tuần trước
-        is_replied: false,
-        reply: ''
-    }
-];
-
-const MOCK_DISHES_LIST = [
-    'Mì Xá Xíu Quảng Đông',
-    'Mì Trộn Xốt Cay',
-    'Sủi Cảo Tôm Thịt',
-    'Hoành Thánh Chiên Giòn',
-    'Mì Hoành Thánh Vịt Quay',
-    'Bánh Bao Kim Sa'
-];
-
-const MOCK_VOUCHERS = [
-    { id: 'v-1', code: 'MIXISINHNTHAT', name: 'Voucher mừng sinh nhật tri ân', value: '50.000 đ' },
-    { id: 'v-2', code: 'XINLOIKHACH', name: 'Voucher xin lỗi trải nghiệm chưa tốt', value: '10%' },
-    { id: 'v-3', code: 'CAMON5SAO', name: 'Voucher tri ân phản hồi 5 sao', value: '20.000 đ' }
-];
-
-const App = () => {
-    const [currentView, setCurrentView] = useState('admin'); // 'customer' hoặc 'admin'
-
-    // --- STATES CHUNG ---
-    const [reviewsList, setReviewsList] = useState(MOCK_REVIEWS);
-
-    // --- STATES KHÁCH HÀNG ---
-    const [customerForm, setCustomerForm] = useState({
-        name: '',
-        phone: '',
-        dish_name: MOCK_DISHES_LIST[0],
-        rating: 5,
-        comment: ''
-    });
-    const [hoveredStar, setHoveredStar] = useState(0);
-
-    // --- STATES ADMIN ---
-    const [filterRating, setFilterRating] = useState('ALL'); // ALL, 5, 4, 3, 2, 1
-    const [searchTerm, setSearchTerm] = useState('');
-
-    // States Lọc khoảng thời gian
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
-
-    // States Modal Phản hồi ý kiến
-    const [isReplyModalOpen, setIsReplyModalOpen] = useState(false);
-    const [selectedReview, setSelectedReview] = useState(null);
-    const [replyText, setReplyText] = useState('');
-
-    // States Modal Tặng Voucher
-    const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
-    const [selectedReviewForGift, setSelectedReviewForVoucher] = useState(null);
-    const [selectedVoucherId, setSelectedVoucherId] = useState(MOCK_VOUCHERS[0].id);
-
-    // ====================== XỬ LÝ PHÍA KHÁCH HÀNG ĐÁNH GIÁ ======================
-    const handleCustomerSubmit = (e) => {
-        e.preventDefault();
-        if (!customerForm.comment.trim()) {
-            return alert("Vui lòng để lại ý kiến đóng góp của bạn về món ăn!");
-        }
-
-        const newReview = {
-            id: `rev-${Date.now()}`,
-            customer_name: customerForm.name.trim() || 'Khách ẩn danh',
-            phone: customerForm.phone.trim() || 'Chưa cung cấp SĐT',
-            rating: customerForm.rating,
-            dish_name: customerForm.dish_name,
-            comment: customerForm.comment.trim(),
-            created_at: new Date().toISOString(),
-            is_replied: false,
-            reply: ''
-        };
-
-        setReviewsList(prev => [newReview, ...prev]);
-
-        alert("Cảm ơn ý kiến đánh giá quý báu của bạn! Làng MìXì đã nhận được và sẽ gửi voucher quà tặng tri ân qua số điện thoại/Zalo sớm nhất.");
-
-        setCustomerForm({
-            name: '',
-            phone: '',
-            dish_name: MOCK_DISHES_LIST[0],
-            rating: 5,
-            comment: ''
-        });
-    };
-
-    // ====================== XỬ LÝ PHÍA ADMIN QUẢN LÝ ======================
-    const handleOpenReplyModal = (review) => {
-        setSelectedReview(review);
-        setReplyText(review.reply || '');
-        setIsReplyModalOpen(true);
-    };
-
-    const handleSendReply = () => {
-        if (!replyText.trim()) {
-            return alert('Vui lòng nhập nội dung thư phản hồi góp ý!');
-        }
-
-        setReviewsList(prev => prev.map(r => {
-            if (r.id === selectedReview.id) {
-                return { ...r, is_replied: true, reply: replyText.trim() };
-            }
-            return r;
-        }));
-
-        alert("Gửi phản hồi của nhà hàng thành công!");
-        setIsReplyModalOpen(false);
-        setSelectedReview(null);
-    };
-
-    // 🌟 MỚI: Mở modal tặng Voucher cho khách hàng cụ thể
-    const handleOpenGiftModal = (review) => {
-        if (review.phone === 'Chưa cung cấp SĐT') {
-            return alert("Khách hàng này đánh giá ẩn danh (không cung cấp SĐT), không thể tặng Voucher!");
-        }
-        setSelectedReviewForVoucher(review);
-        setSelectedVoucherId(MOCK_VOUCHERS[0].id);
-        setIsGiftModalOpen(true);
-    };
-
-    const handleSendVoucher = () => {
-        const voucher = MOCK_VOUCHERS.find(v => v.id === selectedVoucherId);
-        alert(`Đã tặng thành công mã Voucher "${voucher.code}" (${voucher.name} trị giá ${voucher.value}) gửi trực tiếp đến SĐT ${selectedReviewForGift.phone} của khách hàng ${selectedReviewForGift.customer_name}!`);
-        setIsGiftModalOpen(false);
-        setSelectedReviewForVoucher(null);
-    };
-
-    const handleDeleteReview = (id) => {
-        const isConfirm = window.confirm("Bạn có chắc chắn muốn xóa đánh giá này khỏi hệ thống quản trị?");
-        if (!isConfirm) return;
-
-        setReviewsList(prev => prev.filter(r => r.id !== id));
-        alert("Xóa đánh giá thành công!");
-    };
-
-    // --- ACTIONS CHỌN NHANH KHOẢNG THỜI GIAN ---
-    const selectToday = () => {
-        const today = new Date().toISOString().split('T')[0];
-        setStartDate(today);
-        setEndDate(today);
-    };
-
-    const selectThisWeek = () => {
-        const current = new Date();
-        const first = current.getDate() - current.getDay() + (current.getDay() === 0 ? -6 : 1); // Thứ 2
-        const firstDay = new Date(current.setDate(first)).toISOString().split('T')[0];
-        const lastDay = new Date().toISOString().split('T')[0]; // Hôm nay
-        setStartDate(firstDay);
-        setEndDate(lastDay);
-    };
-
-    const selectThisMonth = () => {
-        const current = new Date();
-        const firstDay = new Date(current.getFullYear(), current.getMonth(), 1);
-        const firstDayStr = new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        const lastDayStr = new Date().toISOString().split('T')[0]; // Hôm nay
-        setStartDate(firstDayStr);
-        setEndDate(lastDayStr);
-    };
-
-    const clearDateFilter = () => {
-        setStartDate('');
-        setEndDate('');
-    };
-
-    // Render Ngôi sao
-    const renderStars = (rating, size = 'text-sm') => {
-        return Array.from({ length: 5 }, (_, idx) => (
-            <span
-                key={idx}
-                className={`material-symbols-outlined text-yellow-400 ${size}`}
-                style={{ fontVariationSettings: idx < rating ? "'FILL' 1" : "'FILL' 0" }}
-            >
-                star
-            </span>
-        ));
-    };
-
-    const formatDate = (dateString) => {
-        const d = new Date(dateString);
-        return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')} - ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-    };
-
-    // Lọc danh sách theo số sao, từ khóa tìm kiếm và khoảng thời gian
-    const filteredReviews = reviewsList.filter(r => {
-        const matchRating = filterRating === 'ALL' || r.rating === Number(filterRating);
-        const matchSearch = r.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            r.dish_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            r.phone.includes(searchTerm) ||
-            r.comment.toLowerCase().includes(searchTerm.toLowerCase());
-
-        let matchDate = true;
-        if (startDate || endDate) {
-            const reviewDate = new Date(r.created_at);
-            if (startDate) {
-                const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0);
-                if (reviewDate < start) matchDate = false;
-            }
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                if (reviewDate > end) matchDate = false;
-            }
-        }
-
-        return matchRating && matchSearch && matchDate;
-    });
-
-    // Thống kê số liệu nhanh
-    const totalReviews = reviewsList.length;
-    const averageRating = totalReviews > 0 ? (reviewsList.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) : 0.0;
-    const pendingReplyCount = reviewsList.filter(r => !r.is_replied).length;
-    const criticalCount = reviewsList.filter(r => r.rating <= 3 && !r.is_replied).length;
-
-    return (
-        <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-            <AdminSidebar currentTab="review" />
-            <AdminHeader />
-
-            {/* 🌟 NÚT CHUYỂN ĐỔI CHẾ ĐỘ XEM TRÊN PREVIEW SANDBOX */}
-            <div className="fixed bottom-6 right-6 z-[999] bg-white border-2 border-orange-500 rounded-2xl p-3 shadow-2xl flex flex-col gap-2 max-w-[220px]">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Bảng điều hướng Demo</p>
-                <button
-                    onClick={() => setCurrentView('customer')}
-                    className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${currentView === 'customer' ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'}`}
-                >
-                    📱 Giao diện Khách hàng
-                </button>
-                <button
-                    onClick={() => setCurrentView('admin')}
-                    className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${currentView === 'admin' ? 'bg-gray-900 text-white shadow-md' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'}`}
-                >
-                    💻 Giao diện Quản lý
-                </button>
-            </div>
-
-            {/* ========================================================================= */}
-            {/* 1. GIAO DIỆN KHÁCH HÀNG ĐÁNH GIÁ (CUSTOMER VIEW - MOBILE-FIRST) */}
-            {/* ========================================================================= */}
-            {currentView === 'customer' && (
-                <div className="flex-1 flex items-center justify-center p-4 bg-orange-50/50">
-                    <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-orange-100">
-                        <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white text-center relative">
-                            <div className="absolute top-3 left-4 text-[10px] font-bold tracking-widest bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full uppercase">Làng MìXì</div>
-                            <h2 className="text-2xl font-black mt-2">Đánh Giá Món Ăn</h2>
-                            <p className="text-xs text-orange-100 mt-1 leading-relaxed">Mỗi ý kiến đóng góp của bạn giúp chúng tôi cải thiện chất lượng dịch vụ ngày một tốt hơn!</p>
-                        </div>
-
-                        <form onSubmit={handleCustomerSubmit} className="p-6 space-y-5">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Món ăn muốn đánh giá <span className="text-red-500">*</span></label>
-                                <select
-                                    value={customerForm.dish_name}
-                                    onChange={(e) => setCustomerForm({ ...customerForm, dish_name: e.target.value })}
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500 focus:bg-white transition-all font-bold text-gray-900 cursor-pointer"
-                                >
-                                    {MOCK_DISHES_LIST.map((dish, i) => (
-                                        <option key={i} value={dish}>{dish}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="text-center py-2 bg-orange-50/30 rounded-2xl border border-orange-100/50">
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Độ hài lòng của bạn</label>
-                                <div className="flex justify-center gap-2">
-                                    {Array.from({ length: 5 }, (_, i) => {
-                                        const ratingValue = i + 1;
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={i}
-                                                onClick={() => setCustomerForm({ ...customerForm, rating: ratingValue })}
-                                                onMouseEnter={() => setHoveredStar(ratingValue)}
-                                                onMouseLeave={() => setHoveredStar(0)}
-                                                className="text-4xl transition-transform hover:scale-125 focus:outline-none"
-                                            >
-                                                <span
-                                                    className="material-symbols-outlined text-[40px]"
-                                                    style={{
-                                                        color: ratingValue <= (hoveredStar || customerForm.rating) ? '#facc15' : '#e5e7eb',
-                                                        fontVariationSettings: ratingValue <= (hoveredStar || customerForm.rating) ? "'FILL' 1" : "'FILL' 0"
-                                                    }}
-                                                >
-                                                    star
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <p className="text-xs font-bold text-orange-500 mt-1">
-                                    {customerForm.rating === 5 && 'Rất ngon, vô cùng hài lòng! 😍'}
-                                    {customerForm.rating === 4 && 'Ngon miệng, hài lòng! 🙂'}
-                                    {customerForm.rating === 3 && 'Bình thường, tạm ổn! 😐'}
-                                    {customerForm.rating === 2 && 'Chưa ngon, cần cải thiện! 🙁'}
-                                    {customerForm.rating === 1 && 'Rất tệ, không hài lòng! 😡'}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Cảm nhận chi tiết <span className="text-red-500">*</span></label>
-                                <textarea
-                                    rows="4"
-                                    placeholder="Hãy chia sẻ cảm nhận của bạn về hương vị món ăn..."
-                                    value={customerForm.comment}
-                                    onChange={(e) => setCustomerForm({ ...customerForm, comment: e.target.value })}
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-orange-500 focus:bg-white transition-all font-medium text-gray-900 resize-none"
-                                ></textarea>
-                            </div>
-
-                            <div className="border-t border-gray-100 pt-4 space-y-4">
-                                <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Để lại thông tin nhận Voucher quà tặng</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wide">Họ tên khách</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Không bắt buộc"
-                                            value={customerForm.name}
-                                            onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
-                                            className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-orange-500 focus:bg-white transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wide">Số điện thoại</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Nhận mã Zalo"
-                                            value={customerForm.phone}
-                                            onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                                            className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-orange-500 focus:bg-white transition-all"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black rounded-xl text-base shadow-lg hover:from-orange-600 hover:to-amber-600 transition-all mt-2 flex items-center justify-center gap-2"
-                            >
-                                <span className="material-symbols-outlined text-xl">send</span>
-                                GỬI ĐÁNH GIÁ NGAY
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* ========================================================================= */}
-            {/* 2. TRANG QUẢN LÝ ĐÁNH GIÁ DÀNH CHO ADMIN (ADMIN MANAGEMENT VIEW) */}
-            {/* ========================================================================= */}
-            {currentView === 'admin' && (
-                <div className="flex-1 flex">
-                    <AdminSidebar currentTab="review" />
-                    <AdminHeader />
-
-                    <main className="ml-64 pt-24 p-8 w-full flex flex-col min-h-screen">
-                        {/* Header Section */}
-                        <div className="mb-8">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-1">Ý kiến & Đánh giá Khách hàng</h2>
-                            <p className="text-neutralCustom text-sm">Theo dõi toàn bộ đánh giá chất lượng món ăn, phục vụ của thực khách sau khi quét mã QR hóa đơn.</p>
-                        </div>
-
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                            <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-yellow-50 text-yellow-500 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-0.5">Điểm trung bình</p>
-                                    <h4 className="text-2xl font-black text-gray-900">{averageRating} <span className="text-sm font-medium text-neutralCustom">/ 5.0</span></h4>
-                                </div>
-                            </div>
-                            <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-orange-100 text-orange-500 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[28px]">forum</span>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-0.5">Tổng số lượt góp ý</p>
-                                    <h4 className="text-2xl font-black text-gray-900">{totalReviews}</h4>
-                                </div>
-                            </div>
-                            <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[28px]">chat_bubble_outline</span>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-0.5">Chờ phản hồi</p>
-                                    <h4 className="text-2xl font-black text-gray-900">{pendingReplyCount}</h4>
-                                </div>
-                            </div>
-                            <div className="bg-white p-5 rounded-2xl border border-red-100 bg-red-50/20 shadow-sm flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-red-100 text-red-500 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[28px]">warning</span>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-red-500 uppercase tracking-wider mb-0.5">Tiêu cực cần xử lý</p>
-                                    <h4 className="text-2xl font-black text-red-600">{criticalCount}</h4>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 🌟 MỚI: BỘ LỌC KHOẢNG THỜI GIAN THÔNG MINH */}
-                        <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm mb-6 flex flex-col gap-4">
-                            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                                <div className="flex items-center gap-2 shrink-0">
-                                    <span className="material-symbols-outlined text-orange-500 text-xl">calendar_month</span>
-                                    <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">Bộ lọc khoảng thời gian:</span>
-                                </div>
-
-                                {/* Các nút chọn nhanh */}
-                                <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-                                    <button
-                                        onClick={selectToday}
-                                        className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-                                    >
-                                        Hôm nay
-                                    </button>
-                                    <button
-                                        onClick={selectThisWeek}
-                                        className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-                                    >
-                                        Tuần này
-                                    </button>
-                                    <button
-                                        onClick={selectThisMonth}
-                                        className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-                                    >
-                                        Tháng này
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="h-px bg-gray-100 w-full"></div>
-
-                            {/* Ô lịch tùy chọn */}
-                            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-                                <div className="flex-1 grid grid-cols-2 gap-3">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Từ ngày</span>
-                                        <input
-                                            type="date"
-                                            value={startDate}
-                                            onChange={(e) => setStartDate(e.target.value)}
-                                            className="w-full bg-gray-50 border border-neutralCustom/20 text-sm rounded-xl px-4 py-2 outline-none focus:border-orange-500 focus:bg-white text-gray-900 font-medium"
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Đến ngày</span>
-                                        <input
-                                            type="date"
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                            className="w-full bg-gray-50 border border-neutralCustom/20 text-sm rounded-xl px-4 py-2 outline-none focus:border-orange-500 focus:bg-white text-gray-900 font-medium"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Nút reset */}
-                                <div className="sm:self-end">
-                                    <button
-                                        onClick={clearDateFilter}
-                                        disabled={!startDate && !endDate}
-                                        className="w-full sm:w-auto px-5 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                                    >
-                                        <span className="material-symbols-outlined text-base">restart_alt</span>
-                                        Xóa lọc ngày
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Filters Panel */}
-                        <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-                            <div className="relative w-full md:max-w-xs">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">search</span>
-                                <input
-                                    type="text"
-                                    placeholder="Tìm theo tên, SĐT, món ăn..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-gray-50 border border-neutralCustom/20 text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-orange-500 focus:bg-white transition-all"
-                                />
-                            </div>
-                            <div className="flex gap-2 w-full md:w-auto overflow-x-auto custom-scrollbar">
-                                {['ALL', '5', '4', '3', '2', '1'].map((stars) => (
-                                    <button
-                                        key={stars}
-                                        onClick={() => setFilterRating(stars)}
-                                        className={`px-4 py-2 text-xs font-bold rounded-lg border transition-colors flex items-center gap-1 shrink-0 ${filterRating === stars
-                                            ? 'bg-gray-900 text-white border-gray-900'
-                                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        {stars === 'ALL' ? 'Tất cả' : `${stars} Sao`}
-                                        {stars !== 'ALL' && <span className="material-symbols-outlined text-xs text-yellow-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Reviews Grid Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow">
-                            {filteredReviews.length > 0 ? (
-                                filteredReviews.map((review) => (
-                                    <div key={review.id} className="bg-white rounded-2xl p-6 border border-neutralCustom/20 shadow-sm hover:shadow-md transition-shadow relative flex flex-col justify-between">
-                                        <div>
-                                            <div className="flex justify-between items-start mb-3">
-                                                <div>
-                                                    <h4 className="font-bold text-gray-900 text-base">{review.customer_name}</h4>
-                                                    <p className="text-xs text-neutralCustom mt-0.5 font-semibold flex items-center gap-1">
-                                                        <span className="material-symbols-outlined text-sm">call</span> {review.phone}
-                                                    </p>
-                                                </div>
-                                                <span className="text-[10px] text-gray-400 font-mono font-bold">{formatDate(review.created_at)}</span>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="flex gap-0.5">
-                                                    {renderStars(review.rating)}
-                                                </div>
-                                                <span className="bg-orange-50 text-orange-600 border border-orange-100 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
-                                                    {review.dish_name}
-                                                </span>
-                                            </div>
-
-                                            <div className="bg-gray-50 p-4 rounded-xl text-sm italic text-gray-700 leading-relaxed mb-4 border border-gray-100">
-                                                "{review.comment}"
-                                            </div>
-
-                                            {/* Hiển thị nội dung phản hồi nếu đã trả lời */}
-                                            {review.is_replied && (
-                                                <div className="bg-orange-500/5 border-l-4 border-orange-500 p-3 rounded-r-xl text-xs mb-4">
-                                                    <p className="font-bold text-orange-500 mb-1 uppercase tracking-wider text-[10px] flex items-center gap-1">
-                                                        <span className="material-symbols-outlined text-sm">reply</span> Phản hồi từ nhà hàng:
-                                                    </p>
-                                                    <p className="text-gray-700 italic">"{review.reply}"</p>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Footer Buttons */}
-                                        <div className="border-t border-gray-100 pt-3 flex justify-between items-center mt-4 shrink-0">
-                                            {/* 🌟 MỚI: NÚT TẶNG VOUCHER */}
-                                            <button
-                                                onClick={() => handleOpenGiftModal(review)}
-                                                className={`px-3 py-2 border rounded-xl text-xs font-bold transition-all flex items-center gap-1
-                          ${review.phone === 'Chưa cung cấp SĐT'
-                                                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-                                                        : 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-600'}`}
-                                                title={review.phone === 'Chưa cung cấp SĐT' ? "Đánh giá ẩn danh không thể tặng Voucher" : "Tặng Voucher tri ân"}
-                                            >
-                                                <span className="material-symbols-outlined text-sm">card_giftcard</span>
-                                                Tặng Voucher
-                                            </button>
-
-                                            <div className="flex gap-1.5">
-                                                <button
-                                                    onClick={() => handleOpenReplyModal(review)}
-                                                    className="px-4 py-2 bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm">reply</span>
-                                                    {review.is_replied ? 'Sửa phản hồi' : 'Phản hồi'}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteReview(review.id)}
-                                                    className="px-3 py-2 text-neutralCustom hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                                                    title="Xóa đánh giá"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm">delete</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="col-span-full py-16 text-center text-gray-400 font-bold italic bg-white rounded-2xl border border-dashed border-neutralCustom/25">
-                                    Chưa có ý kiến khách hàng nào phù hợp với bộ lọc...
-                                </div>
-                            )}
-                        </div>
-                    </main>
-                </div>
-            )}
-
-            {/* ========================================================================= */}
-            {/* MODAL PHẢN HỒI Ý KIẾN KHÁCH HÀNG (DÀNH CHO ADMIN) */}
-            {/* ========================================================================= */}
-            {isReplyModalOpen && selectedReview && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
-                        <div className="p-5 border-b border-neutralCustom/20 flex items-center justify-between bg-culinaryBg shrink-0">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900">Thư phản hồi góp ý</h3>
-                                <p className="text-xs text-gray-400 mt-0.5">Phản hồi của nhà hàng sẽ được cập nhật trực tiếp tại đây.</p>
-                            </div>
-                            <button
-                                onClick={() => setIsReplyModalOpen(false)}
-                                className="p-1.5 hover:bg-neutralCustom/10 rounded-full text-neutralCustom transition-colors"
-                            >
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
-                        </div>
-
-                        <div className="p-6 space-y-4 bg-gray-50 flex-1">
-                            <div className="bg-white p-4 rounded-xl border border-gray-150 text-xs shadow-sm">
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="font-bold text-gray-900">{selectedReview.customer_name}</span>
-                                    <span>{renderStars(selectedReview.rating)}</span>
-                                </div>
-                                <p className="text-gray-600 italic">"{selectedReview.comment}"</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Nội dung thư trả lời <span className="text-red-500">*</span></label>
-                                <textarea
-                                    rows="5"
-                                    placeholder="Dạ, Làng MìXì chân thành cảm ơn ý kiến đóng góp quý báu của bạn..."
-                                    value={replyText}
-                                    onChange={(e) => setReplyText(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white border border-neutralCustom/30 rounded-xl text-xs outline-none focus:border-orange-500 transition-all font-medium text-gray-900 resize-none"
-                                ></textarea>
-                            </div>
-                        </div>
-
-                        <div className="p-5 border-t border-neutralCustom/20 bg-white flex justify-end gap-3 shrink-0">
-                            <button
-                                onClick={() => setIsReplyModalOpen(false)}
-                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-neutralCustom border border-neutralCustom/20 hover:bg-gray-50 transition-colors"
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                onClick={handleSendReply}
-                                className="px-8 py-2.5 rounded-xl font-bold text-sm text-white bg-orange-500 hover:bg-orange-600 shadow-md transition-all flex items-center gap-1.5"
-                            >
-                                <span className="material-symbols-outlined text-sm">send</span>
-                                Gửi phản hồi
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ========================================================================= */}
-            {/* 🌟 MỚI: MODAL TẶNG VOUCHER CHO KHÁCH HÀNG (DÀNH CHO ADMIN) */}
-            {/* ========================================================================= */}
-            {isGiftModalOpen && selectedReviewForGift && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
-                        <div className="p-6 border-b border-neutralCustom/10 bg-orange-50/50 flex flex-col items-center text-center">
-                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-3">
-                                <span className="material-symbols-outlined text-4xl text-orange-500">card_giftcard</span>
-                            </div>
-                            <h3 className="text-xl font-black text-gray-900">Tặng Voucher Tri Ân</h3>
-                            <p className="text-xs text-neutralCustom mt-1">
-                                Tặng Voucher tri ân phản hồi đóng góp cho khách: <b className="text-orange-500">{selectedReviewForGift.customer_name}</b>
-                            </p>
-                        </div>
-
-                        <div className="p-6 space-y-4 bg-white">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Số điện thoại liên hệ</label>
-                                <input
-                                    type="text"
-                                    value={selectedReviewForGift.phone}
-                                    disabled
-                                    className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-700"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Lựa chọn Voucher <span className="text-red-500">*</span></label>
-                                <select
-                                    value={selectedVoucherId}
-                                    onChange={(e) => setSelectedVoucherId(e.target.value)}
-                                    className="w-full px-4 py-3.5 bg-gray-50 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-bold text-gray-900 cursor-pointer"
-                                >
-                                    {MOCK_VOUCHERS.map(promo => (
-                                        <option key={promo.id} value={promo.id}>
-                                            [{promo.code}] {promo.name} - Giảm {promo.value}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="p-5 border-t border-neutralCustom/10 bg-gray-50 flex justify-end gap-3 shrink-0">
-                            <button
-                                onClick={() => { setIsGiftModalOpen(false); setSelectedReviewForVoucher(null); }}
-                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-neutralCustom border border-neutralCustom/20 hover:bg-white transition-colors"
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                onClick={handleSendVoucher}
-                                className="px-8 py-2.5 rounded-xl font-bold text-sm text-white bg-orange-500 hover:bg-orange-600 shadow-md transition-all flex items-center gap-1.5"
-                            >
-                                <span className="material-symbols-outlined text-sm">send</span>
-                                Xác nhận tặng ngay
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-        </div>
-    );
+import axios from 'axios';
+
+// Thiết lập URL kết nối đến API Backend
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const axiosConfig = { headers: { 'ngrok-skip-browser-warning': 'true' } };
+
+// Helper an toàn để tránh lỗi RegEx khi từ cấm chứa ký tự đặc biệt (VD: di~, v~, b`)
+const escapeRegExp = (string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
-export default App;
+const ReviewManagement = () => {
+  /* STATE QUẢN LÝ DỮ LIỆU VÀ PHÂN TRANG */
+  const [reviewsList, setReviewsList] = useState([]);
+  const [dishesList, setDishesList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // STATE LƯU TRỮ DANH SÁCH TỪ THÔ TỤC ĐỌC TỪ FILE TXT
+  const [sensitiveWords, setSensitiveWords] = useState([]);
+
+  const [viewMode, setViewMode] = useState('table');
+
+  // Phân trang danh sách ý kiến đánh giá (Mỗi trang 8 đánh giá)
+  const [reviewCurrentPage, setReviewCurrentPage] = useState(1);
+  const reviewsPerPage = 8;
+
+  // Phân trang bảng xếp hạng chất lượng món ăn (Mỗi trang 5 món ăn)
+  const [dishCurrentPage, setDishCurrentPage] = useState(1);
+  const dishesPerPage = 5;
+
+  // Các bộ lọc dữ liệu thông minh
+  const [filterRating, setFilterRating] = useState('ALL');
+  const [selectedDishFilter, setSelectedDishFilter] = useState('ALL'); 
+  const [searchTerm, setSearchTerm] = useState(''); 
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // STATES ĐIỀU KHIỂN BỘ LỌC THÔ TỤC
+  const [maskSensitive, setMaskSensitive] = useState(true); // Che từ nhạy cảm bằng dấu *
+  const [hideSensitive, setHideSensitive] = useState(false); // Ẩn hoàn toàn các đánh giá chứa từ tục tĩu
+
+  const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'error' });
+
+  // NẠP SONG SONG DANH SÁCH TỪ THÔ TỤC VÀ DỮ LIỆU ĐÁNH GIÁ KHI KHỞI CHẠY TRANG
+  useEffect(() => {
+    fetchProfanityList();
+    fetchData();
+  }, []);
+
+  // Tự động đưa phân trang về trang 1 mỗi khi đổi bộ lọc
+  useEffect(() => {
+    setReviewCurrentPage(1);
+    setDishCurrentPage(1);
+  }, [filterRating, selectedDishFilter, searchTerm, startDate, endDate, hideSensitive]);
+
+  const showAlert = (message, type = 'error', title = 'Thông báo') => {
+    setAlertModal({ show: true, message, title, type });
+  };
+
+  // HÀM FETCH ĐỌC FILE TXT TỪ THƯ MỤC PUBLIC (GIA CỐ BỘ TÁCH TỪ SPACE-SEPARATED THÔNG MINH)
+  const fetchProfanityList = async () => {
+    try {
+      const response = await fetch('/vietnamese_profanity.txt');
+      const contentType = response.headers.get('content-type');
+      
+      // Phòng tránh lỗi Single Page App trả về nội dung HTML thay vì file văn bản
+      if (!response.ok || (contentType && contentType.includes('text/html'))) {
+        throw new Error('Tệp tin từ cấm không tồn tại hoặc trả về sai định dạng HTML');
+      }
+      const text = await response.text();
+      const words = [];
+      
+      // Tách các từ cấm phân cách bằng dấu phẩy
+      text.split(',').forEach(item => {
+        const trimmed = item.trim();
+        if (!trimmed) return;
+        
+        // Xử lý nếu từ chứa khoảng trắng dài dính nhau
+        if (trimmed.includes(' ') && trimmed.split(/\s+/).length > 4) {
+          trimmed.split(/\s+/).forEach(w => {
+            const wordTrimmed = w.trim();
+            if (wordTrimmed) words.push(wordTrimmed);
+          });
+        } else {
+          words.push(trimmed);
+        }
+      });
+        
+      setSensitiveWords(words);
+    } catch (error) {
+      console.error("Lỗi nạp tệp tin từ vựng thô tục, kích hoạt dự phòng ngay lập tức:", error);
+      // Phương án dự phòng (Fallback) chứa đầy đủ các từ thô tục gốc để cứu cánh ngay lập tức
+      setSensitiveWords([
+        'cặc', 'cak', 'kak', 'kac', 'cac', 'lồn', 'lon', 'đéo', 'đm', 'vcl', 'clgt', 'buồi', 'buoi', 'đĩ', 'chó'
+      ]);
+    }
+  };
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [resReviews, resDishes] = await Promise.all([
+        axios.get(`${API_URL}/review`, axiosConfig),
+        axios.get(`${API_URL}/dishes`, axiosConfig)
+      ]);
+
+      if (resReviews.data && resReviews.data.success) {
+        setReviewsList(resReviews.data.data || []);
+      }
+      if (resDishes.data && resDishes.data.success) {
+        setDishesList(resDishes.data.data || []);
+      }
+    } catch (error) {
+      console.error("Lỗi đồng bộ dữ liệu đánh giá:", error);
+      showAlert("Gặp sự cố khi đồng bộ ý kiến đánh giá từ hệ thống Làng MÌXI BBQ!", "error", "Lỗi đồng bộ");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getDishNameById = (dishId) => {
+    const dish = dishesList.find(d => d.id === Number(dishId));
+    return dish ? dish.name : `Món ăn #${dishId}`;
+  };
+
+  /* HÀM KIỂM TRA BÌNH LUẬN CÓ CHỨA TỪ TỤC TĨU KHÔNG (NÂNG CẤP UNICODE BOUNDARY) */
+  const checkHasProfanity = (text) => {
+    if (!text || sensitiveWords.length === 0) return false;
+    const cleanText = text.toLowerCase();
+    return sensitiveWords.some(word => {
+      const regex = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(word)}(?![\\p{L}\\p{N}])`, 'gui');
+      return regex.test(cleanText);
+    });
+  };
+
+  /* HÀM CHE TỪ NGỮ THÔ TỤC THÀNH DẤU SAO (*) (NÂNG CẤP UNICODE BOUNDARY CHE DẤU ĐỘNG CHUẨN XÁC) */
+  const maskProfanityText = (text) => {
+    if (!text || sensitiveWords.length === 0) return text || '';
+    let maskedText = text;
+    sensitiveWords.forEach(word => {
+      const regex = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(word)}(?![\\p{L}\\p{N}])`, 'gui');
+      maskedText = maskedText.replace(regex, (match) => {
+        // Giữ lại ký tự đầu tiên và chuyển các ký tự sau thành dấu sao (*) để tăng tính thẩm mỹ
+        return match[0] + '*'.repeat(match.length - 1);
+      });
+    });
+    return maskedText;
+  };
+
+  const selectToday = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setStartDate(today);
+    setEndDate(today);
+  };
+
+  const selectThisWeek = () => {
+    const current = new Date();
+    const first = current.getDate() - current.getDay() + (current.getDay() === 0 ? -6 : 1);
+    const firstDay = new Date(current.setDate(first)).toISOString().split('T')[0];
+    const lastDay = new Date().toISOString().split('T')[0];
+    setStartDate(firstDay);
+    setEndDate(lastDay);
+  };
+
+  const selectThisMonth = () => {
+    const current = new Date();
+    const firstDay = new Date(current.getFullYear(), current.getMonth(), 1);
+    const firstDayStr = new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const lastDayStr = new Date().toISOString().split('T')[0];
+    setStartDate(firstDayStr);
+    setEndDate(lastDayStr);
+  };
+
+  const clearDateFilter = () => {
+    setStartDate('');
+    setEndDate('');
+  };
+
+  /* LỌC DANH SÁCH REVIEW (KẾT HỢP BỘ LỌC THÔ TỤC) */
+  const filteredReviews = reviewsList.filter(r => {
+    const matchRating = filterRating === 'ALL' || r.rating === Number(filterRating);
+    const matchDishSelect = selectedDishFilter === 'ALL' || Number(r.dish_id) === Number(selectedDishFilter);
+
+    const dishName = getDishNameById(r.dish_id);
+    const commentText = r.comment || '';
+    const matchSearch = dishName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        commentText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        String(r.session_id).toLowerCase().includes(searchTerm.toLowerCase());
+
+    let matchDate = true;
+    if (startDate || endDate) {
+      const reviewDate = new Date(r.created_at);
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (reviewDate < start) matchDate = false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (reviewDate > end) matchDate = false;
+      }
+    }
+
+    let matchCensor = true;
+    if (hideSensitive && checkHasProfanity(r.comment)) {
+      matchCensor = false;
+    }
+
+    return matchRating && matchDishSelect && matchSearch && matchDate && matchCensor;
+  });
+
+  const totalReviewPages = Math.ceil(filteredReviews.length / reviewsPerPage);
+  const indexOfLastReview = reviewCurrentPage * reviewsPerPage;
+  const indexOfFirstReview = indexOfLastReview - reviewsPerPage;
+  const currentReviewsList = filteredReviews.slice(indexOfFirstReview, indexOfLastReview);
+
+  /* TÍNH TOÁN BẢNG XẾP HẠNG CHẤT LƯỢNG MÓN ĂN */
+  const getDishQualityAnalytics = () => {
+    const analytics = {};
+    
+    reviewsList.forEach(r => {
+      const id = r.dish_id;
+      if (!analytics[id]) {
+        analytics[id] = {
+          name: getDishNameById(id),
+          totalReviews: 0,
+          sumStars: 0,
+          negativeCount: 0 
+        };
+      }
+      analytics[id].totalReviews += 1;
+      analytics[id].sumStars += r.rating;
+      if (r.rating <= 3) {
+        analytics[id].negativeCount += 1;
+      }
+    });
+
+    return Object.values(analytics).sort((a, b) => (b.sumStars / b.totalReviews) - (a.sumStars / a.totalReviews));
+  };
+
+  const dishAnalyticsList = getDishQualityAnalytics();
+
+  const totalDishPages = Math.ceil(dishAnalyticsList.length / dishesPerPage);
+  const indexOfLastDish = dishCurrentPage * dishesPerPage;
+  const indexOfFirstDish = indexOfLastDish - dishesPerPage;
+  const currentDishesAnalytics = dishAnalyticsList.slice(indexOfFirstDish, indexOfLastDish);
+
+  const totalReviews = reviewsList.length;
+  const averageRating = totalReviews > 0 ? (reviewsList.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) : '0.0';
+  const criticalCount = reviewsList.filter(r => r.rating <= 3).length; 
+
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, idx) => (
+      <span
+        key={idx}
+        className="material-symbols-outlined text-yellow-400 text-xs sm:text-sm"
+        style={{ fontVariationSettings: idx < rating ? "'FILL' 1" : "'FILL' 0" }}
+      >
+        star
+      </span>
+    ));
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Vừa xong';
+    const d = new Date(dateString);
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')} - ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+  };
+
+  return (
+    <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex overflow-x-hidden relative">
+      <AdminSidebar currentTab="review" />
+      <AdminHeader />
+
+      {/* CUSTOM ALERT DIALOG AN TOÀN */}
+      {alertModal.show && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
+            <div className="w-16 h-14 rounded-2xl bg-red-50 text-red-650 flex items-center justify-center mx-auto mb-4">
+              <span className="material-symbols-outlined text-3xl">error</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
+            <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{alertModal.message}</p>
+            <button 
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'error' })} 
+              className="w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md bg-red-500 hover:bg-red-600"
+            >
+              Đồng ý
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* WORKSPACE GIÁM SÁT CHẤT LƯỢNG CHO MÁY TÍNH */}
+      <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen transition-all duration-300">
+        
+        {/* Header */}
+        <div className="mb-4 flex justify-between items-center shrink-0">
+          <div>
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Ý kiến & Khảo sát món ăn</h2>
+            <p className="text-neutralCustom text-sm mt-1">Giám sát chất lượng món nướng lẩu ẩn danh trực tiếp từ ý kiến khách hàng quét mã QR trên bill.</p>
+          </div>
+          
+          <div className="bg-white border border-neutralCustom/20 p-1 rounded-xl flex gap-1 shadow-sm shrink-0">
+            <button 
+              onClick={() => setViewMode('table')} 
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === 'table' ? 'bg-primary text-white shadow-sm' : 'text-neutralCustom hover:bg-gray-100'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">table_rows</span>
+              Bảng biểu
+            </button>
+            <button 
+              onClick={() => setViewMode('grid')} 
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === 'grid' ? 'bg-primary text-white shadow-sm' : 'text-neutralCustom hover:bg-gray-100'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">grid_view</span>
+              Thẻ bento
+            </button>
+          </div>
+        </div>
+
+        {/* BENTO STATS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 shrink-0">
+          <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-yellow-50 text-yellow-500 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-1">Điểm đánh giá trung bình</p>
+              <h4 className="text-3xl font-black text-gray-900">{averageRating} <span className="text-sm font-medium text-neutralCustom">/ 5.0</span></h4>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[32px]">forum</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-neutralCustom uppercase tracking-wider mb-1">Tổng lượt khảo sát</p>
+              <h4 className="text-3xl font-black text-gray-900">{totalReviews} lượt</h4>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-red-100 bg-red-50/20 shadow-sm flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-500 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[32px]">warning</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-red-500 uppercase tracking-wider mb-1">Món ăn bị chê (≤3 sao)</p>
+              <h4 className="text-3xl font-black text-red-600">{criticalCount} lượt</h4>
+            </div>
+          </div>
+        </div>
+
+        {/* PANEL BỘ LỌC KHOẢNG THỜI GIAN */}
+        <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-4 flex flex-col gap-3 shrink-0">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="material-symbols-outlined text-primary text-xl">calendar_month</span>
+              <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">Bộ lọc khoảng thời gian:</span>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-end">
+              <button onClick={selectToday} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">Hôm nay</button>
+              <button onClick={selectThisWeek} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">Tuần này</button>
+              <button onClick={selectThisMonth} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">Tháng này</button>
+            </div>
+          </div>
+
+          <div className="h-px bg-gray-100 w-full"></div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div className="flex-1 grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Từ ngày</span>
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-gray-50 border border-neutralCustom/20 text-sm rounded-xl px-4 py-2 outline-none focus:border-primary focus:bg-white text-gray-900 font-medium"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Đến ngày</span>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-gray-50 border border-neutralCustom/20 text-sm rounded-xl px-4 py-2 outline-none focus:border-primary focus:bg-white text-gray-900 font-medium"
+                />
+              </div>
+            </div>
+            
+            <div className="sm:self-end">
+              <button 
+                onClick={clearDateFilter}
+                disabled={!startDate && !endDate}
+                className="w-full sm:w-auto px-5 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+              >
+                <span className="material-symbols-outlined text-base">restart_alt</span>
+                Xóa lọc ngày
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* LỌC THEO MÓN ĂN VÀ TÌM KIẾM TỪ KHÓA BÌNH LUẬN + BỘ LỌC SENSITIVE THÔ TỤC */}
+        <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-4 space-y-3 shrink-0">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:max-w-md">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">search</span>
+              <input 
+                type="text" 
+                placeholder="Tìm theo từ khóa góp ý, mã phiên ăn..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-50 border border-neutralCustom/20 text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-primary focus:bg-white transition-all font-semibold text-gray-950" 
+              />
+            </div>
+
+            <div className="flex gap-3 w-full md:w-auto items-center shrink-0">
+              <select
+                value={selectedDishFilter}
+                onChange={(e) => setSelectedDishFilter(e.target.value)}
+                className="px-4 py-2.5 border border-neutralCustom/20 rounded-xl text-xs font-bold text-gray-700 bg-white outline-none focus:border-primary cursor-pointer max-w-xs"
+              >
+                <option value="ALL">-- Tất cả món ăn --</option>
+                {dishesList.map(dish => (
+                  <option key={dish.id} value={dish.id}>{dish.name}</option>
+                ))}
+              </select>
+
+              <div className="flex gap-1 overflow-x-auto">
+                {['ALL', '5', '4', '3', '2', '1'].map((stars) => (
+                  <button 
+                    key={stars}
+                    onClick={() => setFilterRating(stars)} 
+                    className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all flex items-center gap-1 shrink-0 ${
+                      filterRating === stars 
+                        ? 'bg-gray-900 text-white border-gray-900 shadow-sm' 
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {stars === 'ALL' ? 'Tất cả' : `${stars} ★`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-gray-100 w-full"></div>
+
+          {/* PHÂN HỆ ĐIỀU KHIỂN BỘ LỌC TỪ NGỮ THÔ TỤC (SENSITIVE CONTROLS) */}
+          <div className="flex flex-wrap items-center gap-6">
+            <span className="text-xs font-bold text-gray-650 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-orange-500 text-lg">gpp_maybe</span>
+              Hệ thống lọc từ tục tĩu tự động:
+            </span>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  checked={maskSensitive} 
+                  onChange={(e) => setMaskSensitive(e.target.checked)}
+                  className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary" 
+                />
+                Che mờ từ nhạy cảm (dạng *)
+              </label>
+
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  checked={hideSensitive} 
+                  onChange={(e) => setHideSensitive(e.target.checked)}
+                  className="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500" 
+                />
+                Ẩn hoàn toàn đánh giá tục tĩu
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* KHU VỰC HIỂN THỊ ĐA CHẾ ĐỘ DÀNH CHO LAPTOP */}
+        <div className="flex flex-col gap-6 mb-4">
+          
+          {/* CHI TIẾT DANH SÁCH REVIEW KÈM PHÂN TRANG (CHIẾM 100% CHIỀU RỘNG) */}
+          <div className="w-full flex flex-col">
+            <div>
+              {isLoading ? (
+                <div className="py-24 text-center text-stone-500 font-bold flex flex-col items-center justify-center gap-3">
+                  <span className="material-symbols-outlined text-5xl animate-spin text-primary">progress_activity</span>
+                  <span>Đang lấy đánh giá live từ hệ thống Làng MÌXI BBQ...</span>
+                </div>
+              ) : filteredReviews.length > 0 ? (
+                viewMode === 'table' ? (
+                  /* CHẾ ĐỘ BẢNG BIỂU CHUYÊN NGHIỆP */
+                  <div className="bg-white rounded-2xl border border-neutralCustom/20 shadow-sm overflow-hidden animate-fade-in">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-stone-50 border-b border-neutralCustom/10 text-neutralCustom text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                            <th className="px-4 py-3">Phiên ăn / Thời gian</th>
+                            <th className="px-4 py-3">Món ăn nướng lẩu</th>
+                            <th className="px-4 py-3 text-center">Xếp hạng</th>
+                            <th className="px-4 py-3">Bình luận góp ý</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutralCustom/10">
+                          {currentReviewsList.map((review, idx) => {
+                            // THỰC HIỆN LỌC VÀ CHE DẤU NGAY TRƯỚC KHI HIỂN THỊ TRÊN MÀN HÌNH
+                            const hasBadWord = checkHasProfanity(review.comment);
+                            const displayComment = maskSensitive ? maskProfanityText(review.comment) : review.comment;
+
+                            return (
+                              <tr key={idx} className={`hover:bg-orange-500/5 transition-colors group ${hasBadWord ? 'bg-red-50/10' : ''}`}>
+                                <td className="px-4 py-3.5">
+                                  <div className="flex flex-col min-w-[130px]">
+                                    <span className="text-xs font-bold text-gray-800 whitespace-nowrap">
+                                      {formatDate(review.created_at)}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-neutralCustom/85 mt-0.5" title={review.session_id}>
+                                      #{String(review.session_id).slice(0, 8)}...
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="inline-block bg-orange-50 border border-orange-200 text-orange-600 font-extrabold px-2.5 py-1 rounded-lg text-xs whitespace-nowrap">
+                                    {getDishNameById(review.dish_id)}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5 text-center">
+                                  <div className="flex gap-0.5 justify-center">{renderStars(review.rating)}</div>
+                                </td>
+                                <td className="px-4 py-3.5 text-sm text-gray-700 min-w-[200px] max-w-xs md:max-w-md">
+                                  <div className="flex flex-col gap-1">
+                                    {/* THAY THẾ BIẾN THÔ review.comment THÀNH BIẾN ĐÃ ĐƯỢC CHE DẤU displayComment */}
+                                    <p className="italic font-medium leading-relaxed font-semibold break-words">
+                                      "{displayComment || 'Không để lại lời nhắn'}"
+                                    </p>
+                                    {/* Nhãn đỏ cảnh báo nếu phát hiện thô tục */}
+                                    {hasBadWord && (
+                                      <span className="self-start inline-flex items-center gap-1 bg-red-50 text-red-650 border border-red-100 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md mt-1 shadow-sm">
+                                        <span className="material-symbols-outlined text-[12px]">gpp_maybe</span>
+                                        ⚠️ Có từ tục tĩu nhạy cảm
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  /* CHẾ ĐỘ GRID BENTO THOÁNG ĐÃNG */
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                    {currentReviewsList.map((review, idx) => {
+                      // ĐỒNG BỘ LỌC TỤC TĨU CHO CẢ CHẾ ĐỘ THẺ BENTO GRID
+                      const hasBadWord = checkHasProfanity(review.comment);
+                      const displayComment = maskSensitive ? maskProfanityText(review.comment) : review.comment;
+
+                      return (
+                        <div key={idx} className={`bg-white rounded-2xl p-6 border shadow-sm hover:shadow-md transition-shadow relative flex flex-col justify-between ${hasBadWord ? 'border-red-150 bg-red-50/5' : 'border-neutralCustom/20'}`}>
+                          <div>
+                            {/* Header: Ngày giờ và Mã session */}
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="text-[10px] bg-stone-100 text-stone-600 font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                                Bill #{String(review.session_id).slice(0, 8)}...
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-mono font-bold uppercase tracking-wider">{formatDate(review.created_at)}</span>
+                            </div>
+
+                            {/* Món ăn và sao */}
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="bg-orange-50 text-orange-600 border border-orange-100 font-black px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider">
+                                {getDishNameById(review.dish_id)}
+                              </span>
+                              <div className="flex gap-0.5">{renderStars(review.rating)}</div>
+                            </div>
+
+                            {/* THAY THẾ BIẾN THÔ review.comment THÀNH displayComment */}
+                            <div className="bg-stone-50/50 p-4 rounded-xl text-sm italic text-gray-700 leading-relaxed border border-stone-200/40 relative">
+                              "{displayComment || 'Không có bình luận chi tiết'}"
+                            </div>
+                            
+                            {/* Cảnh báo ở dạng Grid */}
+                            {hasBadWord && (
+                              <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-red-650">
+                                <span className="material-symbols-outlined text-[14px]">gpp_maybe</span>
+                                Phát hiện từ tục tĩu nhạy cảm
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                <div className="col-span-full py-24 text-center text-gray-400 font-bold italic bg-white rounded-2xl border border-dashed border-neutralCustom/25">
+                  Không tìm thấy ý kiến khảo sát nào khớp với điều kiện lọc...
+                </div>
+              )}
+            </div>
+
+            {/* PHÂN TRANG DANH SÁCH ĐÁNH GIÁ ĐƠN GIẢN TRUNG TÂM */}
+            {!isLoading && totalReviewPages > 1 && (
+              <div className="mt-3 flex justify-center items-center p-2 rounded-2xl shrink-0">
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setReviewCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={reviewCurrentPage === 1}
+                    className="p-1.5 border border-neutralCustom/20 rounded-xl hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-9 h-9"
+                  >
+                    <span className="material-symbols-outlined text-sm">chevron_left</span>
+                  </button>
+                  {Array.from({ length: totalReviewPages }, (_, i) => i + 1).map((page) => (
+                    <button 
+                      key={page}
+                      onClick={() => setReviewCurrentPage(page)}
+                      className={`w-9 h-9 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                        reviewCurrentPage === page 
+                          ? 'bg-primary text-white font-bold' 
+                          : 'hover:bg-stone-50 text-neutralCustom border border-neutralCustom/20 bg-white'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button 
+                    onClick={() => setReviewCurrentPage(prev => Math.min(prev + 1, totalReviewPages))}
+                    disabled={reviewCurrentPage === totalReviewPages}
+                    className="p-1.5 border border-neutralCustom/20 rounded-xl hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-9 h-9"
+                  >
+                    <span className="material-symbols-outlined text-sm">chevron_right</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* BẢNG PHÂN TÍCH CHẤT LƯỢNG CHI TIẾT TỪNG MÓN (ĐẨY XUỐNG DƯỚI CÙNG FULL WIDTH) */}
+          <div className="w-full flex flex-col">
+            <div className="bg-white p-6 rounded-2xl border border-neutralCustom/20 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="border-b border-gray-150 pb-4 mb-4">
+                  <h3 className="font-bold text-gray-900 text-base flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-primary">bar_chart</span> Xếp hạng chất lượng món ăn
+                  </h3>
+                  <p className="text-xs text-neutralCustom mt-0.5">Tự động tổng hợp và xếp hạng trung bình từ dữ liệu Live của khách hàng.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                  {currentDishesAnalytics.length > 0 ? (
+                    currentDishesAnalytics.map((dish, index) => {
+                      const avgScore = (dish.sumStars / dish.totalReviews).toFixed(1);
+                      const isLowQuality = Number(avgScore) <= 3.8;
+                      const percentage = Math.min(100, Math.max(0, (Number(avgScore) / 5) * 100));
+
+                      return (
+                        <div key={index} className="p-3 bg-stone-50/50 border border-stone-200/60 rounded-xl flex flex-col gap-2.5 transition-all hover:bg-stone-100/50">
+                          <div className="flex items-center justify-between min-w-0">
+                            <div className="min-w-0 pr-3">
+                              <h4 className="font-extrabold text-gray-900 text-xs sm:text-sm truncate">{dish.name}</h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-neutralCustom font-semibold">{dish.totalReviews} lượt đánh giá</span>
+                                {dish.negativeCount > 0 && (
+                                  <span className="text-[9px] bg-red-50 text-red-600 border border-red-100 px-1.5 py-0.5 rounded font-black">
+                                    {dish.negativeCount} lượt chê
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0 flex flex-col items-end">
+                              <span className={`text-sm font-black px-2 py-0.5 rounded-lg ${
+                                isLowQuality ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-600 border border-green-150'
+                              }`}>
+                                {avgScore} ★
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Thanh biểu đồ phần trăm tỷ lệ hài lòng */}
+                          <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                isLowQuality ? 'bg-red-500' : 'bg-green-500'
+                              }`}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-center text-xs text-stone-400 italic py-8">Chưa có dữ liệu phân tích chất lượng món ăn.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* THANH ĐIỀU KHIỂN PHÂN TRANG CHO PHẦN XẾP HẠNG MÓN ĂN TỐI GIẢN */}
+              {dishAnalyticsList.length > dishesPerPage && (
+                <div className="mt-4 pt-3 border-t border-gray-150 flex justify-center items-center shrink-0">
+                  <div className="flex gap-1.5">
+                    <button 
+                      onClick={() => setDishCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={dishCurrentPage === 1}
+                      className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-7 h-7"
+                    >
+                      <span className="material-symbols-outlined text-xs">chevron_left</span>
+                    </button>
+                    {Array.from({ length: totalDishPages }, (_, i) => i + 1).map((page) => (
+                      <button 
+                        key={page}
+                        onClick={() => setDishCurrentPage(page)}
+                        className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all shadow-sm ${
+                          dishCurrentPage === page 
+                            ? 'bg-primary text-white font-bold' 
+                            : 'hover:bg-stone-50 text-neutralCustom border border-neutralCustom/15 bg-white'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button 
+                      onClick={() => setDishCurrentPage(prev => Math.min(prev + 1, totalDishPages))}
+                      disabled={dishCurrentPage === totalDishPages}
+                      className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-7 h-7"
+                    >
+                      <span className="material-symbols-outlined text-xs">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  );
+};
+
+export default ReviewManagement;

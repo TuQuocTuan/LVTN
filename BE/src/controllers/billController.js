@@ -4,6 +4,7 @@ import moment from 'moment-timezone';
 import { createVnPayUrl } from '../controllers/paymentController.js';
 import { kiemtraMinStock } from './dishController.js';
 import e from 'express';
+import QRCode from 'qrcode';
 
 export const inBill = async (req, res) => {
     try {
@@ -103,3 +104,43 @@ export const inBill = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+export const generateBillHtml = async (session_id, table_id) => {
+    const frontendUrl = process.env.FRONTEND_URL;
+    // 1. Tạo đường dẫn dẫn đến trang review của bạn (thêm session_id để FE biết đang review cho phiên nào)
+    // Nếu deploy thực tế thì thay localhost thành domain của bạn
+    const reviewUrl = `${frontendUrl}/review?session_id=${session_id}`;
+
+    // 2. Sinh mã QR dưới dạng chuỗi DataURL (Base64 Image)
+    const qrCodeImageBase64 = await QRCode.toDataURL(reviewUrl, {
+        width: 150, // Độ rộng của mã QR trên hóa đơn (px)
+        margin: 1,
+        color: {
+            dark: '#000000', // Màu mã QR
+            light: '#ffffff' // Màu nền
+        }
+    });
+
+    // 3. Chèn cái biến `qrCodeImageBase64` này vào trong chuỗi HTML Bill của bạn
+    const html_bill = `
+        <div style="text-align: center; font-family: monospace; width: 100%;">
+            <h2>HÓA ĐƠN THANH TOÁN</h2>
+            <p>Mã phiên: ${session_id}</p>
+            <hr/>
+            <div style="margin: 20px 0;">
+                <p>Tạm tính: ...</p>
+                <h3>Tổng tiền: ...</h3>
+            </div>
+            <hr/>
+            
+            <div style="text-align: center; margin-top: 15px; margin-bottom: 15px;">
+                <p style="font-size: 12px; margin-bottom: 5px;">Quét mã này để đánh giá món ăn nhận ưu đãi!</p>
+                <img src="${qrCodeImageBase64}" alt="Review QR Code" style="width: 130px; height: 130px;"/>
+            </div>
+            
+            <p style="text-align: center;">Cảm ơn quý khách. Hẹn gặp lại!</p>
+        </div>
+    `;
+
+    return html_bill;
+};
