@@ -23,15 +23,23 @@ export const getDoanhThuDashboard = async (req, res) => {
 
         const { data: bills, error: fetchErr } = await supabase
             .from('bills')
-            .select('total_amount')
+            .select('total_amount, payment_method')
             .gte('created_at', moctgian.toISOString());
         if (fetchErr) throw fetchErr;
 
-        const tongdoanhthu = bills.reduce((tong, bill) => tong + bill.total_amount, 0);
+        const tongdoanhthu = bills.reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
+        const tongtienmat = bills
+            .filter(bill => bill.payment_method === 'CASH')
+            .reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
+        const tongchuyenkhoan = bills
+            .filter(bill => bill.payment_method === 'VNPAY')
+            .reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
 
         res.status(200).json({
             success: true,
-            tongdoanhthu
+            tongdoanhthu,
+            tongtienmat,
+            tongchuyenkhoan
         });
 
     } catch (error) {

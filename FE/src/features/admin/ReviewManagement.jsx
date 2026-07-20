@@ -29,12 +29,12 @@ const ReviewManagement = () => {
 
   // Phân trang bảng xếp hạng chất lượng món ăn (Mỗi trang 5 món ăn)
   const [dishCurrentPage, setDishCurrentPage] = useState(1);
-  const dishesPerPage = 5;
+  const dishesPerPage = 6;
 
   // Các bộ lọc dữ liệu thông minh
   const [filterRating, setFilterRating] = useState('ALL');
-  const [selectedDishFilter, setSelectedDishFilter] = useState('ALL'); 
-  const [searchTerm, setSearchTerm] = useState(''); 
+  const [selectedDishFilter, setSelectedDishFilter] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -65,19 +65,19 @@ const ReviewManagement = () => {
     try {
       const response = await fetch('/vietnamese_profanity.txt');
       const contentType = response.headers.get('content-type');
-      
+
       // Phòng tránh lỗi Single Page App trả về nội dung HTML thay vì file văn bản
       if (!response.ok || (contentType && contentType.includes('text/html'))) {
         throw new Error('Tệp tin từ cấm không tồn tại hoặc trả về sai định dạng HTML');
       }
       const text = await response.text();
       const words = [];
-      
+
       // Tách các từ cấm phân cách bằng dấu phẩy
       text.split(',').forEach(item => {
         const trimmed = item.trim();
         if (!trimmed) return;
-        
+
         // Xử lý nếu từ chứa khoảng trắng dài dính nhau
         if (trimmed.includes(' ') && trimmed.split(/\s+/).length > 4) {
           trimmed.split(/\s+/).forEach(w => {
@@ -88,7 +88,7 @@ const ReviewManagement = () => {
           words.push(trimmed);
         }
       });
-        
+
       setSensitiveWords(words);
     } catch (error) {
       console.error("Lỗi nạp tệp tin từ vựng thô tục, kích hoạt dự phòng ngay lập tức:", error);
@@ -189,10 +189,10 @@ const ReviewManagement = () => {
     const emailText = r.email || '';
     const phoneText = r.phone_number || '';
     const matchSearch = dishName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        commentText.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        emailText.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        phoneText.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        String(r.session_id).toLowerCase().includes(searchTerm.toLowerCase());
+      commentText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emailText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      phoneText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(r.session_id).toLowerCase().includes(searchTerm.toLowerCase());
 
     let matchDate = true;
     if (startDate || endDate) {
@@ -225,7 +225,17 @@ const ReviewManagement = () => {
   /* TÍNH TOÁN BẢNG XẾP HẠNG CHẤT LƯỢNG MÓN ĂN */
   const getDishQualityAnalytics = () => {
     const analytics = {};
-    
+
+    // Khởi tạo điểm cho tất cả các món ăn có trong hệ thống để hiện đầy đủ
+    dishesList.forEach(dish => {
+      analytics[dish.id] = {
+        name: dish.name,
+        totalReviews: 0,
+        sumStars: 0,
+        negativeCount: 0
+      };
+    });
+
     reviewsList.forEach(r => {
       const id = r.dish_id;
       if (!analytics[id]) {
@@ -233,7 +243,7 @@ const ReviewManagement = () => {
           name: getDishNameById(id),
           totalReviews: 0,
           sumStars: 0,
-          negativeCount: 0 
+          negativeCount: 0
         };
       }
       analytics[id].totalReviews += 1;
@@ -243,7 +253,15 @@ const ReviewManagement = () => {
       }
     });
 
-    return Object.values(analytics).sort((a, b) => (b.sumStars / b.totalReviews) - (a.sumStars / a.totalReviews));
+    return Object.values(analytics).sort((a, b) => {
+      const scoreA = a.totalReviews > 0 ? (a.sumStars / a.totalReviews) : 0;
+      const scoreB = b.totalReviews > 0 ? (b.sumStars / b.totalReviews) : 0;
+      // Sắp xếp giảm dần theo điểm trung bình, nếu bằng nhau thì theo bảng chữ cái tiếng Việt
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA;
+      }
+      return a.name.localeCompare(b.name, 'vi');
+    });
   };
 
   const dishAnalyticsList = getDishQualityAnalytics();
@@ -255,7 +273,7 @@ const ReviewManagement = () => {
 
   const totalReviews = reviewsList.length;
   const averageRating = totalReviews > 0 ? (reviewsList.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) : '0.0';
-  const criticalCount = reviewsList.filter(r => r.rating <= 3).length; 
+  const criticalCount = reviewsList.filter(r => r.rating <= 3).length;
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, idx) => (
@@ -289,8 +307,8 @@ const ReviewManagement = () => {
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{alertModal.message}</p>
-            <button 
-              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'error' })} 
+            <button
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'error' })}
               className="w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md bg-red-500 hover:bg-red-600"
             >
               Đồng ý
@@ -301,29 +319,27 @@ const ReviewManagement = () => {
 
       {/* WORKSPACE GIÁM SÁT CHẤT LƯỢNG CHO MÁY TÍNH */}
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen transition-all duration-300">
-        
+
         {/* Header */}
         <div className="mb-4 flex justify-between items-center shrink-0">
           <div>
             <h2 className="text-3xl font-black text-gray-900 tracking-tight">Ý kiến & Khảo sát món ăn</h2>
             <p className="text-neutralCustom text-sm mt-1">Giám sát chất lượng món nướng lẩu ẩn danh trực tiếp từ ý kiến khách hàng quét mã QR trên bill.</p>
           </div>
-          
+
           <div className="bg-white border border-neutralCustom/20 p-1 rounded-xl flex gap-1 shadow-sm shrink-0">
-            <button 
-              onClick={() => setViewMode('table')} 
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
-                viewMode === 'table' ? 'bg-primary text-white shadow-sm' : 'text-neutralCustom hover:bg-gray-100'
-              }`}
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${viewMode === 'table' ? 'bg-primary text-white shadow-sm' : 'text-neutralCustom hover:bg-gray-100'
+                }`}
             >
               <span className="material-symbols-outlined text-[16px]">table_rows</span>
               Bảng biểu
             </button>
-            <button 
-              onClick={() => setViewMode('grid')} 
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
-                viewMode === 'grid' ? 'bg-primary text-white shadow-sm' : 'text-neutralCustom hover:bg-gray-100'
-              }`}
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${viewMode === 'grid' ? 'bg-primary text-white shadow-sm' : 'text-neutralCustom hover:bg-gray-100'
+                }`}
             >
               <span className="material-symbols-outlined text-[16px]">grid_view</span>
               Thẻ bento
@@ -371,7 +387,7 @@ const ReviewManagement = () => {
               <span className="material-symbols-outlined text-primary text-xl">calendar_month</span>
               <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">Bộ lọc khoảng thời gian:</span>
             </div>
-            
+
             <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-end">
               <button onClick={selectToday} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">Hôm nay</button>
               <button onClick={selectThisWeek} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">Tuần này</button>
@@ -385,8 +401,8 @@ const ReviewManagement = () => {
             <div className="flex-1 grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Từ ngày</span>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="w-full bg-gray-50 border border-neutralCustom/20 text-sm rounded-xl px-4 py-2 outline-none focus:border-primary focus:bg-white text-gray-900 font-medium"
@@ -394,17 +410,17 @@ const ReviewManagement = () => {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Đến ngày</span>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="w-full bg-gray-50 border border-neutralCustom/20 text-sm rounded-xl px-4 py-2 outline-none focus:border-primary focus:bg-white text-gray-900 font-medium"
                 />
               </div>
             </div>
-            
+
             <div className="sm:self-end">
-              <button 
+              <button
                 onClick={clearDateFilter}
                 disabled={!startDate && !endDate}
                 className="w-full sm:w-auto px-5 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
@@ -421,12 +437,12 @@ const ReviewManagement = () => {
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative w-full md:max-w-md">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">search</span>
-              <input 
-                type="text" 
-                placeholder="Tìm theo từ khóa góp ý, mã phiên ăn..." 
+              <input
+                type="text"
+                placeholder="Tìm theo từ khóa góp ý, mã phiên ăn..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-gray-50 border border-neutralCustom/20 text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-primary focus:bg-white transition-all font-semibold text-gray-950" 
+                className="w-full bg-gray-50 border border-neutralCustom/20 text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-primary focus:bg-white transition-all font-semibold text-gray-950"
               />
             </div>
 
@@ -444,14 +460,13 @@ const ReviewManagement = () => {
 
               <div className="flex gap-1 overflow-x-auto">
                 {['ALL', '5', '4', '3', '2', '1'].map((stars) => (
-                  <button 
+                  <button
                     key={stars}
-                    onClick={() => setFilterRating(stars)} 
-                    className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all flex items-center gap-1 shrink-0 ${
-                      filterRating === stars 
-                        ? 'bg-gray-900 text-white border-gray-900 shadow-sm' 
+                    onClick={() => setFilterRating(stars)}
+                    className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all flex items-center gap-1 shrink-0 ${filterRating === stars
+                        ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {stars === 'ALL' ? 'Tất cả' : `${stars} ★`}
                   </button>
@@ -470,21 +485,21 @@ const ReviewManagement = () => {
             </span>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
-                  checked={maskSensitive} 
+                <input
+                  type="checkbox"
+                  checked={maskSensitive}
                   onChange={(e) => setMaskSensitive(e.target.checked)}
-                  className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary" 
+                  className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
                 />
                 Che mờ từ nhạy cảm (dạng *)
               </label>
 
               <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
-                  checked={hideSensitive} 
+                <input
+                  type="checkbox"
+                  checked={hideSensitive}
                   onChange={(e) => setHideSensitive(e.target.checked)}
-                  className="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500" 
+                  className="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500"
                 />
                 Ẩn hoàn toàn đánh giá tục tĩu
               </label>
@@ -494,7 +509,7 @@ const ReviewManagement = () => {
 
         {/* KHU VỰC HIỂN THỊ ĐA CHẾ ĐỘ DÀNH CHO LAPTOP */}
         <div className="flex flex-col gap-6 mb-4">
-          
+
           {/* CHI TIẾT DANH SÁCH REVIEW KÈM PHÂN TRANG (CHIẾM 100% CHIỀU RỘNG) */}
           <div className="w-full flex flex-col">
             <div>
@@ -629,7 +644,7 @@ const ReviewManagement = () => {
                             <div className="bg-stone-50/50 p-4 rounded-xl text-sm italic text-gray-700 leading-relaxed border border-stone-200/40 relative">
                               "{displayComment || 'Không có bình luận chi tiết'}"
                             </div>
-                            
+
                             {/* Cảnh báo ở dạng Grid */}
                             {hasBadWord && (
                               <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-red-650">
@@ -654,7 +669,7 @@ const ReviewManagement = () => {
             {!isLoading && totalReviewPages > 1 && (
               <div className="mt-3 flex justify-center items-center p-2 rounded-2xl shrink-0">
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => setReviewCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={reviewCurrentPage === 1}
                     className="p-1.5 border border-neutralCustom/20 rounded-xl hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-9 h-9"
@@ -662,19 +677,18 @@ const ReviewManagement = () => {
                     <span className="material-symbols-outlined text-sm">chevron_left</span>
                   </button>
                   {Array.from({ length: totalReviewPages }, (_, i) => i + 1).map((page) => (
-                    <button 
+                    <button
                       key={page}
                       onClick={() => setReviewCurrentPage(page)}
-                      className={`w-9 h-9 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                        reviewCurrentPage === page 
-                          ? 'bg-primary text-white font-bold' 
+                      className={`w-9 h-9 rounded-xl text-xs font-bold transition-all shadow-sm ${reviewCurrentPage === page
+                          ? 'bg-primary text-white font-bold'
                           : 'hover:bg-stone-50 text-neutralCustom border border-neutralCustom/20 bg-white'
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>
                   ))}
-                  <button 
+                  <button
                     onClick={() => setReviewCurrentPage(prev => Math.min(prev + 1, totalReviewPages))}
                     disabled={reviewCurrentPage === totalReviewPages}
                     className="p-1.5 border border-neutralCustom/20 rounded-xl hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-9 h-9"
@@ -700,9 +714,10 @@ const ReviewManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   {currentDishesAnalytics.length > 0 ? (
                     currentDishesAnalytics.map((dish, index) => {
-                      const avgScore = (dish.sumStars / dish.totalReviews).toFixed(1);
-                      const isLowQuality = Number(avgScore) <= 3.8;
-                      const percentage = Math.min(100, Math.max(0, (Number(avgScore) / 5) * 100));
+                      const hasReviews = dish.totalReviews > 0;
+                      const avgScore = hasReviews ? (dish.sumStars / dish.totalReviews).toFixed(1) : '0.0';
+                      const isLowQuality = hasReviews ? (Number(avgScore) <= 3.8) : false;
+                      const percentage = hasReviews ? Math.min(100, Math.max(0, (Number(avgScore) / 5) * 100)) : 0;
 
                       return (
                         <div key={index} className="p-3 bg-stone-50/50 border border-stone-200/60 rounded-xl flex flex-col gap-2.5 transition-all hover:bg-stone-100/50">
@@ -720,20 +735,26 @@ const ReviewManagement = () => {
                             </div>
 
                             <div className="text-right shrink-0 flex flex-col items-end">
-                              <span className={`text-sm font-black px-2 py-0.5 rounded-lg ${
-                                isLowQuality ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-600 border border-green-150'
-                              }`}>
-                                {avgScore} ★
+                              <span className={`text-sm font-black px-2 py-0.5 rounded-lg ${!hasReviews
+                                  ? 'bg-gray-550 text-gray-400 border border-gray-200 bg-gray-50'
+                                  : isLowQuality
+                                    ? 'bg-red-50 text-red-600 border border-red-100'
+                                    : 'bg-green-50 text-green-600 border border-green-150'
+                                }`}>
+                                {hasReviews ? `${avgScore} ★` : '— ★'}
                               </span>
                             </div>
                           </div>
 
                           {/* Thanh biểu đồ phần trăm tỷ lệ hài lòng */}
                           <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                isLowQuality ? 'bg-red-500' : 'bg-green-500'
-                              }`}
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${!hasReviews
+                                  ? 'bg-gray-300'
+                                  : isLowQuality
+                                    ? 'bg-red-500'
+                                    : 'bg-green-500'
+                                }`}
                               style={{ width: `${percentage}%` }}
                             ></div>
                           </div>
@@ -750,7 +771,7 @@ const ReviewManagement = () => {
               {dishAnalyticsList.length > dishesPerPage && (
                 <div className="mt-4 pt-3 border-t border-gray-150 flex justify-center items-center shrink-0">
                   <div className="flex gap-1.5">
-                    <button 
+                    <button
                       onClick={() => setDishCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={dishCurrentPage === 1}
                       className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-7 h-7"
@@ -758,19 +779,18 @@ const ReviewManagement = () => {
                       <span className="material-symbols-outlined text-xs">chevron_left</span>
                     </button>
                     {Array.from({ length: totalDishPages }, (_, i) => i + 1).map((page) => (
-                      <button 
+                      <button
                         key={page}
                         onClick={() => setDishCurrentPage(page)}
-                        className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all shadow-sm ${
-                          dishCurrentPage === page 
-                            ? 'bg-primary text-white font-bold' 
+                        className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all shadow-sm ${dishCurrentPage === page
+                            ? 'bg-primary text-white font-bold'
                             : 'hover:bg-stone-50 text-neutralCustom border border-neutralCustom/15 bg-white'
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>
                     ))}
-                    <button 
+                    <button
                       onClick={() => setDishCurrentPage(prev => Math.min(prev + 1, totalDishPages))}
                       disabled={dishCurrentPage === totalDishPages}
                       className="p-1 border border-neutralCustom/20 rounded-lg hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-7 h-7"

@@ -265,6 +265,36 @@ export const quanlythoigianlam1ca = async (req, res) => {
 export const ketCa = async (req, res) => {
     try {
         const userId = req.body?.user_id || req.query?.user_id;
+
+        // Kiểm tra xem có bàn nào đang hoạt động (phục vụ) hay không
+        const { data: activeSessions, error: sessionErr } = await supabase
+            .from('dining_sessions')
+            .select('id, tables(name)')
+            .eq('status', 'serving');
+
+        if (sessionErr) throw sessionErr;
+
+        if (activeSessions && activeSessions.length > 0) {
+            const tableNames = activeSessions
+                .map(session => {
+                    if (!session.tables) return null;
+                    if (Array.isArray(session.tables)) {
+                        return session.tables[0]?.name;
+                    }
+                    return session.tables.name;
+                })
+                .filter(Boolean);
+            
+            const message = tableNames.length > 0
+                ? `Không thể kết ca vì vẫn còn các bàn đang phục vụ: ${tableNames.join(', ')}`
+                : "Không thể kết ca vì vẫn còn bàn đang phục vụ!";
+
+            return res.status(400).json({
+                success: false,
+                message: message
+            });
+        }
+
         const now = moment().tz("Asia/Ho_Chi_Minh");
         const startOfDay = moment().tz("Asia/Ho_Chi_Minh").startOf('day').toISOString();
         const endOfDay = moment().tz("Asia/Ho_Chi_Minh").endOf('day').toISOString();
@@ -381,6 +411,35 @@ export const finalizeKetCa = async (req, res) => {
         const userId = req.body?.user_id || req.query?.user_id;
         if (!userId) {
             return res.status(400).json({ success: false, message: "Thiếu thông tin user_id" });
+        }
+
+        // Kiểm tra xem có bàn nào đang hoạt động (phục vụ) hay không
+        const { data: activeSessions, error: sessionErr } = await supabase
+            .from('dining_sessions')
+            .select('id, tables(name)')
+            .eq('status', 'serving');
+
+        if (sessionErr) throw sessionErr;
+
+        if (activeSessions && activeSessions.length > 0) {
+            const tableNames = activeSessions
+                .map(session => {
+                    if (!session.tables) return null;
+                    if (Array.isArray(session.tables)) {
+                        return session.tables[0]?.name;
+                    }
+                    return session.tables.name;
+                })
+                .filter(Boolean);
+            
+            const message = tableNames.length > 0
+                ? `Không thể kết ca vì vẫn còn các bàn đang phục vụ: ${tableNames.join(', ')}`
+                : "Không thể kết ca vì vẫn còn bàn đang phục vụ!";
+
+            return res.status(400).json({
+                success: false,
+                message: message
+            });
         }
 
         const startOfDay = moment().tz("Asia/Ho_Chi_Minh").startOf('day').toISOString();
