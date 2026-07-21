@@ -756,22 +756,42 @@ export const updateOrderStatus = async (req, res) => {
     }
 }
 
+
+
 export const cancelOrderStatus = async (req, res) => {
     try {
-        const { order_id } = req.body;
+        const { order_id, order_detail_id } = req.body;
+
+        const { data: detailData, error: detailErr } = await supabase
+            .from('order_details')
+            .update({ status: 'cancelled' })
+            .eq('id', order_detail_id)
+            .eq('order_id', order_id)
+            .select()
+            .maybeSingle();
+
+        if (detailErr) throw detailErr;
+
         const { data: orderData, error: orderErr } = await supabase
             .from('orders')
-            .update({ status: 'cancelled' })
-            .eq('id', order_id)
             .select(`status, id, session_id, dining_sessions (tables(name))`)
+            .eq('id', order_id)
             .single();
-
         if (orderErr) throw orderErr;
 
         const { data: orderDetails } = await supabase
             .from('order_details')
-            .select(`quantity, note, dishes(name)`)
+            .select(`id,quantity, note, dishes(name)`)
             .eq('order_id', order_id);
+
+        const allCancelled = orderDetails.every(detail => detail.status === 'cancelled');
+        if (allCancelled) {
+            await supabase
+                .from('orders')
+                .update({ status: 'cancelled' })
+                .eq('id', order_id);
+            orderData.status = 'cancelled';
+        }
 
         const finalOrder = {
             ...orderData,

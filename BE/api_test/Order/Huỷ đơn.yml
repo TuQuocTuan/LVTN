@@ -10,7 +10,8 @@ http:
     type: json
     data: |-
       {
-        "order_id":53
+        "order_id":247,
+        "order_detail_id":336
       }
   auth: inherit
 
