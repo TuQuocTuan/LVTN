@@ -9,6 +9,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('week'); // Khoảng thời gian lọc: day, week, month, year
   const [liveRevenue, setLiveRevenue] = useState(0); // Tổng doanh thu thật bốc từ API
+  const [cashRevenue, setCashRevenue] = useState(0); // Doanh thu tiền mặt
+  const [transferRevenue, setTransferRevenue] = useState(0); // Doanh thu chuyển khoản (VNPAY)
   
   // Dữ liệu đồ thị cột thực tế được render tự động từ API tuần của Tuấn
   const [weeklyData, setWeeklyData] = useState([]);
@@ -52,10 +54,14 @@ const AdminDashboard = () => {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/revenue`, { range });
       if (response.data && response.data.success) {
         setLiveRevenue(Number(response.data.tongdoanhthu || 0));
+        setCashRevenue(Number(response.data.tongtienmat || 0));
+        setTransferRevenue(Number(response.data.tongchuyenkhoan || 0));
       }
     } catch (error) {
       console.error("Lỗi đồng bộ API Doanh thu thật:", error);
       setLiveRevenue(0);
+      setCashRevenue(0);
+      setTransferRevenue(0);
     } finally {
       setLoading(false);
     }
@@ -131,10 +137,7 @@ const AdminDashboard = () => {
     },
   ];
 
-  const topDishes = [
-    { name: 'Salad Cá Hồi Áp Chảo', sales: '342 đ/h', percentage: 92, image: 'https://images.unsplash.com/photo-1560963689-02e820bfceb5?w=200&h=200&fit=crop' },
-    { name: 'Steak Thăn Ngoại Bò Mỹ', sales: '215 đ/h', percentage: 75, image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=150&h=150&fit=crop' },
-  ];
+
 
   /* STREAMING_CHUNK: Nâng cấp thiết kế Excel (tăng font-size lên 15px, tăng padding và độ rộng ô) */
   const handleExportExcel = () => {
@@ -416,28 +419,65 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* MÓN ĂN BÁN CHẠY NHẤT: THIẾT KẾ GRID CARD THOÁNG ĐÃNG */}
-        <div className="bg-white p-6 rounded-2xl border border-neutralCustom/15 shadow-sm flex flex-col">
-          <h3 className="text-lg font-bold text-gray-900 mb-1">Món ăn bán chạy hàng đầu</h3>
-          <p className="text-neutralCustom text-xs uppercase tracking-wider font-bold mb-6">Xếp hạng theo số lượng phần ăn xuất quầy</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {topDishes.map((dish, idx) => (
-              <div key={idx} className="flex items-center gap-5 bg-culinaryBg/20 p-4 rounded-2xl border border-neutralCustom/10">
-                <img className="w-16 h-16 rounded-xl object-cover shadow-sm border border-neutralCustom/10 shrink-0" src={dish.image} alt={dish.name}/>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-sm text-gray-900 truncate pr-3">{dish.name}</span>
-                    <span className="text-primary font-black text-sm whitespace-nowrap">{dish.sales}</span>
+        {/* THỐNG KÊ DOANH THU THEO PHƯƠNG THỨC THANH TOÁN */}
+        {(() => {
+          const totalMethodRevenue = cashRevenue + transferRevenue;
+          const cashPercentage = totalMethodRevenue > 0 ? Math.round((cashRevenue / totalMethodRevenue) * 100) : 0;
+          const transferPercentage = totalMethodRevenue > 0 ? Math.round((transferRevenue / totalMethodRevenue) * 100) : 0;
+
+          return (
+            <div className="bg-white p-6 rounded-2xl border border-neutralCustom/15 shadow-sm flex flex-col">
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Doanh thu theo phương thức</h3>
+              <p className="text-neutralCustom text-xs uppercase tracking-wider font-bold mb-6">
+                Phân tích tỷ lệ thanh toán tiền mặt và chuyển khoản (VNPAY)
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Tiền mặt */}
+                <div className="flex items-center gap-5 bg-emerald-50/30 p-5 rounded-2xl border border-emerald-500/10 hover:shadow-md transition-all duration-300">
+                  <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 border border-emerald-150">
+                    <span className="material-symbols-outlined text-[32px]">payments</span>
                   </div>
-                  <div className="h-2 w-full bg-white rounded-full overflow-hidden border border-neutralCustom/15">
-                    <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${dish.percentage}%` }}></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-2">
+                      <span className="font-extrabold text-sm text-gray-900">Tiền mặt (CASH)</span>
+                      <span className="text-emerald-600 font-black text-base whitespace-nowrap">
+                        {cashRevenue.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 flex-1 bg-stone-100 rounded-full overflow-hidden border border-neutralCustom/10">
+                        <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${cashPercentage}%` }}></div>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-emerald-600 w-8 text-right shrink-0">{cashPercentage}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chuyển khoản (VNPAY) */}
+                <div className="flex items-center gap-5 bg-blue-50/30 p-5 rounded-2xl border border-blue-500/10 hover:shadow-md transition-all duration-300">
+                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0 border border-blue-150">
+                    <span className="material-symbols-outlined text-[32px]">qr_code_2</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-2">
+                      <span className="font-extrabold text-sm text-gray-900">Chuyển khoản (VNPAY)</span>
+                      <span className="text-blue-600 font-black text-base whitespace-nowrap">
+                        {transferRevenue.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 flex-1 bg-stone-100 rounded-full overflow-hidden border border-neutralCustom/10">
+                        <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${transferPercentage}%` }}></div>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-blue-600 w-8 text-right shrink-0">{transferPercentage}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          );
+        })()}
 
         {/* NHẬT KÝ KẾT CA CỦA THU NGÂN */}
         {(() => {

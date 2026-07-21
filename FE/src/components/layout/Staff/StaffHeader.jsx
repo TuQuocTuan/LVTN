@@ -23,6 +23,7 @@ const StaffHeader = ({
   // States để lưu dữ liệu kết ca từ API
   const [shiftReportData, setShiftReportData] = useState(null);
   const [ketCaTime, setKetCaTime] = useState('');
+  const [alertModal, setAlertModal] = useState({ show: false, title: 'Thông báo', message: '', type: 'error' });
 
   const [userInfo, setUserInfo] = useState({ fullname: 'Đang tải...', role: '' });
 
@@ -94,12 +95,25 @@ const StaffHeader = ({
         setShiftReportData(response.data);
         // Ghi nhận mốc ngày giờ bấm kết ca hiện tại
         setKetCaTime(new Date().toLocaleString('vi-VN'));
+        setShowLogoutConfirm(true);
+      } else {
+        setAlertModal({
+          show: true,
+          title: "Cảnh Báo",
+          message: response.data.message || "Không thể kết ca vào lúc này.",
+          type: "error"
+        });
       }
     } catch (error) {
       console.error("Lỗi khi tải dữ liệu kết ca:", error);
+      setAlertModal({
+        show: true,
+        title: "Cảnh Báo",
+        message: error.response?.data?.message || "Lỗi khi tải dữ liệu kết ca.",
+        type: "error"
+      });
     } finally {
       setIsLoggingOut(false);
-      setShowLogoutConfirm(true);
     }
   };
 
@@ -137,15 +151,22 @@ const StaffHeader = ({
         });
       }
       console.log("Đã gọi API logout thành công!");
-    } catch (err) {
-      console.error("Lỗi chốt ca hoặc ghi nhận LOGOUT xuống server:", err);
-    } finally {
-      // Xóa bộ nhớ và điều hướng ra màn hình Đăng nhập
+
+      // Chỉ xóa bộ nhớ và chuyển trang khi thực hiện thành công toàn bộ
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setShowLogoutConfirm(false);
-      setIsLoggingOut(false);
       navigate('/login');
+    } catch (err) {
+      console.error("Lỗi chốt ca hoặc ghi nhận LOGOUT xuống server:", err);
+      setAlertModal({
+        show: true,
+        title: "Lỗi Kết Ca",
+        message: err.response?.data?.message || "Lỗi chốt ca hoặc ghi nhận đăng xuất. Vui lòng thử lại!",
+        type: "error"
+      });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -382,6 +403,31 @@ const StaffHeader = ({
               </>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 HỆ THỐNG ALERT MODAL THAY THẾ TOAST (Bảo mật, có nút bấm Đồng ý) */}
+      {alertModal.show && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
+            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
+              alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+            }`}>
+              <span className="material-symbols-outlined text-3xl">
+                {alertModal.type === 'success' ? 'check_circle' : 'error'}
+              </span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
+            <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{alertModal.message}</p>
+            <button 
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'error' })} 
+              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${
+                alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
+              }`}
+            >
+              Đồng ý
+            </button>
           </div>
         </div>
       )}
