@@ -35,7 +35,7 @@ const IngredientManagement = () => {
     name: '', quantity: '', unit: '', min_stock: '', category_id: ''
   });
 
-  // 🌟 STATES THAY THẾ ALERT VÀ CONFIRM MẶC ĐỊNH
+  // STATES THAY THẾ ALERT VÀ CONFIRM MẶC ĐỊNH
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
 
@@ -238,7 +238,7 @@ const IngredientManagement = () => {
       <AdminSidebar currentTab="inventory" />
       <AdminHeader />
 
-      {/* 🌟 HỆ THỐNG CUSTOM ALERT MODAL AN TOÀN */}
+      {/* HỆ THỐNG CUSTOM ALERT MODAL AN TOÀN */}
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
@@ -263,7 +263,7 @@ const IngredientManagement = () => {
         </div>
       )}
 
-      {/* 🌟 HỆ THỐNG CUSTOM CONFIRM MODAL */}
+      {/* HỆ THỐNG CUSTOM CONFIRM MODAL */}
       {confirmModal.show && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">

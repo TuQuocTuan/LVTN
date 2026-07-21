@@ -4,40 +4,52 @@ import AdminHeader from '../../components/layout/Admin/AdminHeader';
 import axios from 'axios';
 
 const RoleManagement = () => {
+  // Danh sách toàn bộ tài khoản nhân viên lấy từ hệ thống
   const [users, setUsers] = useState([]);
+  
+  // ID của tài khoản nhân viên đang được click chọn
   const [activeUserId, setActiveUserId] = useState(null);
+  
+  // Trạng thái chờ tải dữ liệu danh sách tài khoản
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Trạng thái chờ khi đang thực hiện lưu dữ liệu qua API
   const [isSaving, setIsSaving] = useState(false);
 
-  // State cho Modal Thêm User
+  // Trạng thái hiển thị modal thêm nhân viên mới
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
+  // Dữ liệu nhập trên form khi thêm nhân viên mới
   const [newUser, setNewUser] = useState({
     username: '', password: '', fullname: '', role: 'cashier', email: '', phone_number: '', is_active: true
   });
 
-  // State cho Modal Sửa Thông Tin Cá Nhân
+  // Trạng thái hiển thị modal chỉnh sửa thông tin cá nhân nhân viên
   const [isEditInfoModalOpen, setIsEditInfoModalOpen] = useState(false);
+  
+  // Dữ liệu nhập trên form khi chỉnh sửa thông tin cá nhân nhân viên
   const [editInfoForm, setEditInfoForm] = useState({
     id: '', fullname: '', username: '', email: '', phone_number: ''
   });
 
-  // State cho phần Edit Quyền (Cột bên phải)
+  // Dữ liệu phân quyền và vai trò đang chỉnh sửa của nhân viên ở cột bên phải
   const [editData, setEditData] = useState({ role: '', is_active: true, permissions: {} });
 
-  // State hiển thị/ẩn mật khẩu trong modal sửa thông tin
+  // Ẩn/hiển thị mật khẩu nhập mới trong modal sửa thông tin
   const [showPassword, setShowPassword] = useState(false);
 
-
-
-  // --- STATES CHỐT CHẶN BẢO MẬT THAY THẾ ALERT/CONFIRM TRÌNH DUYỆT ---
+  // Trạng thái hiển thị Custom Alert thay thế alert mặc định
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
+  
+  // Trạng thái hiển thị Custom Confirm thay thế confirm mặc định
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
 
+  // Hiển thị nhanh hộp thoại cảnh báo tùy biến
   const showAlert = (message, type = 'success', title = 'Thông báo') => {
     setAlertModal({ show: true, message, title, type });
   };
 
-  // ĐỊNH NGHĨA CÁC QUYỀN
+  // Khai báo phân loại và danh sách các quyền hạn chi tiết trong hệ thống
   const permissionCategories = [
     {
       title: 'Nhóm Quyền Quản Trị (Admin)',
@@ -76,7 +88,7 @@ const RoleManagement = () => {
     }
   ];
 
-  // Màu sắc cho nhãn Role
+  // Bản đồ màu sắc tương ứng cho từng vai trò trên giao diện
   const roleColors = {
     super_admin: 'text-red-600 bg-red-50 border border-red-200',
     admin: 'text-secondary bg-secondary/10',
@@ -84,10 +96,12 @@ const RoleManagement = () => {
     cashier: 'text-tertiary bg-tertiary/10'
   };
 
+  // Tự động tải danh sách tài khoản nhân viên khi truy cập trang
   useEffect(() => {
     fetchUsers();
   }, []);
 
+  // Gọi API lấy toàn bộ danh sách người dùng từ cơ sở dữ liệu
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
@@ -97,7 +111,6 @@ const RoleManagement = () => {
       if (data.length > 0 && !activeUserId) {
         handleSelectUser(data[0]);
       } else if (activeUserId) {
-        // Refresh lại activeUser nếu đang có
         const currentUser = data.find(u => u.id === activeUserId);
         if (currentUser) handleSelectUser(currentUser);
       }
@@ -108,11 +121,11 @@ const RoleManagement = () => {
     }
   };
 
+  // Thiết lập thông tin tài khoản được chọn lên form phân quyền và phân tích quyền
   const handleSelectUser = (user) => {
     setActiveUserId(user.id);
     let userPermissions = {};
     try {
-      // Cố gắng parse an toàn
       if (typeof user.permissions === 'string') {
         userPermissions = JSON.parse(user.permissions);
       } else if (typeof user.permissions === 'object' && user.permissions !== null) {
@@ -130,13 +143,13 @@ const RoleManagement = () => {
     });
   };
 
-  // Lấy User hiện tại (từ Cột Trái)
+  // Tìm và xác định thông tin tài khoản của nhân viên đang được chọn
   const activeUser = users.find(u => u.id === activeUserId);
 
-  // KIỂM TRA SUPER_ADMIN BẰNG DỮ LIỆU ĐANG EDIT BÊN PHẢI
+  // Kiểm tra vai trò tài khoản có phải là quản trị viên hệ thống cao cấp nhất hay không
   const isSuperAdmin = editData.role?.toLowerCase() === 'super_admin';
 
-  // XỬ LÝ KHI CLICK VÀO CHECKBOX QUYỀN
+  // Đảo trạng thái bật/tắt của một quyền truy cập cụ thể khi click chọn
   const handleTogglePermission = (permId) => {
     if (isSuperAdmin) return;
 
@@ -149,7 +162,7 @@ const RoleManagement = () => {
     }));
   };
 
-  // KHI ĐỔI ROLE TỪ SELECT BOX -> TỰ ĐỘNG CẬP NHẬT LẠI CHECKBOX MẶC ĐỊNH
+  // Tự động gán tập hợp quyền mặc định tương ứng khi thay đổi vai trò (Role)
   const handleRoleChange = (newRole) => {
     let newPerms = { ...editData.permissions };
 
@@ -167,7 +180,7 @@ const RoleManagement = () => {
     }));
   };
 
-  // CẬP NHẬT PHÂN QUYỀN VÀ ROLE
+  // Gửi yêu cầu cập nhật vai trò và cấu trúc quyền Checkbox lên cơ sở dữ liệu
   const handleUpdateRole = async () => {
     setIsSaving(true);
     try {
@@ -190,7 +203,7 @@ const RoleManagement = () => {
     }
   };
 
-  // MỞ MODAL SỬA THÔNG TIN
+  // Nạp thông tin tài khoản được chọn lên form sửa thông tin cá nhân và mở modal
   const handleOpenEditInfo = (emp) => {
     setEditInfoForm({
       id: emp.id,
@@ -204,9 +217,7 @@ const RoleManagement = () => {
     setIsEditInfoModalOpen(true);
   };
 
-
-
-  // CẬP NHẬT THÔNG TIN CÁ NHÂN
+  // Gửi yêu cầu cập nhật thông tin cá nhân (và mật khẩu mới nếu có nhập) lên Backend
   const handleUpdateInfoSubmit = async (e) => {
     e.preventDefault();
 
@@ -217,7 +228,6 @@ const RoleManagement = () => {
 
     setIsSaving(true);
     try {
-      // Vì API updateRoleUser đang dùng chung, cần gửi kèm lại role/permissions để ko bị mất
       const currentUser = users.find(u => u.id === editInfoForm.id);
 
       const payload = {
@@ -254,6 +264,7 @@ const RoleManagement = () => {
     }
   };
 
+  // Gửi thông tin đăng ký nhân viên mới lên Backend (tự động tạo và gửi email thông báo tài khoản)
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
@@ -289,6 +300,7 @@ const RoleManagement = () => {
     }
   };
 
+  // Gọi API thay đổi trạng thái hoạt động (khóa/mở khóa tài khoản) của nhân viên sau khi xác nhận
   const handleToggleLockUser = async (emp) => {
     if (emp.role?.toLowerCase() === 'super_admin') return showAlert("Không thể thao tác trên tài khoản Super Admin!", "error", "Không cho phép");
 
@@ -303,14 +315,12 @@ const RoleManagement = () => {
       onConfirm: async () => {
         try {
           if (emp.is_active) {
-            // Trường hợp KHÓA: Gọi API delete để soft lock (Backend sẽ đổi is_active = false)
             const res = await axios.put(`${import.meta.env.VITE_API_URL}/user/delete/${emp.id}`);
             if (res.data.success) {
               showAlert("Đã khóa tài khoản thành công!", "success", "Khóa thành công");
               fetchUsers();
             }
           } else {
-            // Trường hợp MỞ KHÓA: Gọi API update truyền is_active = true
             const payload = {
               id: emp.id,
               role: emp.role,
@@ -338,7 +348,7 @@ const RoleManagement = () => {
 
       <main className="flex-1 ml-64 pt-20 p-6 h-screen flex flex-col bg-culinaryBg w-[calc(100%-16rem)] overflow-hidden">
         <div className="w-full flex flex-col h-full overflow-hidden">
-          {/* Page Header */}
+          {/* Header trang và nút kích hoạt thêm nhân viên */}
           <header className="mb-4 flex justify-between items-end shrink-0">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Người dùng & Phân quyền</h2>
@@ -353,7 +363,7 @@ const RoleManagement = () => {
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden mb-4">
-            {/* CỘT TRÁI: DANH SÁCH NHÂN VIÊN */}
+            {/* Cột trái hiển thị danh sách tài khoản nhân viên */}
             <section className="md:col-span-4 flex flex-col h-full overflow-hidden">
               <div className="bg-white border border-neutralCustom/20 rounded-2xl overflow-hidden shadow-sm flex flex-col h-full">
                 <div className="p-3.5 bg-culinaryBg/50 border-b border-neutralCustom/20 flex justify-between items-center shrink-0">
@@ -417,12 +427,12 @@ const RoleManagement = () => {
               </div>
             </section>
 
-            {/* CỘT PHẢI: GÁN QUYỀN (CHECKBOX) & TRẠNG THÁI */}
+            {/* Cột phải hiển thị cấu hình chi tiết vai trò và các checkbox phân quyền */}
             <section className="md:col-span-8 flex flex-col h-full overflow-hidden">
               {activeUser ? (
                 <div className="bg-white border border-neutralCustom/20 rounded-2xl shadow-md flex flex-col h-full overflow-hidden">
 
-                  {/* Header info */}
+                  {/* Phần header cột thông tin nhân viên được chọn */}
                   <div className="p-4 bg-culinaryBg/30 border-b border-neutralCustom/20 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0">
@@ -433,7 +443,7 @@ const RoleManagement = () => {
                         <p className="text-xs text-neutralCustom mt-0.5">Tick chọn để bật/tắt quyền truy cập từng tính năng.</p>
                       </div>
                     </div>
-                    {/* Trạng thái hoạt động */}
+                    
                     <div className="flex items-center gap-2">
                       <select
                         value={editData.role}
@@ -449,7 +459,7 @@ const RoleManagement = () => {
                     </div>
                   </div>
 
-                  {/* Body: Form Gán Quyền (CHECKBOX) */}
+                  {/* Danh sách các quyền lựa chọn dưới dạng Checkbox */}
                   <div className="p-4 flex-grow overflow-y-auto custom-scrollbar">
                     {isSuperAdmin && (
                       <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-center gap-2">
@@ -466,7 +476,6 @@ const RoleManagement = () => {
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                             {category.items.map((item) => {
-                              // Dùng biến isSuperAdmin (dựa theo Role đang sửa) để quyết định tick
                               const isChecked = isSuperAdmin ? true : !!editData.permissions?.[item.id];
 
                               return (
@@ -498,7 +507,7 @@ const RoleManagement = () => {
                       ))}
                     </div>
 
-                    {/* Trạng thái tài khoản */}
+                    {/* Kiểm soát trạng thái khóa/hoạt động đăng nhập tài khoản */}
                     <div className="mt-6 border-t border-neutralCustom/10 pt-4">
                       <h4 className="text-[10px] font-bold text-neutralCustom uppercase tracking-wider mb-2">Trạng thái đăng nhập</h4>
                       <div className={`flex items-center gap-2.5 p-3 rounded-xl border w-fit transition-all ${editData.is_active ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} ${isSuperAdmin ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -517,14 +526,14 @@ const RoleManagement = () => {
 
                   </div>
 
-                  {/* Footer Actions */}
+                  {/* Nút lưu cấu hình và thông báo nhắc nhở */}
                   <div className="p-4 bg-culinaryBg/50 border-t border-neutralCustom/20 flex justify-between items-center shrink-0">
                     <span className="text-[11px] text-neutralCustom italic">
                       Quyền sẽ có tác dụng khi nhân viên tải lại trang.
                     </span>
                     <button
                       onClick={handleUpdateRole}
-                      disabled={isSuperAdmin || isSaving} // Không cho phép Lưu nếu đang là Super Admin
+                      disabled={isSuperAdmin || isSaving}
                       className="px-6 py-2 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-secondary active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-xs"
                     >
                       {isSaving ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">save</span>}
@@ -543,7 +552,7 @@ const RoleManagement = () => {
         </div>
       </main>
 
-      {/* MODAL THÊM USER MỚI */}
+      {/* Modal form thêm tài khoản nhân viên mới */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsAddModalOpen(false)}>
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up" onClick={(e) => e.stopPropagation()}>
@@ -598,7 +607,7 @@ const RoleManagement = () => {
         </div>
       )}
 
-      {/* MODAL SỬA THÔNG TIN CÁ NHÂN */}
+      {/* Modal form chỉnh sửa thông tin cá nhân nhân viên */}
       {isEditInfoModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsEditInfoModalOpen(false)}>
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up" onClick={(e) => e.stopPropagation()}>
@@ -661,8 +670,7 @@ const RoleManagement = () => {
         </div>
       )}
 
-
-      {/* 🌟 HỆ THỐNG ALERT MODAL THAY THẾ TOAST (Bảo mật, có nút bấm Đồng ý) */}
+      {/* Hộp thoại Custom Alert thay thế alert mặc định của hệ thống */}
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
@@ -687,7 +695,7 @@ const RoleManagement = () => {
         </div>
       )}
 
-      {/* 🌟 HỆ THỐNG HỘP THOẠI XÁC NHẬN THAY THẾ CONFIRM */}
+      {/* Hộp thoại Custom Confirm thay thế confirm mặc định của hệ thống */}
       {confirmModal.show && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">

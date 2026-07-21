@@ -13,72 +13,84 @@ const escapeRegExp = (string) => {
 };
 
 const ReviewManagement = () => {
-  /* STATE QUẢN LÝ DỮ LIỆU VÀ PHÂN TRANG */
+  // Danh sách toàn bộ các đánh giá lấy từ API
   const [reviewsList, setReviewsList] = useState([]);
+  
+  // Danh sách tất cả các món ăn lấy từ API
   const [dishesList, setDishesList] = useState([]);
+  
+  // Trạng thái chờ khi đang tải dữ liệu
   const [isLoading, setIsLoading] = useState(false);
 
-  // STATE LƯU TRỮ DANH SÁCH TỪ THÔ TỤC ĐỌC TỪ FILE TXT
+  // Danh sách các từ thô tục nhạy cảm đọc từ file văn bản hoặc fallback
   const [sensitiveWords, setSensitiveWords] = useState([]);
 
+  // Chế độ hiển thị danh sách đánh giá ('table' dạng bảng hoặc 'grid' dạng thẻ)
   const [viewMode, setViewMode] = useState('table');
 
-  // Phân trang danh sách ý kiến đánh giá (Mỗi trang 8 đánh giá)
+  // Trang hiện tại của danh sách đánh giá
   const [reviewCurrentPage, setReviewCurrentPage] = useState(1);
   const reviewsPerPage = 8;
 
-  // Phân trang bảng xếp hạng chất lượng món ăn (Mỗi trang 5 món ăn)
+  // Trang hiện tại của danh sách xếp hạng món ăn
   const [dishCurrentPage, setDishCurrentPage] = useState(1);
   const dishesPerPage = 6;
 
-  // Các bộ lọc dữ liệu thông minh
+  // Bộ lọc theo số sao đánh giá (ALL hoặc số sao cụ thể 1-5)
   const [filterRating, setFilterRating] = useState('ALL');
+  
+  // Bộ lọc theo món ăn được chọn cụ thể
   const [selectedDishFilter, setSelectedDishFilter] = useState('ALL');
+  
+  // Từ khóa tìm kiếm (theo tên món, bình luận, email, sđt, mã phiên)
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Ngày bắt đầu để lọc thời gian đánh giá
   const [startDate, setStartDate] = useState('');
+  
+  // Ngày kết thúc để lọc thời gian đánh giá
   const [endDate, setEndDate] = useState('');
 
   // STATES ĐIỀU KHIỂN BỘ LỌC THÔ TỤC
   const [maskSensitive, setMaskSensitive] = useState(true); // Che từ nhạy cảm bằng dấu *
   const [hideSensitive, setHideSensitive] = useState(false); // Ẩn hoàn toàn các đánh giá chứa từ tục tĩu
 
+  // Trạng thái hiển thị Custom Alert thay thế alert mặc định
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'error' });
 
-  // NẠP SONG SONG DANH SÁCH TỪ THÔ TỤC VÀ DỮ LIỆU ĐÁNH GIÁ KHI KHỞI CHẠY TRANG
+  // Nạp danh sách từ cấm và nạp dữ liệu đánh giá khi mở trang quản trị
   useEffect(() => {
     fetchProfanityList();
     fetchData();
   }, []);
 
-  // Tự động đưa phân trang về trang 1 mỗi khi đổi bộ lọc
+  // Đưa phân trang về trang đầu tiên mỗi khi thay đổi bất kỳ bộ lọc nào
   useEffect(() => {
     setReviewCurrentPage(1);
     setDishCurrentPage(1);
   }, [filterRating, selectedDishFilter, searchTerm, startDate, endDate, hideSensitive]);
 
+  // Kích hoạt mở Custom Alert thông báo lỗi/thông tin
   const showAlert = (message, type = 'error', title = 'Thông báo') => {
     setAlertModal({ show: true, message, title, type });
   };
 
-  // HÀM FETCH ĐỌC FILE TXT TỪ THƯ MỤC PUBLIC (GIA CỐ BỘ TÁCH TỪ SPACE-SEPARATED THÔNG MINH)
+  // Đọc danh sách từ cấm tiếng Việt từ file txt nằm trong thư mục public
   const fetchProfanityList = async () => {
     try {
       const response = await fetch('/vietnamese_profanity.txt');
       const contentType = response.headers.get('content-type');
 
-      // Phòng tránh lỗi Single Page App trả về nội dung HTML thay vì file văn bản
       if (!response.ok || (contentType && contentType.includes('text/html'))) {
         throw new Error('Tệp tin từ cấm không tồn tại hoặc trả về sai định dạng HTML');
       }
       const text = await response.text();
       const words = [];
 
-      // Tách các từ cấm phân cách bằng dấu phẩy
       text.split(',').forEach(item => {
         const trimmed = item.trim();
         if (!trimmed) return;
 
-        // Xử lý nếu từ chứa khoảng trắng dài dính nhau
         if (trimmed.includes(' ') && trimmed.split(/\s+/).length > 4) {
           trimmed.split(/\s+/).forEach(w => {
             const wordTrimmed = w.trim();
@@ -92,13 +104,13 @@ const ReviewManagement = () => {
       setSensitiveWords(words);
     } catch (error) {
       console.error("Lỗi nạp tệp tin từ vựng thô tục, kích hoạt dự phòng ngay lập tức:", error);
-      // Phương án dự phòng (Fallback) chứa đầy đủ các từ thô tục gốc để cứu cánh ngay lập tức
       setSensitiveWords([
         'cặc', 'cak', 'kak', 'kac', 'cac', 'lồn', 'lon', 'đéo', 'đm', 'vcl', 'clgt', 'buồi', 'buoi', 'đĩ', 'chó'
       ]);
     }
   };
 
+  // Đồng bộ song song danh sách đánh giá và danh sách món ăn từ Backend
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -121,12 +133,13 @@ const ReviewManagement = () => {
     }
   };
 
+  // Truy vấn tên món ăn dựa vào id món ăn
   const getDishNameById = (dishId) => {
     const dish = dishesList.find(d => d.id === Number(dishId));
     return dish ? dish.name : `Món ăn #${dishId}`;
   };
 
-  /* HÀM KIỂM TRA BÌNH LUẬN CÓ CHỨA TỪ TỤC TĨU KHÔNG (NÂNG CẤP UNICODE BOUNDARY) */
+  // Kiểm tra chuỗi văn bản có chứa từ cấm nhạy cảm nào hay không
   const checkHasProfanity = (text) => {
     if (!text || sensitiveWords.length === 0) return false;
     const cleanText = text.toLowerCase();
@@ -136,26 +149,27 @@ const ReviewManagement = () => {
     });
   };
 
-  /* HÀM CHE TỪ NGỮ THÔ TỤC THÀNH DẤU SAO (*) (NÂNG CẤP UNICODE BOUNDARY CHE DẤU ĐỘNG CHUẨN XÁC) */
+  // Tìm và thay thế tất cả từ thô tục bằng ký tự * (chỉ che các chữ sau ký tự đầu)
   const maskProfanityText = (text) => {
     if (!text || sensitiveWords.length === 0) return text || '';
     let maskedText = text;
     sensitiveWords.forEach(word => {
       const regex = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(word)}(?![\\p{L}\\p{N}])`, 'gui');
       maskedText = maskedText.replace(regex, (match) => {
-        // Giữ lại ký tự đầu tiên và chuyển các ký tự sau thành dấu sao (*) để tăng tính thẩm mỹ
         return match[0] + '*'.repeat(match.length - 1);
       });
     });
     return maskedText;
   };
 
+  // Thiết lập bộ lọc thời gian chỉ lấy ngày hôm nay
   const selectToday = () => {
     const today = new Date().toISOString().split('T')[0];
     setStartDate(today);
     setEndDate(today);
   };
 
+  // Thiết lập bộ lọc thời gian lấy từ đầu tuần này đến hiện tại
   const selectThisWeek = () => {
     const current = new Date();
     const first = current.getDate() - current.getDay() + (current.getDay() === 0 ? -6 : 1);
@@ -165,6 +179,7 @@ const ReviewManagement = () => {
     setEndDate(lastDay);
   };
 
+  // Thiết lập bộ lọc thời gian lấy từ ngày đầu tháng này đến hiện tại
   const selectThisMonth = () => {
     const current = new Date();
     const firstDay = new Date(current.getFullYear(), current.getMonth(), 1);
@@ -174,12 +189,13 @@ const ReviewManagement = () => {
     setEndDate(lastDayStr);
   };
 
+  // Xóa bỏ hoàn toàn bộ lọc thời gian đã chọn
   const clearDateFilter = () => {
     setStartDate('');
     setEndDate('');
   };
 
-  /* LỌC DANH SÁCH REVIEW (KẾT HỢP BỘ LỌC THÔ TỤC) */
+  // Tiến hành lọc danh sách đánh giá theo đầy đủ các điều kiện đang áp dụng
   const filteredReviews = reviewsList.filter(r => {
     const matchRating = filterRating === 'ALL' || r.rating === Number(filterRating);
     const matchDishSelect = selectedDishFilter === 'ALL' || Number(r.dish_id) === Number(selectedDishFilter);
@@ -217,16 +233,16 @@ const ReviewManagement = () => {
     return matchRating && matchDishSelect && matchSearch && matchDate && matchCensor;
   });
 
+  // Xác định các chỉ mục phục vụ việc cắt mảng phân trang
   const totalReviewPages = Math.ceil(filteredReviews.length / reviewsPerPage);
   const indexOfLastReview = reviewCurrentPage * reviewsPerPage;
   const indexOfFirstReview = indexOfLastReview - reviewsPerPage;
   const currentReviewsList = filteredReviews.slice(indexOfFirstReview, indexOfLastReview);
 
-  /* TÍNH TOÁN BẢNG XẾP HẠNG CHẤT LƯỢNG MÓN ĂN */
+  // Phân tích và thống kê số liệu đánh giá, tính điểm trung bình và xếp hạng cho từng món ăn
   const getDishQualityAnalytics = () => {
     const analytics = {};
 
-    // Khởi tạo điểm cho tất cả các món ăn có trong hệ thống để hiện đầy đủ
     dishesList.forEach(dish => {
       analytics[dish.id] = {
         name: dish.name,
@@ -256,7 +272,6 @@ const ReviewManagement = () => {
     return Object.values(analytics).sort((a, b) => {
       const scoreA = a.totalReviews > 0 ? (a.sumStars / a.totalReviews) : 0;
       const scoreB = b.totalReviews > 0 ? (b.sumStars / b.totalReviews) : 0;
-      // Sắp xếp giảm dần theo điểm trung bình, nếu bằng nhau thì theo bảng chữ cái tiếng Việt
       if (scoreB !== scoreA) {
         return scoreB - scoreA;
       }
@@ -266,15 +281,18 @@ const ReviewManagement = () => {
 
   const dishAnalyticsList = getDishQualityAnalytics();
 
+  // Các chỉ mục phục vụ phân trang cho bảng xếp hạng món ăn
   const totalDishPages = Math.ceil(dishAnalyticsList.length / dishesPerPage);
   const indexOfLastDish = dishCurrentPage * dishesPerPage;
   const indexOfFirstDish = indexOfLastDish - dishesPerPage;
   const currentDishesAnalytics = dishAnalyticsList.slice(indexOfFirstDish, indexOfLastDish);
 
+  // Tính toán tổng số lượt khảo sát, điểm trung bình và lượt đánh giá tiêu cực
   const totalReviews = reviewsList.length;
   const averageRating = totalReviews > 0 ? (reviewsList.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) : '0.0';
   const criticalCount = reviewsList.filter(r => r.rating <= 3).length;
 
+  // Tạo giao diện biểu tượng ngôi sao màu vàng tương ứng với điểm đánh giá
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, idx) => (
       <span
@@ -287,6 +305,7 @@ const ReviewManagement = () => {
     ));
   };
 
+  // Định dạng ngày giờ hiển thị dạng HH:MM - DD/MM/YYYY
   const formatDate = (dateString) => {
     if (!dateString) return 'Vừa xong';
     const d = new Date(dateString);
@@ -298,7 +317,7 @@ const ReviewManagement = () => {
       <AdminSidebar currentTab="review" />
       <AdminHeader />
 
-      {/* CUSTOM ALERT DIALOG AN TOÀN */}
+      {/* Hộp thoại Custom Alert hiển thị khi có lỗi hệ thống hoặc lỗi nạp */}
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
@@ -317,14 +336,14 @@ const ReviewManagement = () => {
         </div>
       )}
 
-      {/* WORKSPACE GIÁM SÁT CHẤT LƯỢNG CHO MÁY TÍNH */}
+      {/* Khu vực nội dung chính */}
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen transition-all duration-300">
 
-        {/* Header */}
+        {/* Tiêu đề trang và các nút chọn chế độ xem biểu đồ/dạng thẻ */}
         <div className="mb-4 flex justify-between items-center shrink-0">
           <div>
             <h2 className="text-3xl font-black text-gray-900 tracking-tight">Ý kiến & Khảo sát món ăn</h2>
-            <p className="text-neutralCustom text-sm mt-1">Giám sát chất lượng món nướng lẩu ẩn danh trực tiếp từ ý kiến khách hàng quét mã QR trên bill.</p>
+            <p className="text-neutralCustom text-sm mt-1">Giám sát chất lượng món ăn trực tiếp từ ý kiến khách hàng quét mã QR trên bill.</p>
           </div>
 
           <div className="bg-white border border-neutralCustom/20 p-1 rounded-xl flex gap-1 shadow-sm shrink-0">
@@ -334,7 +353,7 @@ const ReviewManagement = () => {
                 }`}
             >
               <span className="material-symbols-outlined text-[16px]">table_rows</span>
-              Bảng biểu
+              Bảng
             </button>
             <button
               onClick={() => setViewMode('grid')}
@@ -342,12 +361,12 @@ const ReviewManagement = () => {
                 }`}
             >
               <span className="material-symbols-outlined text-[16px]">grid_view</span>
-              Thẻ bento
+              Thẻ
             </button>
           </div>
         </div>
 
-        {/* BENTO STATS GRID */}
+        {/* Khối Bento thống kê các chỉ số sao trung bình, số lượt khảo sát */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 shrink-0">
           <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
             <div className="w-14 h-14 rounded-2xl bg-yellow-50 text-yellow-500 flex items-center justify-center">
@@ -380,7 +399,7 @@ const ReviewManagement = () => {
           </div>
         </div>
 
-        {/* PANEL BỘ LỌC KHOẢNG THỜI GIAN */}
+        {/* Khối quản lý chọn mốc thời gian lọc nhanh */}
         <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-4 flex flex-col gap-3 shrink-0">
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
             <div className="flex items-center gap-2 shrink-0">
@@ -391,12 +410,13 @@ const ReviewManagement = () => {
             <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-end">
               <button onClick={selectToday} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">Hôm nay</button>
               <button onClick={selectThisWeek} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">Tuần này</button>
-              <button onClick={selectThisMonth} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">Tháng này</button>
+              <button onClick={selectThisMonth} className="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 text-gray-750 hover:bg-gray-100 transition-colors cursor-pointer">Tháng này</button>
             </div>
           </div>
 
           <div className="h-px bg-gray-100 w-full"></div>
 
+          {/* Ô nhập lọc khoảng thời gian từ ngày đến ngày và nút xóa lọc */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
             <div className="flex-1 grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
@@ -432,7 +452,7 @@ const ReviewManagement = () => {
           </div>
         </div>
 
-        {/* LỌC THEO MÓN ĂN VÀ TÌM KIẾM TỪ KHÓA BÌNH LUẬN + BỘ LỌC SENSITIVE THÔ TỤC */}
+        {/* Khối tìm kiếm từ khóa, chọn bộ lọc sao, chọn món ăn nướng lẩu và kiểm soát từ cấm thô tục */}
         <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-4 space-y-3 shrink-0">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative w-full md:max-w-md">
@@ -477,7 +497,7 @@ const ReviewManagement = () => {
 
           <div className="h-px bg-gray-100 w-full"></div>
 
-          {/* PHÂN HỆ ĐIỀU KHIỂN BỘ LỌC TỪ NGỮ THÔ TỤC (SENSITIVE CONTROLS) */}
+          {/* Các nút checkbox lựa chọn ẩn / che mờ thô tục từ bình luận khách hàng */}
           <div className="flex flex-wrap items-center gap-6">
             <span className="text-xs font-bold text-gray-650 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-orange-500 text-lg">gpp_maybe</span>
@@ -507,10 +527,8 @@ const ReviewManagement = () => {
           </div>
         </div>
 
-        {/* KHU VỰC HIỂN THỊ ĐA CHẾ ĐỘ DÀNH CHO LAPTOP */}
+        {/* Khối hiển thị dữ liệu chi tiết đánh giá */}
         <div className="flex flex-col gap-6 mb-4">
-
-          {/* CHI TIẾT DANH SÁCH REVIEW KÈM PHÂN TRANG (CHIẾM 100% CHIỀU RỘNG) */}
           <div className="w-full flex flex-col">
             <div>
               {isLoading ? (
@@ -520,7 +538,7 @@ const ReviewManagement = () => {
                 </div>
               ) : filteredReviews.length > 0 ? (
                 viewMode === 'table' ? (
-                  /* CHẾ ĐỘ BẢNG BIỂU CHUYÊN NGHIỆP */
+                  /* Bảng dữ liệu cột hàng chi tiết */
                   <div className="bg-white rounded-2xl border border-neutralCustom/20 shadow-sm overflow-hidden animate-fade-in">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
@@ -535,7 +553,6 @@ const ReviewManagement = () => {
                         </thead>
                         <tbody className="divide-y divide-neutralCustom/10">
                           {currentReviewsList.map((review, idx) => {
-                            // THỰC HIỆN LỌC VÀ CHE DẤU NGAY TRƯỚC KHI HIỂN THỊ TRÊN MÀN HÌNH
                             const hasBadWord = checkHasProfanity(review.comment);
                             const displayComment = maskSensitive ? maskProfanityText(review.comment) : review.comment;
 
@@ -577,11 +594,9 @@ const ReviewManagement = () => {
                                 </td>
                                 <td className="px-4 py-3.5 text-sm text-gray-700 min-w-[200px] max-w-xs md:max-w-md">
                                   <div className="flex flex-col gap-1">
-                                    {/* THAY THẾ BIẾN THÔ review.comment THÀNH BIẾN ĐÃ ĐƯỢC CHE DẤU displayComment */}
                                     <p className="italic font-medium leading-relaxed font-semibold break-words">
                                       "{displayComment || 'Không để lại lời nhắn'}"
                                     </p>
-                                    {/* Nhãn đỏ cảnh báo nếu phát hiện thô tục */}
                                     {hasBadWord && (
                                       <span className="self-start inline-flex items-center gap-1 bg-red-50 text-red-650 border border-red-100 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md mt-1 shadow-sm">
                                         <span className="material-symbols-outlined text-[12px]">gpp_maybe</span>
@@ -598,17 +613,15 @@ const ReviewManagement = () => {
                     </div>
                   </div>
                 ) : (
-                  /* CHẾ ĐỘ GRID BENTO THOÁNG ĐÃNG */
+                  /* Chế độ bento grid hiển thị dạng card */
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                     {currentReviewsList.map((review, idx) => {
-                      // ĐỒNG BỘ LỌC TỤC TĨU CHO CẢ CHẾ ĐỘ THẺ BENTO GRID
                       const hasBadWord = checkHasProfanity(review.comment);
                       const displayComment = maskSensitive ? maskProfanityText(review.comment) : review.comment;
 
                       return (
                         <div key={idx} className={`bg-white rounded-2xl p-6 border shadow-sm hover:shadow-md transition-shadow relative flex flex-col justify-between ${hasBadWord ? 'border-red-150 bg-red-50/5' : 'border-neutralCustom/20'}`}>
                           <div>
-                            {/* Header: Ngày giờ và Mã session */}
                             <div className="flex justify-between items-center mb-3">
                               <span className="text-[10px] bg-stone-100 text-stone-600 font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider">
                                 Bill #{String(review.session_id).slice(0, 8)}...
@@ -616,7 +629,6 @@ const ReviewManagement = () => {
                               <span className="text-[10px] text-gray-400 font-mono font-bold uppercase tracking-wider">{formatDate(review.created_at)}</span>
                             </div>
 
-                            {/* Thông tin khách hàng */}
                             <div className="mb-3 text-xs flex flex-wrap gap-2 items-center text-gray-650 bg-stone-50 border border-stone-200/50 p-2 rounded-xl">
                               <span className="material-symbols-outlined text-[16px] text-orange-500">contact_mail</span>
                               {review.email ? (
@@ -632,7 +644,6 @@ const ReviewManagement = () => {
                               )}
                             </div>
 
-                            {/* Món ăn và sao */}
                             <div className="flex items-center justify-between mb-4">
                               <span className="bg-orange-50 text-orange-600 border border-orange-100 font-black px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider">
                                 {getDishNameById(review.dish_id)}
@@ -640,12 +651,10 @@ const ReviewManagement = () => {
                               <div className="flex gap-0.5">{renderStars(review.rating)}</div>
                             </div>
 
-                            {/* THAY THẾ BIẾN THÔ review.comment THÀNH displayComment */}
                             <div className="bg-stone-50/50 p-4 rounded-xl text-sm italic text-gray-700 leading-relaxed border border-stone-200/40 relative">
                               "{displayComment || 'Không có bình luận chi tiết'}"
                             </div>
 
-                            {/* Cảnh báo ở dạng Grid */}
                             {hasBadWord && (
                               <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-red-650">
                                 <span className="material-symbols-outlined text-[14px]">gpp_maybe</span>
@@ -665,7 +674,7 @@ const ReviewManagement = () => {
               )}
             </div>
 
-            {/* PHÂN TRANG DANH SÁCH ĐÁNH GIÁ ĐƠN GIẢN TRUNG TÂM */}
+            {/* Phân trang danh sách đánh giá */}
             {!isLoading && totalReviewPages > 1 && (
               <div className="mt-3 flex justify-center items-center p-2 rounded-2xl shrink-0">
                 <div className="flex gap-2">
@@ -700,7 +709,7 @@ const ReviewManagement = () => {
             )}
           </div>
 
-          {/* BẢNG PHÂN TÍCH CHẤT LƯỢNG CHI TIẾT TỪNG MÓN (ĐẨY XUỐNG DƯỚI CÙNG FULL WIDTH) */}
+          {/* Bảng xếp hạng điểm sao trung bình của từng món ăn */}
           <div className="w-full flex flex-col">
             <div className="bg-white p-6 rounded-2xl border border-neutralCustom/20 shadow-sm flex flex-col justify-between">
               <div>
@@ -746,7 +755,6 @@ const ReviewManagement = () => {
                             </div>
                           </div>
 
-                          {/* Thanh biểu đồ phần trăm tỷ lệ hài lòng */}
                           <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${!hasReviews
@@ -767,7 +775,7 @@ const ReviewManagement = () => {
                 </div>
               </div>
 
-              {/* THANH ĐIỀU KHIỂN PHÂN TRANG CHO PHẦN XẾP HẠNG MÓN ĂN TỐI GIẢN */}
+              {/* Phân trang cho bảng xếp hạng món ăn */}
               {dishAnalyticsList.length > dishesPerPage && (
                 <div className="mt-4 pt-3 border-t border-gray-150 flex justify-center items-center shrink-0">
                   <div className="flex gap-1.5">
@@ -803,7 +811,6 @@ const ReviewManagement = () => {
 
             </div>
           </div>
-
         </div>
 
       </main>

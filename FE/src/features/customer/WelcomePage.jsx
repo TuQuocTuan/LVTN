@@ -75,7 +75,7 @@ const WelcomePage = () => {
   return (
     <div className="bg-mesh min-h-screen flex flex-col text-gray-900 font-sans relative">
 
-      {/* --- TOP BAR --- */}
+      {/* TOP BAR */}
       <nav className="fixed top-0 left-0 w-full z-40 flex justify-end items-center px-4 py-3 bg-white/80 backdrop-blur-md shadow-sm">
         <button
           onClick={toggleLanguage}
@@ -86,7 +86,7 @@ const WelcomePage = () => {
         </button>
       </nav>
 
-      {/* --- KHU VỰC NỘI DUNG CHÍNH --- */}
+      {/* KHU VỰC NỘI DUNG CHÍNH */}
       <main className="flex-grow flex flex-col items-center justify-center px-4 pt-20 pb-24 overflow-hidden relative">
         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-100">
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>

@@ -14,25 +14,23 @@ const RecipeManagement = () => {
   const { dishId } = useParams();
 
   // KHAI BÁO CÁC STATE QUẢN LÝ DỮ LIỆU HIỂN THỊ CHÍNH
-  const [versions, setVersions] = useState([]); // Chứa danh sách các version công thức (VD: [2, 1])
-  const [selectedVersion, setSelectedVersion] = useState(''); // Version đang được chọn để xem
-  const [dishName, setDishName] = useState('Đang tải...'); // Tên món ăn hiển thị trên tiêu đề
-  const [ingredients, setIngredients] = useState([]); // Danh sách nguyên liệu thật từ DB
-  const [instructions, setInstructions] = useState([]); // Quy trình chế biến bốc từ cột steps trong database
-  const [isLoading, setIsLoading] = useState(true); // Trạng thái màn hình chờ (Loading)
-  const [isSaving, setIsSaving] = useState(false); // Trạng thái vô hiệu hóa nút khi đang gọi API lưu
-  const [allIngredients, setAllIngredients] = useState([]); // Toàn bộ kho nguyên liệu dùng cho thẻ <select>
+  const [versions, setVersions] = useState([]);
+  const [selectedVersion, setSelectedVersion] = useState('');
+  const [dishName, setDishName] = useState('Đang tải...');
+  const [ingredients, setIngredients] = useState([]);
+  const [instructions, setInstructions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [allIngredients, setAllIngredients] = useState([]);
 
   // State hiển thị Toast Banner thông báo
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   // KHAI BÁO CÁC STATE QUẢN LÝ MODAL (POPUP) VÀ DỮ LIỆU FORM
-  const [isEditIngModalOpen, setIsEditIngModalOpen] = useState(false); // Đóng/mở Popup sửa nguyên liệu
-  const [isEditStepModalOpen, setIsEditStepModalOpen] = useState(false); // Đóng/mở Popup sửa các bước
-  const [editIngredients, setEditIngredients] = useState([]); // Dữ liệu mảng nguyên liệu đang bị chỉnh sửa
-  const [editInstructions, setEditInstructions] = useState([]); // Dữ liệu mảng các bước đang bị chỉnh sửa
-
-  // CÁC HÀM GỌI API (FETCH DATA ĐỒNG BỘ TUẦN TỰ)
+  const [isEditIngModalOpen, setIsEditIngModalOpen] = useState(false);
+  const [isEditStepModalOpen, setIsEditStepModalOpen] = useState(false);
+  const [editIngredients, setEditIngredients] = useState([]);
+  const [editInstructions, setEditInstructions] = useState([]);
   
   // Chạy tuần tự khi vào trang để đảm bảo allIngredients có dữ liệu trước khi mapping chi tiết công thức
   useEffect(() => {
@@ -204,7 +202,7 @@ const RecipeManagement = () => {
 
   // Lưu Nguyên Liệu (Đồng bộ đồng thời cả quy trình chế biến)
   const handleSaveIngredients = async () => {
-    // 🌟 Chốt chặn kiểm lỗi: Lọc bỏ các dòng trống để tránh ném NaN lên Database
+    // Lọc bỏ các dòng trống để tránh ném NaN lên Database
     const payloadIngredients = editIngredients
       .filter(i => i.ingredient_id && i.amount_required)
       .map(i => ({
@@ -393,7 +391,7 @@ const RecipeManagement = () => {
 
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col h-screen overflow-hidden transition-all duration-300">
         <div className="w-full flex flex-col h-full overflow-hidden">
-          {/* === HEADER TRANG === */}
+          {/* HEADER TRANG */}
           <div className="mb-5 flex-shrink-0">
             <div onClick={() => navigate('/admin/dish-management')} className="flex items-center gap-2 text-neutralCustom mb-3 hover:text-primary cursor-pointer transition-colors w-fit no-print">
               <span className="material-symbols-outlined text-[16px]">arrow_back</span>

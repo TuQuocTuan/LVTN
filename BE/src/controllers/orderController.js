@@ -414,28 +414,30 @@ export const getTamtinhBill = async (session_id) => {
 
         const { data: orders, error: fetchErr } = await supabase
             .from('orders')
-            .select('id, sub_total, order_details(dishes(name), quantity, price)')
+            .select('id, sub_total, order_details(dishes(name), quantity, price, status)')
             .eq('session_id', session_id)
             .eq('status', 'completed');
 
         if (fetchErr) throw fetchErr;
 
         orders.forEach(order => {
-            order.order_details.forEach(detail => {
-                const tenmon = detail.dishes?.name;
-                const soluong = detail.quantity;
-                const giatien = detail.price;
-                if (gomBill[tenmon]) {
-                    gomBill[tenmon].quantity += soluong;
-                } else {
-                    gomBill[tenmon] = { quantity: soluong, price: giatien };
-                }
-            })
-        })
+            if (order.order_details) {
+                order.order_details = order.order_details.filter(detail => detail.status !== 'cancelled');
+                order.order_details.forEach(detail => {
+                    const tenmon = detail.dishes?.name;
+                    const soluong = detail.quantity;
+                    const giatien = detail.price;
+                    if (gomBill[tenmon]) {
+                        gomBill[tenmon].quantity += soluong;
+                    } else {
+                        gomBill[tenmon] = { quantity: soluong, price: giatien };
+                    }
+                });
+            }
+        });
 
         totals = orders.reduce((tong, item) => tong + item.sub_total, 0);
 
-        if (fetchErr) throw fetchErr;
         return { orders: orders, total: totals, billDetails: gomBill };
     } catch (error) {
         return { success: false, message: error.message };
@@ -686,7 +688,7 @@ export const getPendingOrders = async (req, res) => {
     try {
         const { data: orders, error: orderErr } = await supabase
             .from('orders')
-            .select(`status,id,order_details(dish_id, quantity, dishes(name),note),dining_sessions (tables(name))`)
+            .select(`status,id,order_details(id, status, dish_id, quantity, dishes(name),note),dining_sessions (tables(name))`)
             .eq('status', 'pending')
 
         if (orderErr) throw orderErr;
@@ -706,7 +708,7 @@ export const updateOrderStatus = async (req, res) => {
         const { data: order, error: orderErr } = await supabase
             .from('orders')
             .update({ status: 'completed' })
-            .select(`status, id, session_id, order_details(dish_id, quantity, dishes(name), note), dining_sessions(tables(name))`)
+            .select(`status, id, session_id, order_details(dish_id, quantity, status, dishes(name), note), dining_sessions(tables(name))`)
             .eq('id', order_id);
 
         if (orderErr) throw orderErr;
@@ -717,6 +719,7 @@ export const updateOrderStatus = async (req, res) => {
         const currentOrder = order[0];
 
         for (const orderDetail of currentOrder.order_details) {
+            if (orderDetail.status === 'cancelled') continue;
             const { data: recipeItems, error: recipeErr } = await supabase
                 .from('recipes')
                 .select('ingredient_id, amount_required')
@@ -762,36 +765,66 @@ export const cancelOrderStatus = async (req, res) => {
     try {
         const { order_id, order_detail_id } = req.body;
 
-        const { data: detailData, error: detailErr } = await supabase
+        if (order_detail_id) {
+            // Hủy một món cụ thể
+            const { data: detailData, error: detailErr } = await supabase
+                .from('order_details')
+                .update({ status: 'cancelled' })
+                .eq('id', order_detail_id)
+                .eq('order_id', order_id)
+                .select()
+                .maybeSingle();
+
+            if (detailErr) throw detailErr;
+        } else {
+            // Hủy toàn bộ món trong đơn
+            const { error: detailsErr } = await supabase
+                .from('order_details')
+                .update({ status: 'cancelled' })
+                .eq('order_id', order_id);
+
+            if (detailsErr) throw detailsErr;
+        }
+
+        // Lấy tất cả các món để tính toán lại tổng tiền của đơn hàng
+        const { data: orderDetails, error: detailsErr } = await supabase
             .from('order_details')
-            .update({ status: 'cancelled' })
-            .eq('id', order_detail_id)
-            .eq('order_id', order_id)
-            .select()
-            .maybeSingle();
-
-        if (detailErr) throw detailErr;
-
-        const { data: orderData, error: orderErr } = await supabase
-            .from('orders')
-            .select(`status, id, session_id, dining_sessions (tables(name))`)
-            .eq('id', order_id)
-            .single();
-        if (orderErr) throw orderErr;
-
-        const { data: orderDetails } = await supabase
-            .from('order_details')
-            .select(`id,quantity, note, dishes(name)`)
+            .select(`id, quantity, price, status, note, dishes(name)`)
             .eq('order_id', order_id);
 
+        if (detailsErr) throw detailsErr;
+
+        // Tính lại tổng tiền của các món chưa bị hủy
+        const activeDetails = orderDetails.filter(detail => detail.status !== 'cancelled');
+        const newSubTotal = activeDetails.reduce((sum, detail) => sum + (Number(detail.price || 0) * Number(detail.quantity || 0)), 0);
+
+        // Cập nhật lại orders (sub_total, total_amount)
+        const { error: updateOrderErr } = await supabase
+            .from('orders')
+            .update({
+                sub_total: newSubTotal,
+                total_amount: newSubTotal
+            })
+            .eq('id', order_id);
+
+        if (updateOrderErr) throw updateOrderErr;
+
+        // Kiểm tra xem tất cả các món đã bị hủy chưa
         const allCancelled = orderDetails.every(detail => detail.status === 'cancelled');
         if (allCancelled) {
             await supabase
                 .from('orders')
                 .update({ status: 'cancelled' })
                 .eq('id', order_id);
-            orderData.status = 'cancelled';
         }
+
+        // Lấy thông tin đơn hàng mới nhất để phản hồi
+        const { data: orderData, error: orderErr } = await supabase
+            .from('orders')
+            .select(`status, id, session_id, dining_sessions (tables(name))`)
+            .eq('id', order_id)
+            .single();
+        if (orderErr) throw orderErr;
 
         const finalOrder = {
             ...orderData,

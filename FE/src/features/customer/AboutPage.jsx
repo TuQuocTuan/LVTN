@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AboutPage = () => {
-  // --- STATES CHUNG ---
   const [dishes, setDishes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState('ALL');
@@ -12,15 +11,12 @@ const AboutPage = () => {
   const [isLoadingDishes, setIsLoadingDishes] = useState(false);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
 
-  // --- STATES TRA CỨU VOUCHER ---
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [lookupError, setLookupError] = useState('');
 
-  // --- STATES PHÂN TRANG ---
   const [dishesCurrentPage, setDishesCurrentPage] = useState(1);
   const dishesPerPage = 8;
 
@@ -30,7 +26,6 @@ const AboutPage = () => {
   const [voucherCurrentPage, setVoucherCurrentPage] = useState(1);
   const vouchersPerPage = 5;
 
-  // --- STATES MODAL CHI TIẾT TIN TỨC ---
   const [activeNewsDetail, setActiveNewsDetail] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';

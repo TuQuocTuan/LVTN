@@ -4,23 +4,37 @@ import AdminHeader from '../../components/layout/Admin/AdminHeader';
 import axios from 'axios';
 
 const ShiftManagement = () => {
+  // Danh sách các ca làm việc của nhân viên từ Backend
   const [shiftsList, setShiftsList] = useState([]);
+  
+  // Danh sách tài khoản nhân viên phục vụ việc đối chiếu
   const [usersList, setUsersList] = useState([]);
+  
+  // Trạng thái chờ tải khi đang đồng bộ dữ liệu ca làm
   const [isLoading, setIsLoading] = useState(false);
 
+  // Trang hiện tại của phân trang danh sách ca làm
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  // Từ khóa tìm kiếm theo tên hoặc tên đăng nhập nhân viên
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Bộ lọc theo vai trò nhân sự (ALL, CASHIER, ADMIN)
   const [roleFilter, setRoleFilter] = useState('ALL');
 
+  // Ngày bắt đầu để lọc ca làm việc
   const [startDateFilter, setStartDateFilter] = useState('');
+  
+  // Ngày kết thúc để lọc ca làm việc
   const [endDateFilter, setEndDateFilter] = useState('');
 
+  // Tự động tải danh sách tài khoản nhân viên và ca làm khi bắt đầu mở trang
   useEffect(() => {
     fetchUsers();
   }, []);
 
+  // Gọi API lấy toàn bộ danh sách tài khoản nhân viên từ hệ thống
   const fetchUsers = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/user`);
@@ -34,6 +48,7 @@ const ShiftManagement = () => {
     }
   };
 
+  // Gọi API lấy nhật ký ca làm việc (chấm công) của nhân viên và ánh xạ thông tin
   const fetchShifts = async (fetchedUsers = []) => {
     setIsLoading(true);
     try {
@@ -67,12 +82,12 @@ const ShiftManagement = () => {
         };
 
         const apiShifts = response.data.data.map((item, index) => {
-          // Trích xuất số phút từ chuỗi "6 giờ 6 phút (366 phút)" của Backend
+          // Trích xuất số phút từ chuỗi Backend và quy đổi ra số giờ
           const minutesMatch = item.duration ? item.duration.match(/\((\d+)\s*phút\)/) : null;
           const totalMinutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
           const duration_hours = Number((totalMinutes / 60).toFixed(2));
 
-          // Đối chiếu thông tin tài khoản nhân viên
+          // Đối chiếu tài khoản nhân viên để xác định vai trò, mức lương tương ứng
           const foundUser = fetchedUsers.find(u => u.id === item.user_id || u.username === item.username);
           const role = foundUser?.role || 'cashier';
           const hourly_rate = role === 'admin' ? 35000 : 25000;
@@ -112,12 +127,14 @@ const ShiftManagement = () => {
     }
   };
 
+  // Định dạng chuỗi ngày giờ chấm công hiển thị thân thiện HH:MM - DD/MM/YYYY
   const formatDate = (isoString) => {
     if (!isoString) return 'Chưa kết ca';
     const date = new Date(isoString);
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} - ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
+  // Định dạng tổng số giờ công sang chuỗi giờ phút trực quan
   const formatDuration = (hours) => {
     if (hours === null || hours === undefined || isNaN(hours)) return '---';
     const totalMinutes = Math.round(hours * 60);
@@ -129,6 +146,7 @@ const ShiftManagement = () => {
     return `${h}h ${m}p (${totalMinutes}p)`;
   };
 
+  // Thiết lập bộ lọc thời gian chỉ lấy ngày hôm nay
   const handleSelectToday = () => {
     const today = new Date().toISOString().split('T')[0];
     setStartDateFilter(today);
@@ -136,6 +154,7 @@ const ShiftManagement = () => {
     setCurrentPage(1);
   };
 
+  // Thiết lập bộ lọc thời gian lấy từ đầu tuần này đến hiện tại
   const handleSelectThisWeek = () => {
     const current = new Date();
     const first = current.getDate() - current.getDay() + (current.getDay() === 0 ? -6 : 1);
@@ -147,6 +166,7 @@ const ShiftManagement = () => {
     setCurrentPage(1);
   };
 
+  // Thiết lập bộ lọc thời gian lấy từ ngày đầu tháng này đến hiện tại
   const handleSelectThisMonth = () => {
     const current = new Date();
     const firstDay = new Date(current.getFullYear(), current.getMonth(), 1);
@@ -158,12 +178,14 @@ const ShiftManagement = () => {
     setCurrentPage(1);
   };
 
+  // Xóa bỏ hoàn toàn bộ lọc thời gian đã chọn
   const handleClearDateFilter = () => {
     setStartDateFilter('');
     setEndDateFilter('');
     setCurrentPage(1);
   };
 
+  // Bộ lọc thông minh áp dụng tìm kiếm, vai trò và khoảng thời gian cho mảng ca làm
   const getFilteredShifts = (list) => {
     return list.filter(s => {
       const matchName = (s.users?.fullname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -195,19 +217,24 @@ const ShiftManagement = () => {
     });
   };
 
+  // Tách riêng các ca làm theo trạng thái đang hoạt động hoặc đã kết thúc
   const activeShifts = shiftsList.filter(s => s.status === 'active');
   const completedShifts = shiftsList.filter(s => s.status === 'completed');
 
+  // Áp dụng bộ lọc tìm kiếm cho ca hoạt động và ca hoàn thành
   const filteredActiveShifts = getFilteredShifts(activeShifts);
   const filteredCompletedShifts = getFilteredShifts(completedShifts);
 
+  // Danh sách các ca làm hoàn thành phục vụ việc phân trang và hiển thị
   const displayedList = filteredCompletedShifts;
   const totalPages = Math.ceil(displayedList.length / itemsPerPage);
   const currentShifts = displayedList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  // Tính tổng lương và tổng giờ công từ danh sách hoàn thành đã lọc
   const totalWageSum = filteredCompletedShifts.reduce((acc, curr) => acc + Number(curr.total_wage || 0), 0);
   const totalHoursSum = filteredCompletedShifts.reduce((acc, curr) => acc + Number(curr.duration_hours || 0), 0);
 
+  // Thống kê giờ công và tích lũy tiền lương của từng nhân viên
   const getStaffSummaryList = () => {
     const summary = {};
     filteredCompletedShifts.forEach(s => {
@@ -237,9 +264,9 @@ const ShiftManagement = () => {
     <div className="bg-culinaryBg text-gray-900 font-sans min-h-screen flex overflow-x-hidden relative">
       <AdminSidebar currentTab="shift" />
       <AdminHeader />
+      
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen">
-
-        {/* Header Section */}
+        {/* Tiêu đề trang */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Ca làm & Giờ công</h2>
@@ -247,7 +274,7 @@ const ShiftManagement = () => {
           </div>
         </div>
 
-        {/* Thống kê ca làm nhanh */}
+        {/* Khối Bento thống kê nhanh số ca, giờ công, tổng lương */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-5 rounded-2xl flex items-center gap-5 border border-neutralCustom/20 shadow-sm hover:shadow-md transition-shadow">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-green-50 text-green-600">
@@ -284,9 +311,8 @@ const ShiftManagement = () => {
           </div>
         </div>
 
-        {/* BỘ LỌC KHOẢNG THỜI GIAN THÔNG MINH */}
+        {/* Khối bộ lọc khoảng thời gian nhanh và chọn ngày thủ công */}
         <div className="bg-white p-5 rounded-2xl border border-neutralCustom/20 shadow-sm mb-6 flex flex-col gap-4">
-
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
             <div className="flex items-center gap-2 shrink-0">
               <span className="material-symbols-outlined text-primary text-xl">calendar_month</span>
@@ -351,10 +377,9 @@ const ShiftManagement = () => {
               </button>
             </div>
           </div>
-
         </div>
 
-        {/* Bộ lọc tên nhân viên và vai trò */}
+        {/* Khối tìm kiếm từ khóa tên nhân viên và bộ lọc theo chức danh */}
         <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:max-w-xs">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">search</span>
@@ -388,14 +413,14 @@ const ShiftManagement = () => {
           </div>
         </div>
 
-        {/* Lịch sử ca làm việc */}
+        {/* Nhãn tab và số lượng ca đã lọc hoàn thành */}
         <div className="mb-6 flex border-b border-neutralCustom/20">
           <div className="px-8 py-3.5 font-bold text-sm border-b-2 border-primary text-primary">
             Lịch sử hoàn thành ca ({filteredCompletedShifts.length})
           </div>
         </div>
 
-        {/* Danh sách bảng ca làm / báo cáo kết ca */}
+        {/* Bảng chi tiết nhật ký chấm công ca làm việc */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-neutralCustom/20 flex flex-col mb-8">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -454,7 +479,7 @@ const ShiftManagement = () => {
             </table>
           </div>
 
-          {/* Phân trang */}
+          {/* Phân trang danh sách chấm công */}
           {displayedList.length > 0 && (
             <div className="p-4 bg-culinaryBg/30 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0">
               <div className="flex gap-2">
@@ -468,7 +493,7 @@ const ShiftManagement = () => {
           )}
         </div>
 
-        {/* BẢNG TỔNG HỢP LƯƠNG NHÂN VIÊN */}
+        {/* Bảng tổng hợp công nợ/tiền lương tích lũy của từng nhân viên */}
         <div className="bg-white rounded-2xl border border-neutralCustom/20 shadow-sm p-6 mb-8">
           <div className="border-b border-neutralCustom/10 pb-4 mb-4 flex justify-between items-center">
             <div>

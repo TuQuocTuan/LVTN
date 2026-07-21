@@ -27,6 +27,7 @@ export const getDoanhThuDashboard = async (req, res) => {
             .gte('created_at', moctgian.toISOString());
         if (fetchErr) throw fetchErr;
 
+        const count = bills.length;
         const tongdoanhthu = bills.reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
         const tongtienmat = bills
             .filter(bill => bill.payment_method === 'CASH')
@@ -35,11 +36,14 @@ export const getDoanhThuDashboard = async (req, res) => {
             .filter(bill => bill.payment_method === 'VNPAY')
             .reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
 
+        const averageBill = count > 0 ? Math.round(tongdoanhthu / count) : 0;
+
         res.status(200).json({
             success: true,
             tongdoanhthu,
             tongtienmat,
-            tongchuyenkhoan
+            tongchuyenkhoan,
+            averageBill
         });
 
     } catch (error) {

@@ -38,7 +38,7 @@ const DishManagement = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  // 🌟 STATES THAY THẾ ALERT VÀ CONFIRM MẶC ĐỊNH
+  // STATES THAY THẾ ALERT VÀ CONFIRM MẶC ĐỊNH
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
 

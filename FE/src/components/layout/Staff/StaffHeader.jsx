@@ -179,7 +179,7 @@ const StaffHeader = ({
 
       <div className="flex items-center gap-4 sm:gap-6">
 
-        {/* 🌟 STREAMING_CHUNK: Nút KẾT CA hiển thị cho Thu ngân, Admin và Super Admin */}
+        {/* Nút KẾT CA hiển thị cho Thu ngân, Admin và Super Admin */}
         {['cashier', 'admin', 'super_admin'].includes(userRole) && !window.location.pathname.startsWith('/kitchen') && (
           <button
             onClick={handleOpenKetCaModal}
@@ -302,7 +302,7 @@ const StaffHeader = ({
         </div>
       </div>
 
-      {/* 🌟 STREAMING_CHUNK: Render hộp thoại Modal Kết ca hoặc Đăng xuất tùy thuộc vào dữ liệu shiftReportData */}
+      {/* Render hộp thoại Modal Kết ca hoặc Đăng xuất tùy thuộc vào dữ liệu shiftReportData */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className={`bg-white rounded-3xl p-6 sm:p-8 shadow-2xl w-full border border-neutralCustom/10 animate-scale-up ${['cashier', 'admin', 'super_admin'].includes(userRole) && shiftReportData ? 'max-w-md' : 'max-w-sm text-center'}`}>
@@ -321,7 +321,7 @@ const StaffHeader = ({
                 </div>
 
                 <div className="space-y-4 mb-6 bg-stone-50/50 p-4 rounded-2xl border border-stone-200/50 text-left">
-                  {/* 🌟 THÊM MỚI: Hiển thị Ngày và Giờ bấm kết ca */}
+                  {/* THÊM MỚI: Hiển thị Ngày và Giờ bấm kết ca */}
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-700">Ngày giờ kết ca:</span>
                     <span className="font-bold text-gray-900 font-mono">{ketCaTime}</span>
@@ -407,7 +407,7 @@ const StaffHeader = ({
         </div>
       )}
 
-      {/* 🌟 HỆ THỐNG ALERT MODAL THAY THẾ TOAST (Bảo mật, có nút bấm Đồng ý) */}
+      {/* HỆ THỐNG ALERT MODAL THAY THẾ TOAST (Bảo mật, có nút bấm Đồng ý) */}
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">

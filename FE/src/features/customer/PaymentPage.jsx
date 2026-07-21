@@ -9,7 +9,7 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const PaymentPage = () => {
-  // Lấy thông tin bàn và phiên ăn hiện tại từ localStorage (Hoặc context/Redux của bạn)
+  // Lấy thông tin bàn và phiên ăn hiện tại từ localStorage
   const sessionId = localStorage.getItem('sessionId');
   const tableName = localStorage.getItem('table_name') || 'Bàn của bạn';
   const { t } = useLanguage();
@@ -34,7 +34,7 @@ const PaymentPage = () => {
   // State lưu kênh thông báo
   const [channel, setChannel] = useState(null);
 
-  // 1. Khởi tạo kênh báo thu ngân bằng hàm helper
+  // Khởi tạo kênh báo thu ngân bằng hàm helper
   useEffect(() => {
     const notifyChannel = initBroadcastChannel('restaurant-notifications');
     setChannel(notifyChannel);
@@ -42,7 +42,7 @@ const PaymentPage = () => {
     return () => supabase.removeChannel(notifyChannel);
   }, []);
 
-  // 2. GỌI API LẤY HÓA ĐƠN TẠM TÍNH KHI VÀO TRANG
+  // GỌI API LẤY HÓA ĐƠN TẠM TÍNH KHI VÀO TRANG
   useEffect(() => {
     const fetchPreviewBill = async () => {
       if (!sessionId) {

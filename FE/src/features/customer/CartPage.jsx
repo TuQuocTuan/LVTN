@@ -78,7 +78,6 @@ const CartPage = () => {
         return;
       }
 
-      // Khớp cấu trúc mảng mà orderController backend yêu cầu (dish_id, quantity, price)
       const itemsToOrder = cartItems.map(item => ({
         dish_id: item.id,
         quantity: item.quantity,

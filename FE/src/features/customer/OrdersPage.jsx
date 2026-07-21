@@ -15,12 +15,10 @@ const OrdersPage = () => {
     if (!sessionId) return;
 
     try {
-      // GỌI ĐÚNG API GET LẤY LỊCH SỬ ĐƠN HÀNG TỪ CONTROLLER getOrderBySession
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${sessionId}`);
       const data = response.data;
 
       if (data.success) {
-        // Xử lý linh hoạt: backend có thể trả về 'detailed_orders' hoặc 'data'
         const orderList = data.detailed_orders || data.data || [];
         setOrders(orderList);
       }

@@ -11,7 +11,8 @@ const AdminDashboard = () => {
   const [liveRevenue, setLiveRevenue] = useState(0); // Tổng doanh thu thật bốc từ API
   const [cashRevenue, setCashRevenue] = useState(0); // Doanh thu tiền mặt
   const [transferRevenue, setTransferRevenue] = useState(0); // Doanh thu chuyển khoản (VNPAY)
-  
+  const [liveAverageBill, setLiveAverageBill] = useState(0); // Hóa đơn trung bình
+
   // Dữ liệu đồ thị cột thực tế được render tự động từ API tuần của Tuấn
   const [weeklyData, setWeeklyData] = useState([]);
   const [hoveredBarIndex, setHoveredIndex] = useState(null);
@@ -56,12 +57,14 @@ const AdminDashboard = () => {
         setLiveRevenue(Number(response.data.tongdoanhthu || 0));
         setCashRevenue(Number(response.data.tongtienmat || 0));
         setTransferRevenue(Number(response.data.tongchuyenkhoan || 0));
+        setLiveAverageBill(Number(response.data.averageBill || 0)); // Lấy hóa đơn trung bình thực tế từ BE
       }
     } catch (error) {
       console.error("Lỗi đồng bộ API Doanh thu thật:", error);
       setLiveRevenue(0);
       setCashRevenue(0);
       setTransferRevenue(0);
+      setLiveAverageBill(0);
     } finally {
       setLoading(false);
     }
@@ -103,50 +106,43 @@ const AdminDashboard = () => {
 
   const liveProfit = Math.round(liveRevenue * 0.35);
 
-  /* STREAMING_CHUNK: Thiết lập mảng chỉ số Bento Metrics tích hợp biểu đồ Sparklines mini */
+  /* STREAMING_CHUNK: Thiết lập mảng chỉ số */
   const metrics = [
-    { 
-      id: 1, 
-      title: 'Tổng doanh thu', 
-      value: loading ? 'Đang tính...' : `${liveRevenue.toLocaleString('vi-VN')}đ`, 
-      trend: '+12.5%', 
-      isUp: true, 
-      icon: 'payments', 
+    {
+      id: 1,
+      title: 'Tổng doanh thu',
+      value: loading ? 'Đang tính...' : `${liveRevenue.toLocaleString('vi-VN')}đ`,
+      trend: '+12.5%',
+      isUp: true,
+      icon: 'payments',
       color: 'primary',
-      sparkline: [30, 45, 35, 60, 55, 70, 85]
     },
-    { 
-      id: 2, 
-      title: 'Hóa đơn trung bình', 
-      value: '102.925đ', 
-      trend: '-2.1%', 
-      isUp: false, 
-      icon: 'receipt', 
+    {
+      id: 2,
+      title: 'Hóa đơn trung bình',
+      value: loading ? 'Đang tính...' : `${liveAverageBill.toLocaleString('vi-VN')}đ`,
+      trend: '-2.1%',
+      isUp: false,
+      icon: 'receipt',
       color: 'tertiary',
-      sparkline: [60, 55, 58, 48, 52, 45, 42]
     },
-    { 
-      id: 3, 
-      title: 'Lợi nhuận (Tạm tính 35%)', 
-      value: loading ? 'Đang tính...' : `${liveProfit.toLocaleString('vi-VN')}đ`, 
-      trend: '+8.4%', 
-      isUp: true, 
-      icon: 'trending_up', 
+    {
+      id: 3,
+      title: 'Lợi nhuận (Tạm tính 35%)',
+      value: loading ? 'Đang tính...' : `${liveProfit.toLocaleString('vi-VN')}đ`,
+      trend: '+8.4%',
+      isUp: true,
+      icon: 'trending_up',
       color: 'secondary',
-      sparkline: [25, 30, 40, 38, 50, 48, 65]
     },
   ];
 
-
-
-  /* STREAMING_CHUNK: Nâng cấp thiết kế Excel (tăng font-size lên 15px, tăng padding và độ rộng ô) */
   const handleExportExcel = () => {
-    // Chỉnh sửa giao diện bên trong bảng tính Excel: To ra, chữ rõ ràng hơn
     const styles = `
       <style>
         table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
-        td, th { padding: 14px 20px; border: 1px solid #cbd5e1; font-size: 15px; } /* Tăng font-size lên 15px, padding rộng rãi */
-        .title-row { font-size: 22px; font-weight: bold; color: #ff6b00; padding: 18px 0; text-align: left; } /* Tiêu đề to 22px */
+        td, th { padding: 14px 20px; border: 1px solid #cbd5e1; font-size: 15px; }
+        .title-row { font-size: 22px; font-weight: bold; color: #ff6b00; padding: 18px 0; text-align: left; }
         .meta-label { background-color: #f8fafc; font-weight: bold; color: #475569; width: 240px; font-size: 15px; }
         .meta-val { color: #0f172a; font-weight: bold; font-size: 15px; }
         .header-row { background-color: #ff6b00; color: #ffffff; font-weight: bold; text-align: center; font-size: 15px; }
@@ -235,7 +231,7 @@ const AdminDashboard = () => {
   };
 
   const getColorClasses = (colorName) => {
-    switch(colorName) {
+    switch (colorName) {
       case 'primary': return 'bg-primary/10 text-primary';
       case 'secondary': return 'bg-secondary/10 text-secondary';
       case 'tertiary': return 'bg-tertiary/10 text-tertiary';
@@ -260,7 +256,7 @@ const AdminDashboard = () => {
 
       {/* Lớp phủ mờ nền khi mở Sidebar trên Mobile */}
       {isSidebarOpen && (
-        <div 
+        <div
           onClick={() => setIsSidebarOpen(false)}
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
         ></div>
@@ -268,11 +264,11 @@ const AdminDashboard = () => {
 
       {/* 3. KHU VỰC NỘI DUNG CHÍNH (MAIN) */}
       <main className="ml-64 max-lg:ml-0 pt-20 p-6 max-lg:p-5 lg:w-[calc(100%-16rem)] w-full transition-all duration-300 flex flex-col gap-6">
-        
+
         {/* Header Section */}
         <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setIsSidebarOpen(true)}
               className="lg:hidden p-2 rounded-xl border border-neutralCustom/25 bg-white text-gray-700 active:scale-95 transition-transform flex items-center justify-center shadow-sm"
             >
@@ -283,10 +279,10 @@ const AdminDashboard = () => {
               <p className="text-neutralCustom text-xs sm:text-sm mt-0.5">Tổng quan hiệu suất kinh doanh thực tế từ hóa đơn</p>
             </div>
           </div>
-          
+
           {/* Cặp nút select và Xuất Excel thẳng hàng h-[42px] */}
           <div className="flex items-center gap-2.5 w-full sm:w-auto self-stretch sm:self-auto shrink-0 justify-end flex-nowrap">
-            <select 
+            <select
               value={range}
               onChange={(e) => setRange(e.target.value)}
               className="bg-white border border-neutralCustom/20 text-xs sm:text-sm font-bold text-gray-700 px-4 rounded-xl shadow-sm outline-none focus:border-primary transition-colors cursor-pointer h-[42px] min-w-[110px] sm:min-w-[130px] flex items-center"
@@ -296,9 +292,9 @@ const AdminDashboard = () => {
               <option value="month">Tháng này</option>
               <option value="year">Năm nay</option>
             </select>
-            
+
             {/* NÚT XUẤT FILE EXCEL: MÀU XANH LÁ SOLID, HOVER ĐẬM, KHÔNG TRONG SUỐT */}
-            <button 
+            <button
               onClick={handleExportExcel}
               className="flex items-center justify-center gap-2 px-5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 text-xs sm:text-sm h-[42px] whitespace-nowrap"
             >
@@ -316,26 +312,11 @@ const AdminDashboard = () => {
                 <span className={`material-symbols-outlined p-2.5 rounded-xl ${getColorClasses(metric.color)}`}>
                   {metric.icon}
                 </span>
-                <span className={`font-black text-xs px-2.5 py-1 rounded-lg ${metric.isUp ? 'text-green-600 bg-green-50 border border-green-150' : 'text-red-500 bg-red-50 border border-red-150'}`}>
-                  {metric.trend}
-                </span>
               </div>
               <div className="mt-5 flex justify-between items-end">
                 <div>
                   <p className="text-neutralCustom text-[10px] font-bold uppercase tracking-widest">{metric.title}</p>
                   <h3 className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{metric.value}</h3>
-                </div>
-                {/* Sparkline sóng mini */}
-                <div className="w-16 h-8 opacity-80">
-                  <svg className="w-full h-full" viewBox="0 0 70 30">
-                    <path
-                      d={`M ${metric.sparkline.map((val, idx) => `${idx * 11},${30 - (val / 100) * 25}`).join(' L ')}`}
-                      fill="none"
-                      stroke={metric.isUp ? "#16a34a" : "#dc2626"}
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
                 </div>
               </div>
             </div>
@@ -354,7 +335,7 @@ const AdminDashboard = () => {
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#fca5a5]"></span> Lợi nhuận ròng</span>
             </div>
           </div>
-          
+
           {/* Biểu đồ cột kép 3D-like thích ứng bề ngang */}
           <div className="relative h-64 w-full flex items-end justify-between px-2 sm:px-6 mt-4">
             {/* Đường lưới mỏng */}
@@ -365,25 +346,24 @@ const AdminDashboard = () => {
 
             {weeklyData.length > 0 ? (
               weeklyData.map((data, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="flex flex-col justify-end items-center h-full relative group cursor-pointer"
                   style={{ width: `${100 / weeklyData.length}%` }} // Phân tách đều bằng 100/7
-                  onMouseEnter={() => setHoveredIndex(idx)} 
+                  onMouseEnter={() => setHoveredIndex(idx)}
                   onMouseLeave={() => setHoveredIndex(null)}
                 >
                   {/* Nhóm cột kép (Doanh thu & Lợi nhuận nằm sát nhau) */}
                   <div className="flex items-end justify-center gap-1.5 sm:gap-2 h-full w-full relative pb-1">
                     {/* Cột Lợi nhuận ròng tạm tính 35% (Màu hồng cam thanh lịch) */}
-                    <div 
+                    <div
                       className="w-2.5 sm:w-4 bg-[#fca5a5]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300"
                       style={{ height: data.profitHeight }}
                     ></div>
                     {/* Cột Doanh thu thật (Màu cam đậm rực rỡ) */}
-                    <div 
-                      className={`w-2.5 sm:w-4 rounded-t-md transition-all duration-300 ${
-                        data.highlight ? 'bg-primary shadow-lg scale-x-105' : 'bg-primary/75 hover:bg-primary'
-                      }`}
+                    <div
+                      className={`w-2.5 sm:w-4 rounded-t-md transition-all duration-300 ${data.highlight ? 'bg-primary shadow-lg scale-x-105' : 'bg-primary/75 hover:bg-primary'
+                        }`}
                       style={{ height: data.revenueHeight }}
                     ></div>
                   </div>
@@ -404,13 +384,13 @@ const AdminDashboard = () => {
               </div>
             )}
           </div>
-          
+
           {/* ĐỒNG BỘ TOÁN HỌC TRỤC X: Phân chia chiều rộng và padding giống hệt biểu đồ cột để thẳng hàng tăm tắp */}
           <div className="flex w-full mt-5 text-neutralCustom text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 sm:px-6">
             {weeklyData.map((d, idx) => (
-              <span 
-                key={idx} 
-                className="text-center truncate" 
+              <span
+                key={idx}
+                className="text-center truncate"
                 style={{ width: `${100 / weeklyData.length}%` }} // Đồng bộ width 100/7
               >
                 {d.day}
@@ -431,7 +411,7 @@ const AdminDashboard = () => {
               <p className="text-neutralCustom text-xs uppercase tracking-wider font-bold mb-6">
                 Phân tích tỷ lệ thanh toán tiền mặt và chuyển khoản (VNPAY)
               </p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Tiền mặt */}
                 <div className="flex items-center gap-5 bg-emerald-50/30 p-5 rounded-2xl border border-emerald-500/10 hover:shadow-md transition-all duration-300">
@@ -500,7 +480,7 @@ const AdminDashboard = () => {
                   <h3 className="text-lg font-bold text-gray-900">Nhật ký Kết ca của Thu ngân</h3>
                   <p className="text-neutralCustom text-xs mt-0.5">Danh sách các ca làm việc đã đóng két và xác nhận doanh thu</p>
                 </div>
-                
+
                 <div className="relative w-full sm:max-w-xs">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">search</span>
                   <input
@@ -608,13 +588,13 @@ const AdminDashboard = () => {
                   <p className="text-[10px] mt-0.5">BÁO CÁO KẾT CA LÀM VIỆC</p>
                   <p className="text-[9px] text-neutralCustom mt-1">-----------------------------</p>
                 </div>
-                
+
                 <div className="space-y-1.5">
                   <p>Thời gian in: {new Date(selectedReport.created_at).toLocaleString('vi-VN')}</p>
                   <p>Thu ngân: {selectedReport.users?.fullname || 'Ẩn danh'}</p>
                   <p>Tổng số đơn hàng: {selectedReport.total_orders} đơn</p>
-                  <p className="text-[9px] text-neutralCustom">-----------------------------</p>
-                  
+                  <p className="text-[9px] text-neutralCustom">-----------------------------------------------------------</p>
+
                   <div className="flex justify-between">
                     <span>Tiền đầu ca:</span>
                     <span>{Number(selectedReport.initial_amount || 0).toLocaleString('vi-VN')}đ</span>
@@ -623,7 +603,7 @@ const AdminDashboard = () => {
                     <span>Doanh thu:</span>
                     <span>{Number(selectedReport.revenue_amount || 0).toLocaleString('vi-VN')}đ</span>
                   </div>
-                  <p className="text-[9px] text-neutralCustom">-----------------------------</p>
+                  <p className="text-[9px] text-neutralCustom">-----------------------------------------------------------</p>
                   <div className="flex justify-between font-bold text-gray-900 text-xs">
                     <span>TỔNG TRONG KÉT:</span>
                     <span>{Number(selectedReport.total_amount || 0).toLocaleString('vi-VN')}đ</span>

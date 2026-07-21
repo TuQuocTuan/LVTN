@@ -6,23 +6,25 @@ import axios from 'axios';
 const axiosConfig = { headers: { 'ngrok-skip-browser-warning': 'true' } };
 
 const PromotionManagement = () => {
-  // State quản lý Tab: 'Khuyến mãi' hoặc 'Lịch sử tặng Voucher'
+  // Quản lý Tab hiển thị hiện tại ('Khuyến mãi' hoặc 'Lịch sử tặng Voucher')
   const [activeTab, setActiveTab] = useState('Khuyến mãi');
-
-  // --- STATES QUẢN LÝ DỮ LIỆU TỪ API ---
   const [promotionsList, setPromotionsList] = useState([]);
-  const [customerVouchersList, setCustomerVouchersList] = useState([]); // Danh sách lịch sử voucher đã tặng
+  const [customerVouchersList, setCustomerVouchersList] = useState([]);
+  
+  // Trạng thái chờ khi đang đồng bộ danh sách khuyến mãi
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Trạng thái chờ khi đang tải danh sách lịch sử tặng voucher
   const [isLoadingCV, setIsLoadingCV] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // --- STATES CHỐT CHẶN BẢO MẬT THAY THẾ ALERT/CONFIRM TRÌNH DUYỆT ---
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
+  
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
 
-  // State Form Khuyến mãi
+  // Giá trị mặc định để khởi tạo dữ liệu cho form khuyến mãi
   const initialPromoState = {
     id: null,
     code: '',
@@ -35,27 +37,33 @@ const PromotionManagement = () => {
     end_date: '',
     is_active: true
   };
+  
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialPromoState);
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- STATES QUẢN LÝ TẶNG VOUCHER (CHỈ NHẬP SĐT) ---
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
+  
+  // Dữ liệu tặng voucher gồm số điện thoại nhận, cờ bỏ qua giới hạn và khuyến mãi được chọn
   const [giftData, setGiftData] = useState({ phone_number: '', bypass_limit: true, selectedPromo: null });
+  
+  // Trạng thái chờ khi đang thực hiện gửi tặng voucher qua API
   const [isSendingGift, setIsSendingGift] = useState(false);
+  
   const [customersList, setCustomersList] = useState([]);
 
-  // Tự động tải dữ liệu khi render
   useEffect(() => {
     fetchPromotions();
     fetchCustomerVouchers();
     fetchCustomers();
   }, []);
 
+  // Kích hoạt hiển thị hộp thoại cảnh báo thông báo nhanh
   const showAlert = (message, type = 'success', title = 'Thông báo') => {
     setAlertModal({ show: true, message, title, type });
   };
 
+  // Gọi API lấy toàn bộ danh sách chương trình khuyến mãi từ hệ thống
   const fetchPromotions = async () => {
     setIsLoading(true);
     try {
@@ -71,6 +79,7 @@ const PromotionManagement = () => {
     }
   };
 
+  // Gọi API lấy lịch sử phát tặng voucher cho khách hàng
   const fetchCustomerVouchers = async () => {
     setIsLoadingCV(true);
     try {
@@ -85,6 +94,7 @@ const PromotionManagement = () => {
     }
   };
 
+  // Gọi API lấy danh sách toàn bộ khách hàng để phục vụ việc chọn gửi tặng voucher
   const fetchCustomers = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/customers`, axiosConfig);
@@ -96,6 +106,7 @@ const PromotionManagement = () => {
     }
   };
 
+  // Chuyển đổi định dạng chuỗi ngày ISO từ database thành chuỗi tương thích với input datetime-local
   const formatForInput = (isoString) => {
     if (!isoString) return '';
     const d = new Date(isoString);
@@ -103,18 +114,20 @@ const PromotionManagement = () => {
     return d.toISOString().slice(0, 16);
   };
 
+  // Định dạng chuỗi ngày giờ từ database sang định dạng thân thiện DD/MM/YYYY
   const formatDate = (isoString) => {
     if (!isoString) return '';
     const date = new Date(isoString);
     return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
-  // ====================== XỬ LÝ KHUYẾN MÃI ======================
+  // Mở modal ở chế độ thêm khuyến mãi mới (reset sạch form)
   const handleOpenAddModal = () => {
     setFormData(initialPromoState);
     setIsPromoModalOpen(true);
   };
 
+  // Đọc dữ liệu của chương trình khuyến mãi hiện có và mở modal chỉnh sửa
   const handleOpenEditModal = (promo) => {
     setFormData({
       id: promo.id,
@@ -131,6 +144,7 @@ const PromotionManagement = () => {
     setIsPromoModalOpen(true);
   };
 
+  // Gửi thông tin form khuyến mãi lên Backend để lưu (thêm mới hoặc cập nhật)
   const handleSavePromo = async () => {
     if (!formData.code || !formData.name || !formData.discount_value || !formData.start_date || !formData.end_date) {
       return showAlert("Vui lòng điền đầy đủ các thông tin bắt buộc (*)", "error", "Thiếu thông tin");
@@ -159,6 +173,7 @@ const PromotionManagement = () => {
     }
   };
 
+  // Gọi API xóa chương trình khuyến mãi sau khi được xác nhận
   const handleDeletePromo = (id) => {
     setConfirmModal({
       show: true,
@@ -179,12 +194,13 @@ const PromotionManagement = () => {
     });
   };
 
-  // ====================== XỬ LÝ TẶNG VOUCHER CHO KHÁCH (CHỈ NHẬP SĐT) ======================
+  // Mở modal chuẩn bị tặng voucher cho khách hàng
   const handleOpenGiftModal = (promo) => {
     setGiftData({ phone_number: '', bypass_limit: true, selectedPromo: promo });
     setIsGiftModalOpen(true);
   };
 
+  // Gửi yêu cầu tặng voucher qua API lên Backend (tạo voucher và tự động gửi email)
   const handleSendGiftSubmit = async () => {
     const { phone_number, bypass_limit, selectedPromo } = giftData;
     if (!phone_number.trim()) {
@@ -204,7 +220,7 @@ const PromotionManagement = () => {
       if (res.data.success) {
         showAlert(res.data.message || "Tặng voucher thành công và đã gửi mail!", "success", "Thành công");
         setIsGiftModalOpen(false);
-        fetchCustomerVouchers(); // Refresh lại danh sách lịch sử ở Tab 2
+        fetchCustomerVouchers();
       }
     } catch (error) {
       showAlert(error.response?.data?.message || "Lỗi trong quá trình tặng voucher!", "error", "Giao dịch thất bại");
@@ -213,10 +229,13 @@ const PromotionManagement = () => {
     }
   };
 
-  // ====================== UI HELPERS ======================
+  // Tính số lượng trang cho bộ phân trang
   const totalPages = Math.ceil(promotionsList.length / itemsPerPage);
+  
+  // Trích xuất danh sách khuyến mãi hiển thị cho trang hiện tại
   const currentPromotions = promotionsList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  // Lấy nhãn hiển thị và CSS class tương ứng cho từng loại khuyến mãi
   const getTypeStyle = (type) => {
     switch (type?.toUpperCase()) {
       case 'VOUCHER': return { label: 'Voucher', color: 'text-secondary bg-secondary/10 border-secondary/20' };
@@ -225,14 +244,17 @@ const PromotionManagement = () => {
     }
   };
 
+  // Xác định trạng thái hoạt động hiện tại của chương trình khuyến mãi (đã tắt, hết hạn hoặc đang chạy)
   const getPromoStatus = (isActive, endDate) => {
     if (!isActive) return { text: 'Đã tắt', color: 'text-neutralCustom', dot: 'bg-neutralCustom' };
     if (new Date() > new Date(endDate)) return { text: 'Hết hạn', color: 'text-red-500', dot: 'bg-red-500' };
     return { text: 'Đang chạy', color: 'text-green-600', dot: 'bg-green-500 animate-pulse' };
   };
 
+  // Đếm số chương trình đang chạy hợp lệ
   const activePromotionsCount = promotionsList.filter(p => p.is_active && new Date(p.end_date) >= new Date()).length;
 
+  // Cấu hình danh sách các chỉ số thống kê bento
   const stats = [
     { title: 'Chương trình đang chạy', value: activePromotionsCount, icon: 'local_activity', color: 'primary', bg: 'bg-primary/10 text-primary' },
     { title: 'Voucher đã phát', value: customerVouchersList.length, icon: 'card_giftcard', color: 'secondary', bg: 'bg-secondary/10 text-secondary' },
@@ -244,7 +266,7 @@ const PromotionManagement = () => {
       <AdminSidebar currentTab="promotion" />
       <AdminHeader />
 
-      {/* 🌟 HỆ THỐNG ALERT MODAL THAY THẾ TOAST (Bảo mật, có nút bấm Đồng ý) */}
+      {/* HỆ THỐNG ALERT MODAL THAY THẾ TOAST */}
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
@@ -269,7 +291,7 @@ const PromotionManagement = () => {
         </div>
       )}
 
-      {/* 🌟 HỆ THỐNG HỘP THOẠI XÁC NHẬN THAY THẾ CONFIRM */}
+      {/* HỆ THỐNG HỘP THOẠI XÁC NHẬN THAY THẾ CONFIRM */}
       {confirmModal.show && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
@@ -296,8 +318,9 @@ const PromotionManagement = () => {
         </div>
       )}
 
+      {/* KHU VỰC NỘI DUNG CHÍNH */}
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen">
-        {/* Header Section */}
+        {/* Tiêu đề & Nút thêm khuyến mãi */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Khuyến mãi & Vouchers</h2>
@@ -311,7 +334,7 @@ const PromotionManagement = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Khối thống kê chỉ số Bento */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {stats.map((stat, idx) => (
             <div key={idx} className="bg-white p-5 rounded-2xl flex items-center gap-5 border border-neutralCustom/20 shadow-sm hover:-translate-y-1 transition-transform duration-300">
@@ -326,7 +349,7 @@ const PromotionManagement = () => {
           ))}
         </div>
 
-        {/* Tabs Section */}
+        {/* Thanh chọn Tabs */}
         <div className="mb-6 flex border-b border-neutralCustom/20">
           <button
             onClick={() => setActiveTab('Khuyến mãi')}
@@ -342,7 +365,7 @@ const PromotionManagement = () => {
           </button>
         </div>
 
-        {/* TAB KHUYẾN MÃI */}
+        {/* Bảng chương trình Khuyến mãi */}
         {activeTab === 'Khuyến mãi' ? (
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-neutralCustom/20 animate-fade-in">
             <div className="overflow-x-auto">
@@ -397,11 +420,11 @@ const PromotionManagement = () => {
                                 </button>
                               )}
                               <button onClick={() => handleOpenEditModal(promo)} className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Chỉnh sửa">
-                                <span className="material-symbols-outlined text-[18px]">edit</span>
-                              </button>
+                                  <span className="material-symbols-outlined text-[18px]">edit</span>
+                                </button>
                               <button onClick={() => handleDeletePromo(promo.id)} className="p-1.5 text-neutralCustom hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
-                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                              </button>
+                                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                                </button>
                             </div>
                           </td>
                         </tr>
@@ -413,7 +436,8 @@ const PromotionManagement = () => {
                 </tbody>
               </table>
             </div>
-            {/* Phân trang */}
+
+            {/* Phân trang danh sách */}
             {promotionsList.length > 0 && (
               <div className="p-4 bg-culinaryBg/30 border-t border-neutralCustom/10 flex justify-center items-center text-sm shrink-0">
                 <div className="flex gap-2">
@@ -427,7 +451,7 @@ const PromotionManagement = () => {
             )}
           </div>
         ) : (
-          /* TAB LỊCH SỬ TẶNG VOUCHER */
+          /* Bảng Lịch sử tặng Voucher */
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-neutralCustom/20 animate-fade-in">
             <div className="p-5 border-b border-neutralCustom/20 flex justify-between items-center bg-gray-50/50">
               <h3 className="font-bold text-gray-900">Danh sách khách hàng đã nhận Voucher</h3>
@@ -484,7 +508,7 @@ const PromotionManagement = () => {
         )}
       </main>
 
-      {/* MODAL FORM THÊM / SỬA KHUYẾN MÃI */}
+      {/* Form thêm mới / Sửa khuyến mãi */}
       {isPromoModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up max-h-[90vh]">
@@ -563,7 +587,7 @@ const PromotionManagement = () => {
         </div>
       )}
 
-      {/* 🌟 MỚI: MODAL TẶNG VOUCHER CHO KHÁCH HÀNG (CHỈ NHẬP SĐT) */}
+      {/* Modal tặng Voucher cho khách hàng */}
       {isGiftModalOpen && giftData.selectedPromo && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
