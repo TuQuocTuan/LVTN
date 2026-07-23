@@ -445,7 +445,7 @@ const IngredientManagement = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Số lượng đầu *</label>
+                    <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Số lượng đầu vào *</label>
                     <input type="number" step="any" min="0" required value={addData.quantity} onChange={(e) => setAddData({ ...addData, quantity: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary font-bold text-primary" placeholder="0" />
                   </div>
                   <div>

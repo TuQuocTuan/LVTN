@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AdminSidebar from '../../components/layout/Admin/AdminSidebar';
 import AdminHeader from '../../components/layout/Admin/AdminHeader';
 import axios from 'axios';
@@ -47,6 +47,11 @@ const PromotionManagement = () => {
   // Dữ liệu tặng voucher gồm số điện thoại nhận, cờ bỏ qua giới hạn và khuyến mãi được chọn
   const [giftData, setGiftData] = useState({ phone_number: '', bypass_limit: true, selectedPromo: null });
   
+  // Tìm kiếm & dropdown chọn khách hàng tặng voucher
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerDropdownRef = useRef(null);
+
   // Trạng thái chờ khi đang thực hiện gửi tặng voucher qua API
   const [isSendingGift, setIsSendingGift] = useState(false);
   
@@ -56,6 +61,17 @@ const PromotionManagement = () => {
     fetchPromotions();
     fetchCustomerVouchers();
     fetchCustomers();
+  }, []);
+
+  // Đóng dropdown khách hàng khi click bên ngoài modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Kích hoạt hiển thị hộp thoại cảnh báo thông báo nhanh
@@ -197,8 +213,19 @@ const PromotionManagement = () => {
   // Mở modal chuẩn bị tặng voucher cho khách hàng
   const handleOpenGiftModal = (promo) => {
     setGiftData({ phone_number: '', bypass_limit: true, selectedPromo: promo });
+    setCustomerSearchTerm('');
+    setIsCustomerDropdownOpen(false);
     setIsGiftModalOpen(true);
   };
+
+  // Lọc danh sách khách hàng theo Tên hoặc Số điện thoại trong ô tìm kiếm
+  const filteredCustomersForGift = customersList.filter(cus => {
+    if (!customerSearchTerm.trim()) return true;
+    const term = customerSearchTerm.toLowerCase().trim();
+    const nameMatch = cus.name?.toLowerCase().includes(term);
+    const phoneMatch = cus.phone_number?.includes(term);
+    return nameMatch || phoneMatch;
+  });
 
   // Gửi yêu cầu tặng voucher qua API lên Backend (tạo voucher và tự động gửi email)
   const handleSendGiftSubmit = async () => {
@@ -590,8 +617,8 @@ const PromotionManagement = () => {
       {/* Modal tặng Voucher cho khách hàng */}
       {isGiftModalOpen && giftData.selectedPromo && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
-            <div className="p-6 border-b border-neutralCustom/10 bg-orange-50/50 flex flex-col items-center text-center">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col animate-scale-up relative">
+            <div className="p-6 border-b border-neutralCustom/10 bg-orange-50/50 flex flex-col items-center text-center rounded-t-3xl">
               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-3">
                 <span className="material-symbols-outlined text-4xl text-secondary">card_giftcard</span>
               </div>
@@ -601,22 +628,104 @@ const PromotionManagement = () => {
 
             <div className="p-6 space-y-4 bg-white">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Số điện thoại khách hàng <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl z-10">call</span>
-                  <select
-                    value={giftData.phone_number}
-                    onChange={(e) => setGiftData({ ...giftData, phone_number: e.target.value })}
-                    className="w-full pl-11 pr-10 py-3.5 bg-gray-50 border border-neutralCustom/20 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-semibold text-gray-900 cursor-pointer appearance-none"
-                  >
-                    <option value="">-- Chọn khách hàng nhận Voucher --</option>
-                    {customersList.map(cus => (
-                      <option key={cus.id} value={cus.phone_number}>
-                        {cus.phone_number} - {cus.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom pointer-events-none">arrow_drop_down</span>
+                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">
+                  Tìm / Chọn khách hàng nhận Voucher <span className="text-red-500">*</span>
+                </label>
+                <div className="relative" ref={customerDropdownRef}>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 material-symbols-outlined text-neutralCustom text-xl pointer-events-none z-10">
+                      {giftData.phone_number ? 'account_circle' : 'search'}
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Nhập Tên hoặc Số điện thoại để tìm..."
+                      value={
+                        isCustomerDropdownOpen 
+                          ? customerSearchTerm 
+                          : (giftData.phone_number 
+                              ? (() => {
+                                  const found = customersList.find(c => c.phone_number === giftData.phone_number);
+                                  return found ? `${found.name} - ${found.phone_number}` : giftData.phone_number;
+                                })()
+                              : customerSearchTerm)
+                      }
+                      onFocus={() => {
+                        setIsCustomerDropdownOpen(true);
+                      }}
+                      onChange={(e) => {
+                        setCustomerSearchTerm(e.target.value);
+                        setIsCustomerDropdownOpen(true);
+                        if (giftData.phone_number) {
+                          setGiftData(prev => ({ ...prev, phone_number: '' }));
+                        }
+                      }}
+                      className="w-full pl-11 pr-10 py-3.5 bg-gray-50 border border-neutralCustom/20 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal"
+                    />
+                    {giftData.phone_number || customerSearchTerm ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGiftData(prev => ({ ...prev, phone_number: '' }));
+                          setCustomerSearchTerm('');
+                          setIsCustomerDropdownOpen(true);
+                        }}
+                        className="absolute right-3 p-1 hover:bg-gray-200 text-gray-400 hover:text-gray-700 rounded-full transition-colors z-10"
+                        title="Xóa tìm kiếm / lựa chọn"
+                      >
+                        <span className="material-symbols-outlined text-lg block">close</span>
+                      </button>
+                    ) : (
+                      <span className="absolute right-4 material-symbols-outlined text-neutralCustom pointer-events-none">
+                        arrow_drop_down
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Dropdown hiển thị danh sách khách hàng tìm kiếm */}
+                  {isCustomerDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-neutralCustom/20 rounded-2xl shadow-2xl z-[100] max-h-48 overflow-y-auto animate-fade-in divide-y divide-gray-100">
+                      {filteredCustomersForGift.length > 0 ? (
+                        filteredCustomersForGift.map(cus => {
+                          const isSelected = cus.phone_number === giftData.phone_number;
+                          return (
+                            <div
+                              key={cus.id}
+                              onClick={() => {
+                                setGiftData(prev => ({ ...prev, phone_number: cus.phone_number }));
+                                setCustomerSearchTerm('');
+                                setIsCustomerDropdownOpen(false);
+                              }}
+                              className={`p-3 px-4 flex items-center justify-between cursor-pointer transition-colors ${
+                                isSelected ? 'bg-orange-50/80 text-primary font-bold' : 'hover:bg-orange-50/40 text-gray-800'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${
+                                  isSelected ? 'bg-primary text-white' : 'bg-stone-100 text-stone-600'
+                                }`}>
+                                  {cus.name ? cus.name.charAt(0).toUpperCase() : '?'}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-gray-900">{cus.name}</p>
+                                  <p className="text-[11px] text-gray-500 font-mono flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px] text-stone-400">call</span>
+                                    {cus.phone_number}
+                                  </p>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
+                              )}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-4 text-center text-xs text-gray-500 font-medium">
+                          Không tìm thấy khách hàng nào khớp với từ khóa "{customerSearchTerm}"
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {giftData.phone_number && (() => {
@@ -644,7 +753,7 @@ const PromotionManagement = () => {
               </div>
             </div>
 
-            <div className="p-5 border-t border-neutralCustom/10 bg-gray-50 flex justify-end gap-3 shrink-0">
+            <div className="p-5 border-t border-neutralCustom/10 bg-gray-50 flex justify-end gap-3 shrink-0 rounded-b-3xl">
               <button onClick={() => setIsGiftModalOpen(false)} className="px-6 py-2.5 rounded-xl font-bold text-sm text-gray-700 border border-neutralCustom/20 hover:bg-white transition-colors">Hủy</button>
               <button 
                 onClick={handleSendGiftSubmit} 
