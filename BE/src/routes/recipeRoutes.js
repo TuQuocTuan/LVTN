@@ -1,7 +1,10 @@
 import express from 'express';
 import { getRecipeByDish, getRecipelist, searchRecipe, addRecipes, updateRecipes, deleteRecipe, getAllVersionByDish, getRecipeByVersion } from '../controllers/recipeController.js';
+import { verifyToken, authorizeRoles } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
+
+router.use(verifyToken, authorizeRoles('admin', 'chef', 'super_admin'));
 
 router.get('/', getRecipelist);
 router.get('/search', searchRecipe);
