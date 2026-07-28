@@ -645,59 +645,80 @@ const AdminDashboard = () => {
                   <!DOCTYPE html>
                   <html>
                   <head>
+                      <meta charset="utf-8" />
+                      <title>In Báo Cáo Kết Ca</title>
                       <style>
                           @page {
                               size: 80mm auto;
                               margin: 0;
                           }
+                          @media print {
+                              html, body {
+                                  width: 80mm !important;
+                                  margin: 0 !important;
+                                  padding: 0 !important;
+                              }
+                              .bill-container {
+                                  width: 80mm !important;
+                                  max-width: 80mm !important;
+                                  margin: 0 !important;
+                                  padding: 10px !important;
+                              }
+                          }
                           html, body {
                               margin: 0;
                               padding: 0;
                               width: 80mm;
-                              height: auto;
                               background-color: #fff;
-                          }
-                          body {
-                              font-family: 'Arial', sans-serif;
+                              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                               font-size: 12px;
-                              padding: 8px;
+                              color: #000;
+                          }
+                          .bill-container {
+                              width: 80mm;
+                              max-width: 80mm;
+                              padding: 10px;
                               box-sizing: border-box;
+                              margin: 0 auto;
                           }
                           .text-center { text-align: center; }
                           .bold { font-weight: bold; }
-                          .divider { border-top: 1px dashed #000; margin: 10px 0; }
-                          table { width: 100%; border-collapse: collapse; }
+                          .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                          table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+                          td { padding: 3px 0; vertical-align: top; }
                           .text-right { text-align: right; }
                       </style>
                   </head>
                   <body>
-                      <div class="text-center">
-                          <h3 style="margin: 0; font-size: 16px;">MÌXI</h3>
-                          <p style="margin: 5px 0;" class="bold">BÁO CÁO KẾT CA</p>
+                      <div class="bill-container">
+                          <div class="text-center">
+                              <h3 style="margin: 0; font-size: 16px; font-weight: 800;">LÀNG MÌXI BBQ</h3>
+                              <p style="margin: 4px 0 0 0;" class="bold">BÁO CÁO KẾT CA</p>
+                          </div>
+                          <div class="divider"></div>
+                          <p style="margin: 3px 0;">Thời gian in: ${thoigianin}</p>
+                          <p style="margin: 3px 0;">Thu ngân: ${selectedReport.users?.fullname || 'Ẩn danh'}</p>
+                          <p style="margin: 3px 0;">Tổng số đơn hàng: ${selectedReport.total_orders} đơn</p>
+                          <div class="divider"></div>
+                          <table>
+                              <tr>
+                                  <td>Tiền đầu ca:</td>
+                                  <td class="text-right">${Number(selectedReport.initial_amount || 0).toLocaleString('vi-VN')}đ</td>
+                              </tr>
+                              <tr>
+                                  <td>Tổng doanh thu:</td>
+                                  <td class="text-right">${Number(selectedReport.revenue_amount || 0).toLocaleString('vi-VN')}đ</td>
+                              </tr>
+                              <tr class="bold" style="font-size: 13px;">
+                                  <td style="padding-top: 6px;">TỔNG TRONG KÉT:</td>
+                                  <td class="text-right" style="padding-top: 6px;">${Number(selectedReport.total_amount || 0).toLocaleString('vi-VN')}đ</td>
+                              </tr>
+                          </table>
+                          <div class="divider"></div>
+                          <div class="text-center bold" style="margin-top: 10px;">XÁC NHẬN CỦA QUẢN LÝ</div>
+                          <br><br><br>
+                          <div class="text-center" style="font-size: 10px; color: #555;">(Ký và ghi rõ họ tên)</div>
                       </div>
-                      <div class="divider"></div>
-                      <p>Thời gian in: ${thoigianin}</p>
-                      <p>Thu ngân: ${selectedReport.users?.fullname || 'Ẩn danh'}</p>
-                      <p>Tổng số đơn hàng: ${selectedReport.total_orders}</p>
-                      <div class="divider"></div>
-                      <table>
-                          <tr>
-                              <td>Tiền đầu ca:</td>
-                              <td class="text-right">${Number(selectedReport.initial_amount || 0).toLocaleString('vi-VN')}đ</td>
-                          </tr>
-                          <tr>
-                              <td>Tổng doanh thu:</td>
-                              <td class="text-right">${Number(selectedReport.revenue_amount || 0).toLocaleString('vi-VN')}đ</td>
-                          </tr>
-                          <tr class="bold" style="font-size: 14px;">
-                              <td>TỔNG TRONG KÉT:</td>
-                              <td class="text-right">${Number(selectedReport.total_amount || 0).toLocaleString('vi-VN')}đ</td>
-                          </tr>
-                      </table>
-                      <div class="divider"></div>
-                      <div class="text-center bold">XÁC NHẬN CỦA QUẢN LÝ</div>
-                      <br><br><br><br>
-                      <div class="text-center">(Ký và ghi rõ họ tên)</div>
                   </body>
                   </html>
                   `;

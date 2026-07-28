@@ -62,10 +62,6 @@ const DishManagement = () => {
       const response = await axios.get(`${API_BASE_URL}/categories`);
       const categoriesData = Array.isArray(response.data) ? response.data : [];
       setCategoriesList(categoriesData);
-
-      if (!selectedDish) {
-        setFormData(prev => ({ ...prev, category_id: '' }));
-      }
     } catch (error) {
       console.error("Lỗi tải dữ liệu thực đơn:", error);
       showAlert("Gặp sự cố khi đồng bộ thực đơn từ máy chủ Làng MÌXI!", "error", "Lỗi tải dữ liệu");
@@ -104,15 +100,16 @@ const DishManagement = () => {
   const handleOpenPopup = (dish) => {
     setSelectedDish(dish);
     if (dish) {
+      const categoryId = dish.category_id || dish.categories?.id || categoriesList.find(c => c.name === dish.categories?.name)?.id || '';
       setFormData({
         name: dish.name,
         price: dish.price,
-        category_id: categoriesList.find(c => c.name === dish.categories?.name)?.id || '',
+        category_id: categoryId,
         description: dish.description || '',
         status: dish.status || 'available',
         instructions: dish.instructions ? dish.instructions[0] : null
       });
-      setImagePreview(dish.image_url);
+      setImagePreview(dish.image_url || dish.image);
     } else {
       setFormData({
         name: '',
