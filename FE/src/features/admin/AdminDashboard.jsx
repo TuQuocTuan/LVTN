@@ -15,7 +15,7 @@ const AdminDashboard = () => {
 
   // Dữ liệu đồ thị cột thực tế được render tự động từ API tuần của Tuấn
   const [weeklyData, setWeeklyData] = useState([]);
-  const [hoveredBarIndex, setHoveredIndex] = useState(null);
+  const [hoveredBar, setHoveredBar] = useState(null);
 
   // States cho danh sách báo cáo kết ca
   const [shiftReportsList, setShiftReportsList] = useState([]);
@@ -83,7 +83,7 @@ const AdminDashboard = () => {
           // Tính toán phần trăm chiều cao cho cột doanh thu thật
           const revPercent = maxVal > 0 ? (item.total / maxVal) * 85 : 0;
           // Lợi nhuận tạm tính 35% của ngày đó
-          const profit = Math.round(item.total * 0.35);
+          const profit = Math.round(item.total * 0.10);
           const profPercent = maxVal > 0 ? (profit / maxVal) * 85 : 0;
 
           return {
@@ -104,7 +104,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const liveProfit = Math.round(liveRevenue * 0.35);
+  const liveProfit = Math.round(liveRevenue * 0.10);
 
   /* STREAMING_CHUNK: Thiết lập mảng chỉ số */
   const metrics = [
@@ -112,7 +112,6 @@ const AdminDashboard = () => {
       id: 1,
       title: 'Tổng doanh thu',
       value: loading ? 'Đang tính...' : `${liveRevenue.toLocaleString('vi-VN')}đ`,
-      trend: '+12.5%',
       isUp: true,
       icon: 'payments',
       color: 'primary',
@@ -121,16 +120,14 @@ const AdminDashboard = () => {
       id: 2,
       title: 'Hóa đơn trung bình',
       value: loading ? 'Đang tính...' : `${liveAverageBill.toLocaleString('vi-VN')}đ`,
-      trend: '-2.1%',
       isUp: false,
       icon: 'receipt',
       color: 'tertiary',
     },
     {
       id: 3,
-      title: 'Lợi nhuận (Tạm tính 35%)',
+      title: 'Lợi nhuận (Tạm tính 10%)',
       value: loading ? 'Đang tính...' : `${liveProfit.toLocaleString('vi-VN')}đ`,
-      trend: '+8.4%',
       isUp: true,
       icon: 'trending_up',
       color: 'secondary',
@@ -350,29 +347,48 @@ const AdminDashboard = () => {
                   key={idx}
                   className="flex flex-col justify-end items-center h-full relative group cursor-pointer"
                   style={{ width: `${100 / weeklyData.length}%` }} // Phân tách đều bằng 100/7
-                  onMouseEnter={() => setHoveredIndex(idx)}
-                  onMouseLeave={() => setHoveredIndex(null)}
+                  onMouseLeave={() => setHoveredBar(null)}
                 >
                   {/* Nhóm cột kép (Doanh thu & Lợi nhuận nằm sát nhau) */}
                   <div className="flex items-end justify-center gap-1.5 sm:gap-2 h-full w-full relative pb-1">
-                    {/* Cột Lợi nhuận ròng tạm tính 35% (Màu hồng cam thanh lịch) */}
+                    {/* Cột Lợi nhuận ròng */}
                     <div
-                      className="w-2.5 sm:w-4 bg-[#fca5a5]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300"
+                      className={`w-2.5 sm:w-4 bg-[#fca5a5]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300 ${
+                        hoveredBar?.index === idx && hoveredBar?.type === 'profit' ? 'scale-110 shadow-md ring-2 ring-[#fca5a5]/50 z-10' : ''
+                      }`}
                       style={{ height: data.profitHeight }}
+                      onMouseEnter={() => setHoveredBar({ index: idx, type: 'profit' })}
                     ></div>
-                    {/* Cột Doanh thu thật (Màu cam đậm rực rỡ) */}
+
+                    {/* Cột Doanh thu thật */}
                     <div
-                      className={`w-2.5 sm:w-4 rounded-t-md transition-all duration-300 ${data.highlight ? 'bg-primary shadow-lg scale-x-105' : 'bg-primary/75 hover:bg-primary'
-                        }`}
+                      className={`w-2.5 sm:w-4 rounded-t-md transition-all duration-300 ${
+                        data.highlight ? 'bg-primary shadow-lg scale-x-105' : 'bg-primary/75 hover:bg-primary'
+                      } ${
+                        hoveredBar?.index === idx && hoveredBar?.type === 'revenue' ? 'scale-110 shadow-md ring-2 ring-primary/50 z-10' : ''
+                      }`}
                       style={{ height: data.revenueHeight }}
+                      onMouseEnter={() => setHoveredBar({ index: idx, type: 'revenue' })}
                     ></div>
                   </div>
 
-                  {/* Tooltip hiển thị số tiền thật khi hover */}
-                  {hoveredBarIndex === idx && (
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-950 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg shadow-xl pointer-events-none z-20 whitespace-nowrap">
-                      DT: {Number(data.revenue).toLocaleString('vi-VN')}đ
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gray-950 rotate-45"></div>
+                  {/* Tooltip hiển thị thông tin cụ thể của cột đang rê chuột vào */}
+                  {hoveredBar && hoveredBar.index === idx && (
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-950 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg shadow-xl pointer-events-none z-30 whitespace-nowrap flex items-center gap-1.5 border border-white/10">
+                      {hoveredBar.type === 'profit' ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-[#fca5a5]"></span>
+                          <span className="text-gray-300">Lợi nhuận:</span>
+                          <span className="text-[#fca5a5] font-extrabold">{Number(data.profit).toLocaleString('vi-VN')}đ</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-primary"></span>
+                          <span className="text-gray-300">Doanh thu:</span>
+                          <span className="text-primary font-extrabold">{Number(data.revenue).toLocaleString('vi-VN')}đ</span>
+                        </>
+                      )}
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gray-950 rotate-45 border-r border-b border-white/10"></div>
                     </div>
                   )}
                 </div>
