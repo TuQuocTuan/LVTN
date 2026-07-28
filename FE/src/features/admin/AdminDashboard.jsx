@@ -83,7 +83,7 @@ const AdminDashboard = () => {
           // Tính toán phần trăm chiều cao cho cột doanh thu thật
           const revPercent = maxVal > 0 ? (item.total / maxVal) * 85 : 0;
           // Lợi nhuận tạm tính 35% của ngày đó
-          const profit = Math.round(item.total * 0.10);
+          const profit = Math.round(item.total * 0.9);
           const profPercent = maxVal > 0 ? (profit / maxVal) * 85 : 0;
 
           return {
@@ -353,20 +353,17 @@ const AdminDashboard = () => {
                   <div className="flex items-end justify-center gap-1.5 sm:gap-2 h-full w-full relative pb-1">
                     {/* Cột Lợi nhuận ròng */}
                     <div
-                      className={`w-2.5 sm:w-4 bg-[#fca5a5]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300 ${
-                        hoveredBar?.index === idx && hoveredBar?.type === 'profit' ? 'scale-110 shadow-md ring-2 ring-[#fca5a5]/50 z-10' : ''
-                      }`}
+                      className={`w-2.5 sm:w-4 bg-[#fca5a5]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300 ${hoveredBar?.index === idx && hoveredBar?.type === 'profit' ? 'scale-110 shadow-md ring-2 ring-[#fca5a5]/50 z-10' : ''
+                        }`}
                       style={{ height: data.profitHeight }}
                       onMouseEnter={() => setHoveredBar({ index: idx, type: 'profit' })}
                     ></div>
 
                     {/* Cột Doanh thu thật */}
                     <div
-                      className={`w-2.5 sm:w-4 rounded-t-md transition-all duration-300 ${
-                        data.highlight ? 'bg-primary shadow-lg scale-x-105' : 'bg-primary/75 hover:bg-primary'
-                      } ${
-                        hoveredBar?.index === idx && hoveredBar?.type === 'revenue' ? 'scale-110 shadow-md ring-2 ring-primary/50 z-10' : ''
-                      }`}
+                      className={`w-2.5 sm:w-4 rounded-t-md transition-all duration-300 ${data.highlight ? 'bg-primary shadow-lg scale-x-105' : 'bg-primary/75 hover:bg-primary'
+                        } ${hoveredBar?.index === idx && hoveredBar?.type === 'revenue' ? 'scale-110 shadow-md ring-2 ring-primary/50 z-10' : ''
+                        }`}
                       style={{ height: data.revenueHeight }}
                       onMouseEnter={() => setHoveredBar({ index: idx, type: 'revenue' })}
                     ></div>
