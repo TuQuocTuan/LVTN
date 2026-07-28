@@ -104,7 +104,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const liveProfit = Math.round(liveRevenue * 0.10);
+  const liveProfit = Math.round(liveRevenue * 0.9);
 
   /* STREAMING_CHUNK: Thiết lập mảng chỉ số */
   const metrics = [
@@ -176,7 +176,7 @@ const AdminDashboard = () => {
             <td colspan="2" class="meta-val" style="color: #ff6b00;">${liveRevenue.toLocaleString('vi-VN')} đ</td>
           </tr>
           <tr>
-            <td class="meta-label">Lợi nhuận tạm tính (35%):</td>
+            <td class="meta-label">Lợi nhuận tạm tính (10%):</td>
             <td colspan="2" class="meta-val" style="color: #2b6cb0;">${liveProfit.toLocaleString('vi-VN')} đ</td>
           </tr>
           <tr class="spacer"><td colspan="3" class="spacer"></td></tr>
