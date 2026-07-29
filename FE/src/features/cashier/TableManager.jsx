@@ -668,7 +668,9 @@ const TableManager = () => {
                         billData.allOrders.forEach(order => {
                           order.order_details.forEach(detail => {
                             const name = detail.dishes?.name;
-                            const status = order.status;
+                            const status = order.status === 'cancelled' || detail.status === 'cancelled'
+                              ? 'cancelled'
+                              : (detail.status || order.status);
                             const note = detail.note?.trim();
 
                             const existing = groupedDishes.find(

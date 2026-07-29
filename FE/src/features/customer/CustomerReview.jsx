@@ -84,6 +84,7 @@ const CustomerReview = () => {
           // Chỉ lấy các món ăn đã được bếp báo hoàn thành chế biến xong phục vụ (completed)
           if (order.status === 'completed' && order.order_details) {
             order.order_details.forEach(detail => {
+              if (detail.status === 'cancelled') return;
               rawDishes.push({
                 dish_id: detail.dish_id,
                 dish_name: detail.dishes?.name || 'Món ăn',
