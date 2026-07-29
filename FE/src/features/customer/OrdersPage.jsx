@@ -111,10 +111,13 @@ const OrdersPage = () => {
                         <span className={`font-semibold ${order.status === 'cancelled' ? 'text-gray-400' : 'text-primary'}`}>
                           {item.quantity}x
                         </span>
-                        <p className={order.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}>
+                        <span className={item.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}>
                           {/* Hỗ trợ trường hợp tên món nằm trong dishes hoặc trả thẳng tên */}
                           {item.dishes?.name || item.dishes || 'Món ăn'}
-                        </p>
+                          {/* gạch hiển thị món đã huỷ */}
+
+                        </span>
+
                       </div>
                       <span className="text-neutralCustom">{Number(item.price).toLocaleString('vi-VN')}đ</span>
                     </div>

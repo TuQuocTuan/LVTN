@@ -39,8 +39,7 @@ export const addReview = async (req, res) => {
             .select(`
                 id,
                 session_id,
-                order_details!inner(dish_id),
-                dining_sessions!inner(customer_id)
+                order_details!inner(dish_id)
             `)
             .eq('id', Number(order_id))
             .in('order_details.dish_id', dishIdArray);
@@ -54,10 +53,24 @@ export const addReview = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Không tìm thấy các món ăn này trong đơn hàng của bạn!' });
         }
 
+        let customerId = null;
+        if (phone_number) {
+            const { data: customer, error: cusErr } = await supabase
+                .from('customers')
+                .select('id')
+                .eq('phone_number', phone_number.trim())
+                .maybeSingle();
+
+            if (!cusErr && customer) {
+                customerId = customer.id;
+            }
+        }
+
         const reviewsToInsert = reviews.map(item => ({
             session_id: session_id,
             email: email || null,
             phone_number: phone_number || null,
+            customer_id: customerId,
             dish_id: Number(item.dish_id),
             rating: Number(item.rating),
             comment: item.comment ? item.comment.trim() : null
