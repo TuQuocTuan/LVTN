@@ -242,6 +242,7 @@ const CustomerManagement = () => {
                     <th className="px-5 py-3.5">Họ và tên</th>
                     <th className="px-5 py-3.5">Số điện thoại</th>
                     <th className="px-5 py-3.5">Địa chỉ Email</th>
+                    <th className="px-5 py-3.5 text-right">Tổng chi tiêu</th>
                     <th className="px-5 py-3.5">Ngày giờ đăng ký</th>
                     <th className="px-5 py-3.5 text-center">Thao tác</th>
                   </tr>
@@ -257,6 +258,11 @@ const CustomerManagement = () => {
                       </td>
                       <td className="px-5 py-4">
                         <span className="text-xs sm:text-sm font-semibold text-stone-600 break-all">{cus.email}</span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-xs sm:text-sm font-black text-emerald-600 font-mono">
+                          {Number(cus.total_spent || 0).toLocaleString('vi-VN')} đ
+                        </span>
                       </td>
                       <td className="px-5 py-4">
                         <span className="text-xs text-stone-500 font-medium">{formatDate(cus.created_at)}</span>

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { supabase } from '../config/supabase.js';
 import htmlPdf from 'html-pdf-node';
+import { calculateCustomerTotalBill } from './promotionController.js';
 
 export const createCustomer = async (req, res) => {
     try {
@@ -100,9 +101,26 @@ export const getCustomers = async (req, res) => {
 
         if (fetchErr) throw fetchErr;
 
+        const formattedCustomers = await Promise.all(
+            customers.map(async (c) => {
+                try {
+                    const total_spent = await calculateCustomerTotalBill(c.id);
+                    return {
+                        ...c,
+                        total_spent: total_spent || 0
+                    };
+                } catch (err) {
+                    return {
+                        ...c,
+                        total_spent: 0
+                    };
+                }
+            })
+        );
+
         res.status(200).json({
             success: true,
-            data: customers
+            data: formattedCustomers
         });
     } catch (error) {
         console.error('Lỗi lấy danh sách khách hàng:', error);
