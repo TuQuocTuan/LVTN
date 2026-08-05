@@ -127,6 +127,36 @@ export const vnpayIPN = async (req, res) => {
                 const subTotal = sessionData.sub_total || Math.round(totalAmount / (1 + vatRate) + discountAmount);
                 const vatAmount = Math.round((subTotal - discountAmount) * vatRate);
 
+                let costAmount = 0;
+                const { data: vnpOrders } = await supabase
+                    .from('orders')
+                    .select('order_details(dish_id, quantity, status)')
+                    .eq('session_id', session_id)
+                    .eq('status', 'completed');
+
+                if (vnpOrders && vnpOrders.length > 0) {
+                    const dishIDs = [];
+                    vnpOrders.forEach(o => o.order_details?.forEach(d => {
+                        if (d.status !== 'cancelled' && d.dish_id) dishIDs.push(Number(d.dish_id));
+                    }));
+                    if (dishIDs.length > 0) {
+                        const { data: recipes } = await supabase
+                            .from('recipes')
+                            .select('dish_id, amount_required, ingredients(price)')
+                            .in('dish_id', [...new Set(dishIDs)]);
+                        vnpOrders.forEach(o => {
+                            o.order_details?.forEach(d => {
+                                if (d.status !== 'cancelled') {
+                                    const dishRecipes = recipes?.filter(r => Number(r.dish_id) === Number(d.dish_id)) || [];
+                                    dishRecipes.forEach(r => {
+                                        costAmount += (Number(r.ingredients?.price || 0) / 1000) * Number(r.amount_required) * Number(d.quantity);
+                                    });
+                                }
+                            });
+                        });
+                    }
+                }
+
                 const { data: billData, error: billError } = await supabase
                     .from('bills')
                     .insert([
@@ -138,7 +168,8 @@ export const vnpayIPN = async (req, res) => {
                             vat_amount: vatAmount,
                             total_amount: totalAmount,
                             payment_method: 'VNPAY',
-                            created_at: new Date()
+                            created_at: new Date(),
+                            cost_amount: Math.round(costAmount)
                         }
                     ]);
 

@@ -22,12 +22,15 @@ export const getDoanhThuDashboard = async (req, res) => {
 
         const { data: bills, error: fetchErr } = await supabase
             .from('bills')
-            .select('total_amount, payment_method')
+            .select('total_amount, payment_method, cost_amount')
             .gte('created_at', moctgian.toISOString());
         if (fetchErr) throw fetchErr;
 
         const count = bills.length;
         const tongdoanhthu = bills.reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
+        const tongcost = bills.reduce((tong, bill) => tong + Number(bill.cost_amount || 0), 0);
+        const doanhthuthucte = tongdoanhthu - tongcost;
+
         const tongtienmat = bills
             .filter(bill => bill.payment_method === 'CASH')
             .reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
@@ -40,6 +43,8 @@ export const getDoanhThuDashboard = async (req, res) => {
         res.status(200).json({
             success: true,
             tongdoanhthu,
+            tongcost,
+            doanhthuthucte,
             tongtienmat,
             tongchuyenkhoan,
             averageBill

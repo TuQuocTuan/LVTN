@@ -415,7 +415,7 @@ export const getTamtinhBill = async (session_id) => {
 
         const { data: orders, error: fetchErr } = await supabase
             .from('orders')
-            .select('id, sub_total, order_details(dishes(name), quantity, price, status)')
+            .select('id, sub_total, order_details(dish_id, dishes(name), quantity, price, status)')
             .eq('session_id', session_id)
             .eq('status', 'completed');
 
@@ -458,7 +458,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
         const dishIDs = [];
         orders.forEach(o => {
             o.order_details?.forEach(d => {
-                if (d.status !== 'cancelled') dishIDs.push(d.dish_id);
+                if (d.status !== 'cancelled' && d.dish_id) dishIDs.push(Number(d.dish_id));
             });
         });
 
@@ -468,11 +468,10 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 .from('recipes')
                 .select('dish_id, amount_required, ingredients(price)')
                 .in('dish_id', [...new Set(dishIDs)]);
-            // 3. Tính tổng giá vốn cho phiên ăn này
             orders.forEach(o => {
                 o.order_details?.forEach(d => {
                     if (d.status !== 'cancelled') {
-                        const dishRecipes = recipes?.filter(r => r.dish_id === d.dish_id) || [];
+                        const dishRecipes = recipes?.filter(r => Number(r.dish_id) === Number(d.dish_id)) || [];
                         dishRecipes.forEach(r => {
                             const giaIngre = r.ingredients?.price || 0;
                             cost_amount += (giaIngre / 1000) * Number(r.amount_required) * Number(d.quantity);
@@ -558,8 +557,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 phone_number ? phone_number.trim() : null,
                 null,
                 appliedPromotionId,
-                { sub_total, discount_amount, vat_rate, vat_amount, tongtien },
-                cost_amount,
+                { sub_total, discount_amount, vat_rate, vat_amount, tongtien, cost_amount },
                 is_manual
             );
 
