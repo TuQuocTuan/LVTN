@@ -174,18 +174,32 @@ const PromotionManagement = () => {
 
       const startday = new Date(formData.start_date);
       const endday = new Date(formData.end_date);
-      const today = new Date();
-      
-      if (endday < startday) {
-        showAlert("Ngày kết thúc phải lớn hơn ngày bắt đầu!", "error", "Lỗi ngày tháng");
+
+      if (isNaN(startday.getTime()) || isNaN(endday.getTime())) {
+        showAlert("Vui lòng chọn thời gian bắt đầu và kết thúc hợp lệ!", "error", "Lỗi ngày tháng");
         setIsSaving(false);
         return;
       }
 
-      if (!formData.id && startday < today) {
-        showAlert("Thời gian bắt đầu phải lớn hơn hoặc bằng thời điểm hiện tại!", "error", "Lỗi thời gian");
+      if (endday <= startday) {
+        showAlert("Thời gian kết thúc phải lớn hơn thời gian bắt đầu!", "error", "Lỗi ngày tháng");
         setIsSaving(false);
         return;
+      }
+
+      // Chỉ khi THÊM MỚI mới kiểm tra ngày bắt đầu không nằm ở các ngày trước hôm nay
+      if (!formData.id) {
+        const todayZero = new Date();
+        todayZero.setHours(0, 0, 0, 0);
+
+        const startZero = new Date(startday);
+        startZero.setHours(0, 0, 0, 0);
+
+        if (startZero < todayZero) {
+          showAlert("Ngày bắt đầu không được chọn các ngày trong quá khứ!", "error", "Lỗi thời gian");
+          setIsSaving(false);
+          return;
+        }
       }
 
       const payload = { ...formData };
