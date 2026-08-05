@@ -3,7 +3,6 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 dotenv.config();
 import { supabase } from '../config/supabase.js';
-import htmlPdf from 'html-pdf-node';
 
 export const getDoanhThuDashboard = async (req, res) => {
     try {
@@ -103,5 +102,118 @@ export const tungngaytrongTuan = async (req, res) => {
     } catch (error) {
         console.error("Lỗi tính doanh thu tuần:", error);
         return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const layDSmonHomnay = async (req, res) => {
+    try {
+        const mocTgian = new Date();
+        mocTgian.setHours(0, 0, 0, 0);
+
+        const { data: items, error: err } = await supabase
+            .from('order_details')
+            .select('dishes(name),quantity,price,created_at,status')
+            .gte('created_at', mocTgian.toISOString())
+            .or('status.is.null, status.neq.cancelled');
+        if (err) throw err;
+
+        let danhsachMon = items.reduce((laphientai, item) => {
+            let tenmon = item.dishes.name;
+            let tongtien = item.quantity * item.price;
+
+            let checktontai = laphientai.find(item => item.name === tenmon);
+
+            if (checktontai) {
+                checktontai.quantity += item.quantity;
+                checktontai.tongtien += tongtien;
+            } else {
+                laphientai.push({
+                    name: tenmon,
+                    quantity: item.quantity,
+                    price: item.price,
+                    tongtien
+                })
+            }
+
+            return laphientai;
+        }, []);
+
+        return res.status(200).json({
+            success: true,
+            data: danhsachMon,
+            message: "Lấy danh sách món thành công"
+        })
+    } catch (error) {
+        console.error("Lỗi tính doanh thu tuần:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const tinhtienvon = async (req, res) => {
+    try {
+        const mocTgian = new Date();
+        mocTgian.setHours(0, 0, 0, 0);
+
+        const { data: items, error: err } = await supabase
+            .from('order_details')
+            .select('dishes(name),quantity,price,created_at,status,dish_id')
+            .gte('created_at', mocTgian.toISOString())
+            .or('status.is.null, status.neq.cancelled');
+        if (err) throw err;
+
+        if (!items || items.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: [],
+                message: "Hôm nay chưa bán được món nào"
+            });
+        }
+
+        const listDishIds = [...new Set(items.map(item => item.dish_id))];
+        let mapsoluong = items.reduce((laphientai, item) => {
+            laphientai[item.dish_id] = item.quantity;
+            return laphientai;
+        }, {});
+
+        const { data: ingredients, error: ingredientsErr } = await supabase
+            .from('recipes')
+            .select('dish_id,dishes(name),amount_required,ingredients(name,price)')
+            .in('dish_id', listDishIds)
+        if (ingredientsErr) throw ingredientsErr;
+
+        let danhsachMon = ingredients.reduce((laphientai, ingredient) => {
+            let tenmon = ingredient.dishes.name;
+            let tennguyenlieu = ingredient.ingredients.name;
+            let soluongmon = mapsoluong[ingredient.dish_id] || 0;
+            let soluong = ingredient.amount_required;
+            let giatien = ingredient.ingredients.price || 0;
+            let giavon = (giatien / 1000) * soluong * soluongmon;
+            laphientai.push({
+                tenmon,
+                tennguyenlieu,
+                soluong,
+                giatien,
+                soluongmon,
+                giavon: Math.round(giavon)
+            });
+            return laphientai;
+        }, []);
+
+        let tonggiavon = danhsachMon.reduce((sum, item) => sum + item.giavon, 0);
+
+        return res.status(200).json({
+            success: true,
+            data: danhsachMon,
+            tonggiavon: Math.round(tonggiavon),
+            message: "Lấy nguyên liệu món thành công"
+        })
+    }
+
+
+    catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        })
     }
 }
