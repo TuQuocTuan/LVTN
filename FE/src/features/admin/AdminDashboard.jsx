@@ -9,11 +9,13 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('week'); // Khoảng thời gian lọc: day, week, month, year
   const [liveRevenue, setLiveRevenue] = useState(0); // Tổng doanh thu thật bốc từ API
+  const [costRevenue, setCostRevenue] = useState(0); // Tổng tiền vốn bốc từ API
+  const [realRevenue, setRealRevenue] = useState(0); // Doanh thu thực tế (Lợi nhuận ròng) bốc từ API
   const [cashRevenue, setCashRevenue] = useState(0); // Doanh thu tiền mặt
   const [transferRevenue, setTransferRevenue] = useState(0); // Doanh thu chuyển khoản (VNPAY)
   const [liveAverageBill, setLiveAverageBill] = useState(0); // Hóa đơn trung bình
 
-  // Dữ liệu đồ thị cột thực tế được render tự động từ API tuần của Tuấn
+  // Dữ liệu đồ thị cột thực tế được render tự động từ API tuần
   const [weeklyData, setWeeklyData] = useState([]);
   const [hoveredBar, setHoveredBar] = useState(null);
 
@@ -48,13 +50,15 @@ const AdminDashboard = () => {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} - ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
-  // Giao dịch gọi API lấy tổng doanh thu theo khoảng thời gian chọn lọc
+  // Giao dịch gọi API lấy tổng doanh thu và tiền vốn theo khoảng thời gian chọn lọc
   const fetchRealRevenue = async () => {
     setLoading(true);
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/revenue`, { range });
       if (response.data && response.data.success) {
         setLiveRevenue(Number(response.data.tongdoanhthu || 0));
+        setCostRevenue(Number(response.data.tongcost || 0));
+        setRealRevenue(Number(response.data.doanhthuthucte || 0));
         setCashRevenue(Number(response.data.tongtienmat || 0));
         setTransferRevenue(Number(response.data.tongchuyenkhoan || 0));
         setLiveAverageBill(Number(response.data.averageBill || 0)); // Lấy hóa đơn trung bình thực tế từ BE
@@ -62,6 +66,8 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Lỗi đồng bộ API Doanh thu thật:", error);
       setLiveRevenue(0);
+      setCostRevenue(0);
+      setRealRevenue(0);
       setCashRevenue(0);
       setTransferRevenue(0);
       setLiveAverageBill(0);
@@ -80,15 +86,14 @@ const AdminDashboard = () => {
 
         // Chuyển đổi dữ liệu thô từ database thành các điểm cột cân xứng
         const computedData = rawData.map((item, idx) => {
-          // Tính toán phần trăm chiều cao cho cột doanh thu thật
           const revPercent = maxVal > 0 ? (item.total / maxVal) * 85 : 0;
-          // Lợi nhuận tạm tính 35% của ngày đó
-          const profit = Math.round(item.total * 0.9);
+          const profit = item.doanhthuthucte || 0;
           const profPercent = maxVal > 0 ? (profit / maxVal) * 85 : 0;
 
           return {
             day: item.day_name,
             revenue: item.total,
+            cost: item.cost || 0,
             profit: profit,
             revenueHeight: item.total > 0 ? `${Math.max(revPercent, 6)}%` : '4%',
             profitHeight: profit > 0 ? `${Math.max(profPercent, 3)}%` : '2%',
@@ -99,14 +104,12 @@ const AdminDashboard = () => {
         setWeeklyData(computedData);
       }
     } catch (error) {
-      console.error("Gặp sự cố khi đồng bộ API tuần của Tuấn:", error);
+      console.error("Gặp sự cố khi đồng bộ API tuần:", error);
       setWeeklyData([]);
     }
   };
 
-  const liveProfit = Math.round(liveRevenue * 0.9);
-
-  /* STREAMING_CHUNK: Thiết lập mảng chỉ số */
+  /* STREAMING_CHUNK: Thiết lập mảng chỉ số tài chính (4 thẻ Bento Card) */
   const metrics = [
     {
       id: 1,
@@ -118,19 +121,27 @@ const AdminDashboard = () => {
     },
     {
       id: 2,
-      title: 'Hóa đơn trung bình',
-      value: loading ? 'Đang tính...' : `${liveAverageBill.toLocaleString('vi-VN')}đ`,
+      title: 'Tiền vốn',
+      value: loading ? 'Đang tính...' : `${costRevenue.toLocaleString('vi-VN')}đ`,
       isUp: false,
-      icon: 'receipt',
-      color: 'tertiary',
+      icon: 'account_balance_wallet',
+      color: 'amber',
     },
     {
       id: 3,
-      title: 'Lợi nhuận (Tạm tính 10%)',
-      value: loading ? 'Đang tính...' : `${liveProfit.toLocaleString('vi-VN')}đ`,
+      title: 'Doanh thu thực tế',
+      value: loading ? 'Đang tính...' : `${realRevenue.toLocaleString('vi-VN')}đ`,
       isUp: true,
       icon: 'trending_up',
-      color: 'secondary',
+      color: 'emerald',
+    },
+    {
+      id: 4,
+      title: 'Hóa đơn trung bình',
+      value: loading ? 'Đang tính...' : `${liveAverageBill.toLocaleString('vi-VN')}đ`,
+      isUp: true,
+      icon: 'receipt',
+      color: 'tertiary',
     },
   ];
 
@@ -161,32 +172,37 @@ const AdminDashboard = () => {
       <body>
         <table>
           <tr>
-            <td colspan="3" class="title-row">BÁO CÁO DOANH THU HOẠT ĐỘNG - LÀNG MÌXI BBQ</td>
+            <td colspan="4" class="title-row">BÁO CÁO DOANH THU VÀ TIỀN VỐN - LÀNG MÌXI BBQ</td>
           </tr>
           <tr>
             <td class="meta-label">Thời điểm xuất báo cáo:</td>
-            <td colspan="2" class="meta-val">${new Date().toLocaleString('vi-VN')}</td>
+            <td colspan="3" class="meta-val">${new Date().toLocaleString('vi-VN')}</td>
           </tr>
           <tr>
             <td class="meta-label">Bộ lọc khoảng thời gian:</td>
-            <td colspan="2" class="meta-val">${range === 'day' ? 'Hôm nay' : range === 'week' ? 'Tuần này' : range === 'month' ? 'Tháng này' : 'Năm nay'}</td>
+            <td colspan="3" class="meta-val">${range === 'day' ? 'Hôm nay' : range === 'week' ? 'Tuần này' : range === 'month' ? 'Tháng này' : 'Năm nay'}</td>
           </tr>
           <tr>
             <td class="meta-label">Tổng doanh thu lũy kế:</td>
-            <td colspan="2" class="meta-val" style="color: #ff6b00;">${liveRevenue.toLocaleString('vi-VN')} đ</td>
+            <td colspan="3" class="meta-val" style="color: #ff6b00;">${liveRevenue.toLocaleString('vi-VN')} đ</td>
           </tr>
           <tr>
-            <td class="meta-label">Lợi nhuận tạm tính (10%):</td>
-            <td colspan="2" class="meta-val" style="color: #2b6cb0;">${liveProfit.toLocaleString('vi-VN')} đ</td>
+            <td class="meta-label">Tiền vốn lũy kế:</td>
+            <td colspan="3" class="meta-val" style="color: #d97706;">${costRevenue.toLocaleString('vi-VN')} đ</td>
           </tr>
-          <tr class="spacer"><td colspan="3" class="spacer"></td></tr>
           <tr>
-            <td colspan="3" style="font-weight: bold; font-size: 15px; color: #1e293b; padding-bottom: 8px;">CHI TIẾT PHÂN TÍCH DOANH SỐ THEO NGÀY TRONG TUẦN</td>
+            <td class="meta-label">Doanh thu thực tế:</td>
+            <td colspan="3" class="meta-val" style="color: #059669;">${realRevenue.toLocaleString('vi-VN')} đ</td>
+          </tr>
+          <tr class="spacer"><td colspan="4" class="spacer"></td></tr>
+          <tr>
+            <td colspan="4" style="font-weight: bold; font-size: 15px; color: #1e293b; padding-bottom: 8px;">CHI TIẾT PHÂN TÍCH DOANH SỐ THEO NGÀY TRONG TUẦN</td>
           </tr>
           <tr class="header-row">
             <td>Thứ</td>
-            <td>Doanh thu thật (đ)</td>
-            <td>Lợi nhuận ròng tạm tính 35% (đ)</td>
+            <td>Tổng doanh thu (đ)</td>
+            <td>Tiền vốn (đ)</td>
+            <td>Doanh thu thực tế (đ)</td>
           </tr>
     `;
 
@@ -197,6 +213,7 @@ const AdminDashboard = () => {
         <tr class="${rowClass}">
           <td style="font-weight: bold; color: #334155;">${row.day}</td>
           <td class="number-cell">${Number(row.revenue).toLocaleString('vi-VN')} đ</td>
+          <td class="number-cell">${Number(row.cost).toLocaleString('vi-VN')} đ</td>
           <td class="number-cell">${Number(row.profit).toLocaleString('vi-VN')} đ</td>
         </tr>
       `;
@@ -204,11 +221,13 @@ const AdminDashboard = () => {
 
     // Tính toán và thêm dòng tổng hợp lũy kế cuối Excel
     const totalRev = weeklyData.reduce((acc, curr) => acc + curr.revenue, 0);
+    const totalCost = weeklyData.reduce((acc, curr) => acc + curr.cost, 0);
     const totalProf = weeklyData.reduce((acc, curr) => acc + curr.profit, 0);
     html += `
           <tr class="grand-total">
             <td>TỔNG CỘNG TUẦN</td>
             <td class="number-cell">${totalRev.toLocaleString('vi-VN')} đ</td>
+            <td class="number-cell">${totalCost.toLocaleString('vi-VN')} đ</td>
             <td class="number-cell">${totalProf.toLocaleString('vi-VN')} đ</td>
           </tr>
         </table>
@@ -230,6 +249,8 @@ const AdminDashboard = () => {
   const getColorClasses = (colorName) => {
     switch (colorName) {
       case 'primary': return 'bg-primary/10 text-primary';
+      case 'amber': return 'bg-amber-500/10 text-amber-600';
+      case 'emerald': return 'bg-emerald-500/10 text-emerald-600';
       case 'secondary': return 'bg-secondary/10 text-secondary';
       case 'tertiary': return 'bg-tertiary/10 text-tertiary';
       default: return 'bg-neutralCustom/10 text-neutralCustom';
@@ -301,8 +322,8 @@ const AdminDashboard = () => {
           </div>
         </section>
 
-        {/* Bento Grid Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Bento Grid Metrics (4 Cards) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {metrics.map((metric) => (
             <div key={metric.id} className="bg-white p-5 rounded-2xl border border-neutralCustom/15 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden">
               <div className="flex justify-between items-start">
@@ -328,8 +349,8 @@ const AdminDashboard = () => {
               <p className="text-neutralCustom text-[11px] mt-0.5">Biểu đồ biểu diễn dòng tiền tuần này của Làng MÌXI</p>
             </div>
             <div className="flex gap-4 text-xs font-bold text-neutralCustom">
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-primary"></span> Doanh thu thật</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#fca5a5]"></span> Lợi nhuận ròng</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-primary"></span> Tổng doanh thu</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#fca5a5]"></span> Doanh thu thực tế</span>
             </div>
           </div>
 
@@ -351,7 +372,7 @@ const AdminDashboard = () => {
                 >
                   {/* Nhóm cột kép (Doanh thu & Lợi nhuận nằm sát nhau) */}
                   <div className="flex items-end justify-center gap-1.5 sm:gap-2 h-full w-full relative pb-1">
-                    {/* Cột Lợi nhuận ròng */}
+                    {/* Cột Doanh thu thực tế */}
                     <div
                       className={`w-2.5 sm:w-4 bg-[#fca5a5]/80 hover:bg-[#fca5a5] rounded-t-md transition-all duration-300 ${hoveredBar?.index === idx && hoveredBar?.type === 'profit' ? 'scale-110 shadow-md ring-2 ring-[#fca5a5]/50 z-10' : ''
                         }`}
@@ -359,7 +380,7 @@ const AdminDashboard = () => {
                       onMouseEnter={() => setHoveredBar({ index: idx, type: 'profit' })}
                     ></div>
 
-                    {/* Cột Doanh thu thật */}
+                    {/* Cột Tổng doanh thu */}
                     <div
                       className={`w-2.5 sm:w-4 rounded-t-md transition-all duration-300 ${data.highlight ? 'bg-primary shadow-lg scale-x-105' : 'bg-primary/75 hover:bg-primary'
                         } ${hoveredBar?.index === idx && hoveredBar?.type === 'revenue' ? 'scale-110 shadow-md ring-2 ring-primary/50 z-10' : ''
@@ -375,13 +396,13 @@ const AdminDashboard = () => {
                       {hoveredBar.type === 'profit' ? (
                         <>
                           <span className="w-2 h-2 rounded-full bg-[#fca5a5]"></span>
-                          <span className="text-gray-300">Lợi nhuận:</span>
+                          <span className="text-gray-300">Doanh thu thực tế:</span>
                           <span className="text-[#fca5a5] font-extrabold">{Number(data.profit).toLocaleString('vi-VN')}đ</span>
                         </>
                       ) : (
                         <>
                           <span className="w-2 h-2 rounded-full bg-primary"></span>
-                          <span className="text-gray-300">Doanh thu:</span>
+                          <span className="text-gray-300">Tổng doanh thu:</span>
                           <span className="text-primary font-extrabold">{Number(data.revenue).toLocaleString('vi-VN')}đ</span>
                         </>
                       )}

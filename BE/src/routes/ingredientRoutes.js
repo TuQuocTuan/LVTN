@@ -6,8 +6,8 @@ const router = express.Router();
 
 router.get('/', getIngredients);
 
-router.post('/add', verifyToken, authorizeRoles('admin', 'chef', 'super_admin'), addIngredients);
-router.put('/update', verifyToken, authorizeRoles('admin', 'chef', 'super_admin'), updateIngredient);
-router.delete('/delete/:id', verifyToken, authorizeRoles('admin', 'chef', 'super_admin'), deleteIngredients);
+router.post('/add', verifyToken, authorizeRoles('admin', 'chef', 'super_admin', 'cashier'), addIngredients);
+router.put('/update', verifyToken, authorizeRoles('admin', 'chef', 'super_admin', 'cashier'), updateIngredient);
+router.delete('/delete/:id', verifyToken, authorizeRoles('admin', 'chef', 'super_admin', 'cashier'), deleteIngredients);
 
 export default router;

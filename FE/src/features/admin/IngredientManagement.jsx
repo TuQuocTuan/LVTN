@@ -24,7 +24,7 @@ const IngredientManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addData, setAddData] = useState({
-    name: '', quantity: '', unit: '', min_stock: '', category_id: ''
+    name: '', quantity: '', unit: '', min_stock: '', category_id: '', price: ''
   });
 
   // STATE: QUẢN LÝ CHỈNH SỬA (EDIT)
@@ -32,7 +32,7 @@ const IngredientManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({
-    name: '', quantity: '', unit: '', min_stock: '', category_id: ''
+    name: '', quantity: '', unit: '', min_stock: '', category_id: '', price: ''
   });
 
   // STATES THAY THẾ ALERT VÀ CONFIRM MẶC ĐỊNH
@@ -102,7 +102,7 @@ const IngredientManagement = () => {
 
   // HÀM XỬ LÝ: THÊM NGUYÊN LIỆU
   const openAddModal = () => {
-    setAddData({ name: '', quantity: '', unit: '', min_stock: '', category_id: '' });
+    setAddData({ name: '', quantity: '', unit: '', min_stock: '', category_id: '', price: '' });
     setIsAddModalOpen(true);
   };
 
@@ -118,7 +118,8 @@ const IngredientManagement = () => {
         quantity: Number(addData.quantity),
         unit: addData.unit,
         min_stock: Number(addData.min_stock),
-        category_id: Number(addData.category_id)
+        category_id: Number(addData.category_id),
+        price: Number(addData.price || 0)
       };
 
       const response = await axios.post(`${API_URL}/ingredients/add`, payload, getAuthHeader());
@@ -132,7 +133,7 @@ const IngredientManagement = () => {
         showAlert("Lỗi: " + (result.message || result.error || "Không xác định"), "error");
       }
     } catch (error) {
-      showAlert("Không thể kết nối đến máy chủ quản lý kho Làng MÌXI!", "error");
+      showAlert(error.response?.data?.message || "Không thể kết nối đến máy chủ!", "error");
     } finally {
       setIsAdding(false);
     }
@@ -147,7 +148,8 @@ const IngredientManagement = () => {
       quantity: item.quantity,
       unit: item.unit,
       min_stock: item.min_stock,
-      category_id: targetCategory ? targetCategory.id : ''
+      category_id: targetCategory ? targetCategory.id : '',
+      price: item.price || ''
     });
     setIsEditModalOpen(true);
   };
@@ -165,7 +167,8 @@ const IngredientManagement = () => {
         quantity: Number(editData.quantity),
         unit: editData.unit,
         min_stock: Number(editData.min_stock),
-        category_id: Number(editData.category_id)
+        category_id: Number(editData.category_id),
+        price: Number(editData.price || 0)
       };
 
       const response = await axios.put(`${API_URL}/ingredients/update`, payload, getAuthHeader());
@@ -179,7 +182,7 @@ const IngredientManagement = () => {
         showAlert("Lỗi cập nhật: " + (result.message || result.error || "Không xác định"), "error");
       }
     } catch (error) {
-      showAlert("Lỗi kết nối đến máy chủ!", "error");
+      showAlert(error.response?.data?.message || "Lỗi kết nối đến máy chủ!", "error");
     } finally {
       setIsEditing(false);
     }
@@ -202,7 +205,7 @@ const IngredientManagement = () => {
             showAlert("Lỗi: " + (result.message || result.error || "Không thể thực hiện xóa"), "error");
           }
         } catch (error) {
-          showAlert("Gặp sự cố kết nối máy chủ!", "error");
+          showAlert(error.response?.data?.message || "Gặp sự cố kết nối máy chủ!", "error");
         }
         setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
       }
@@ -448,6 +451,10 @@ const IngredientManagement = () => {
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Đơn vị tính *</label>
                   <input type="text" required value={addData.unit} onChange={(e) => setAddData({ ...addData, unit: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary font-semibold" placeholder="g, kg, ml, lon..." />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Đơn giá (VNĐ)</label>
+                  <input type="number" step="any" min="0" value={addData.price} onChange={(e) => setAddData({ ...addData, price: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary font-bold text-emerald-600" placeholder="Nhập giá vốn/đơn vị (đ)..." />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Số lượng đầu vào *</label>
@@ -498,6 +505,10 @@ const IngredientManagement = () => {
                 <div>
                   <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Đơn vị tính *</label>
                   <input type="text" required value={editData.unit} onChange={(e) => setEditData({ ...editData, unit: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary font-semibold" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Đơn giá (VNĐ)</label>
+                  <input type="number" step="any" min="0" value={editData.price} onChange={(e) => setEditData({ ...editData, price: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary font-bold text-emerald-600" placeholder="Nhập giá vốn/đơn vị (đ)..." />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

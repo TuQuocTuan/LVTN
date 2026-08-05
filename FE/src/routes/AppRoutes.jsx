@@ -24,12 +24,6 @@ import ShiftManagement from '../features/admin/ShiftManagement';
 import ReviewManagement from '../features/admin/ReviewManagement';
 import CustomerManagement from '../features/admin/CustomerManagement';
 
-
-import TableManagerPractice from '../features/cashier/TableManagerPractice';
-import KitchenOrdersPractice from '../features/kitchen/KitchenOrdersPractice';
-import MenuItemCardPractice from '../components/layout/Customer/MenuItemCardPractice';
-import Dishpractice from '../features/admin/dishpractice';
-
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
@@ -182,14 +176,6 @@ const AppRoutes = () => {
       } />
 
       <Route path="*" element={<Navigate to="/" replace />} />
-
-
-
-      <Route path="/practice" element={<TableManagerPractice />} />
-      <Route path="/practice2" element={<KitchenOrdersPractice />} />
-      <Route path="/practice3" element={<MenuItemCardPractice />} />
-      <Route path="/practice4" element={<Dishpractice />} />
-
 
     </Routes>
   );

@@ -14,7 +14,7 @@ export const verifyToken = (req, res, next) => {
         // Giải mã thông tin user từ token (giống hệt secret key lúc login)
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'MA_BAO_MAT_DU_PHONG');
         req.user = decoded; // Dữ liệu sẽ gồm { id, role } 
-        
+
         next(); // Hợp lệ thì cho đi tiếp vào Controller
     } catch (error) {
         return res.status(403).json({ success: false, message: 'Token đã hết hạn hoặc không hợp lệ!' });
@@ -28,9 +28,9 @@ export const authorizeRoles = (...allowedRoles) => {
         const userRole = req.user?.role?.toLowerCase();
 
         if (!userRole || !allowedRoles.includes(userRole)) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Tài khoản của bạn không có đặc quyền truy cập tính năng này!' 
+            return res.status(403).json({
+                success: false,
+                message: 'Tài khoản của bạn không có đặc quyền truy cập tính năng này!'
             });
         }
         next();
