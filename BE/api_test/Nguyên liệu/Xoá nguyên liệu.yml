@@ -1,7 +1,7 @@
 info:
   name: Xoá nguyên liệu
   type: http
-  seq: 10
+  seq: 6
 
 http:
   method: DELETE

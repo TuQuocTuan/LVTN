@@ -1,6 +1,7 @@
 // controller quản lý các món ăn
 //==================================================
 
+import { error } from 'console';
 import { supabase } from '../config/supabase.js';
 
 //Hàm lấy các nguyên liệu
@@ -120,6 +121,49 @@ export const deleteIngredients = async (req, res) => {
         return res.status(200).json({ success: true, message: 'Xoá nguyên liệu thành công' })
     }
     catch (error) {
+        return res.status(500).json({ success: false, error: error.message })
+    }
+}
+
+//Huỷ nguyên liệu kết thúc ngày
+export const huyNguyenLieu = async (req, res) => {
+    try {
+        const { data: cate, error: cateErr } = await supabase
+            .from('category_ingredients')
+            .select('id,name')
+            .in('name', ['Thịt', 'Rau củ', 'Sốt']);
+        if (cateErr) throw cateErr;
+        let cIDS = cate.map(i => i.id);
+
+        const { data: ingredients, error: fetchErr } = await supabase
+            .from('ingredients')
+            .select('id,name,quantity,unit,price,category_id')
+            .in('category_id', cIDS);
+        if (fetchErr) throw fetchErr;
+        let tongtienvon = ingredients.reduce((laphientai, ingredient) => {
+            if (ingredient.unit === "g" || ingredient.unit === "ml") {
+                return laphientai + (Number(ingredient.price) * Number(ingredient.quantity) / 1000);
+            } else {
+                return laphientai + (Number(ingredient.price) * Number(ingredient.quantity));
+            }
+        }, 0);
+
+        const { data: updateIngre, error: updateErr } = await supabase
+            .from("ingredients")
+            .update({ quantity: 0 })
+            .in('category_id', cIDS)
+            .select();
+        if (updateErr) throw updateErr;
+
+        if (tongtienvon > 0) {
+            const { error: insertErr } = await supabase
+                .from('ingredient_wastes')
+                .insert({ total_cost: Math.round(tongtienvon) });
+            if (insertErr) throw insertErr;
+        }
+
+        return res.status(200).json({ success: true, tongtienvon })
+    } catch (error) {
         return res.status(500).json({ success: false, error: error.message })
     }
 }

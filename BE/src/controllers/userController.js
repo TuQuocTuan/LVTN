@@ -314,6 +314,15 @@ export const ketCa = async (req, res) => {
             .gte('created_at', startOfDay)
             .lte('created_at', endOfDay);
 
+        const { data: wastes, error: wasteErr } = await supabase
+            .from('ingredient_wastes')
+            .select('total_cost')
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay);
+        if (wasteErr) throw wasteErr;
+
+        const tongTienHuy = wastes ? wastes.reduce((sum, w) => sum + Number(w.total_cost || 0), 0) : 0;
+
         const soLuongDon = (billsCash ? billsCash.length : 0) + (billsVnpay ? billsVnpay.length : 0);
         const tongTienBanDuocCASH = billsCash ? billsCash.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
         const tongTienBanDuocVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
@@ -329,7 +338,7 @@ export const ketCa = async (req, res) => {
         const tiendauca = 1000000;
         const tongTienBanDuoc = tongTienBanDuocCASH + tongTienBanDuocVNPAY;
         const tongDoanhThuThuan = tongTienBanDuoc - tongVat;
-        const doanhThuThucTe = tongDoanhThuThuan - tongGiaVon;
+        const doanhThuThucTe = tongDoanhThuThuan - tongGiaVon - tongTienHuy;
         const tongTienTrongKet = tiendauca + tongTienBanDuocCASH;
 
         if (fetchErr) throw fetchErr;
@@ -394,6 +403,10 @@ export const ketCa = async (req, res) => {
                     <td>Vốn nguyên liệu:</td>
                     <td class="text-right">-${tongGiaVon.toLocaleString('vi-VN')}đ</td>
                 </tr>
+                <tr>
+                    <td>Nguyên liệu huỷ:</td>
+                    <td class="text-right">-${tongTienHuy.toLocaleString('vi-VN')}đ</td>
+                </tr>
                 <tr class="bold">
                     <td>LỢI NHUẬN THỰC TẾ:</td>
                     <td class="text-right">${doanhThuThucTe.toLocaleString('vi-VN')}đ</td>
@@ -427,6 +440,7 @@ export const ketCa = async (req, res) => {
             tong_vat: tongVat,
             tong_doanh_thu_thuan: tongDoanhThuThuan,
             tong_gia_von: tongGiaVon,
+            tong_tien_huy: tongTienHuy,
             doanh_thu_thuc_te: doanhThuThucTe,
             tongTienBanDuoc_CASH: tongTienBanDuocCASH,
             tongTienBanDuoc_VNPAY: tongTienBanDuocVNPAY,

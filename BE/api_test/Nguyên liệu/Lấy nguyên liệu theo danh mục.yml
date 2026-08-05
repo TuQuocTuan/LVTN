@@ -1,7 +1,7 @@
 info:
   name: Lấy nguyên liệu theo danh mục
   type: http
-  seq: 9
+  seq: 4
 
 http:
   method: GET

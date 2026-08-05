@@ -474,7 +474,11 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                         const dishRecipes = recipes?.filter(r => Number(r.dish_id) === Number(d.dish_id)) || [];
                         dishRecipes.forEach(r => {
                             const giaIngre = r.ingredients?.price || 0;
-                            cost_amount += (giaIngre / 1000) * Number(r.amount_required) * Number(d.quantity);
+                            if (r.ingredients.unit === "g" || r.ingredients.unit === "ml") {
+                                cost_amount += (giaIngre / 1000) * Number(r.amount_required) * Number(d.quantity);
+                            } else {
+                                cost_amount += giaIngre * Number(r.amount_required) * Number(d.quantity);
+                            }
                         });
                     }
                 });
