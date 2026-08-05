@@ -110,8 +110,8 @@ export const addPromotions = async (req, res) => {
             discount_type: discount_type.toUpperCase(),
             discount_value: Number(discount_value),
             min_bill_value: min_bill_value ? Number(min_bill_value) : null,
-            start_date: moment(start_date).tz("Asia/Ho_Chi_Minh").toISOString(),
-            end_date: moment(end_date).tz("Asia/Ho_Chi_Minh").toISOString(),
+            start_date: moment.tz(start_date, "Asia/Ho_Chi_Minh").toISOString(),
+            end_date: moment.tz(end_date, "Asia/Ho_Chi_Minh").toISOString(),
             is_active: is_active !== undefined ? Boolean(is_active) : true,
         };
 
@@ -162,8 +162,8 @@ export const updatePromotion = async (req, res) => {
             discount_type: discount_type.toUpperCase(),
             discount_value: Number(discount_value),
             min_bill_value: min_bill_value ? Number(min_bill_value) : null,
-            start_date: moment(start_date).tz("Asia/Ho_Chi_Minh").toISOString(),
-            end_date: moment(end_date).tz("Asia/Ho_Chi_Minh").toISOString(),
+            start_date: moment.tz(start_date, "Asia/Ho_Chi_Minh").toISOString(),
+            end_date: moment.tz(end_date, "Asia/Ho_Chi_Minh").toISOString(),
             is_active: is_active !== undefined ? Boolean(is_active) : true,
         };
 

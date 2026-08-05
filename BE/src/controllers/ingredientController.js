@@ -8,7 +8,7 @@ export const getIngredients = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('ingredients')
-            .select('id,name,quantity,unit,min_stock,updated_at,category_ingredients(name)')
+            .select('id,name,quantity,unit,min_stock,updated_at,category_ingredients(name),price')
         if (error) throw error;
         res.status(200).json({ success: true, data })
     } catch (error) {
@@ -18,11 +18,10 @@ export const getIngredients = async (req, res) => {
 
 export const addIngredients = async (req, res) => {
     try {
-        const { name, quantity, unit, min_stock, category_id } = req.body;
-        if (!name || !quantity || !unit || !min_stock) {
-            return res.status(400).json({ success: false, message: 'Thieu thong tin nguyen lieu!' })
+        const { name, quantity, unit, min_stock, price, category_id } = req.body;
+        if (!name || quantity === undefined || !unit || min_stock === undefined) {
+            return res.status(400).json({ success: false, message: 'Thieu thong tin nguyen lieu!' });
         }
-
 
         const { data: existingIngredient, error: existingError } = await supabase
             .from('ingredients')
@@ -31,31 +30,34 @@ export const addIngredients = async (req, res) => {
             .maybeSingle();
 
         if (existingIngredient) {
-            return res.status(400).json({ success: false, message: 'Nguyên liệu đã tồn tại!' })
+            return res.status(400).json({ success: false, message: 'Nguyên liệu đã tồn tại!' });
         }
+
+        const priceValue = (price !== undefined && price !== null && price !== '') ? Number(price) : 0;
 
         const { data: newIngredient, error: insertError } = await supabase
             .from('ingredients')
             .insert({
-                name,
+                name: name.trim(),
                 quantity: Number(quantity),
-                unit,
+                unit: unit.trim(),
                 min_stock: Number(min_stock),
-                category_id: Number(category_id)
+                category_id: category_id ? Number(category_id) : null,
+                price: priceValue
             })
             .select()
             .single();
 
         if (insertError) throw insertError;
-        return res.status(201).json({ success: true, message: 'Thêm nguyên liệu thành công', newIngredient })
+        return res.status(201).json({ success: true, message: 'Thêm nguyên liệu thành công', newIngredient });
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message })
+        return res.status(500).json({ success: false, error: error.message });
     }
 }
 
 export const updateIngredient = async (req, res) => {
     try {
-        const { id, name, quantity, unit, min_stock, category_id } = req.body;
+        const { id, name, quantity, unit, min_stock, price, category_id } = req.body;
         if (!id) {
             return res.status(400).json({ success: false, message: 'Vui lòng nhập ID để cập nhật!' });
         }
@@ -66,6 +68,7 @@ export const updateIngredient = async (req, res) => {
         if (unit !== undefined) updateData.unit = unit.trim();
         if (min_stock !== undefined) updateData.min_stock = Number(min_stock);
         if (category_id !== undefined) updateData.category_id = Number(category_id);
+        if (price !== undefined) updateData.price = Number(price);
 
         const IngredientID = Number(id);
         if (updateData.name) {

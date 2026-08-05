@@ -225,9 +225,15 @@ const TableManager = () => {
 
           if (response.data && response.data.success) {
             const allVouchers = response.data.promotion || [];
-            // Chỉ lọc và giữ lại các voucher chưa được sử dụng
-            const unusedVouchers = allVouchers.filter(v => !v.is_used);
-            setCustomerVouchers(unusedVouchers);
+            const now = new Date();
+            // Chỉ lọc và giữ lại các voucher chưa được sử dụng, đã có hiệu lực và chưa hết hạn
+            const validVouchers = allVouchers.filter(v => {
+              const isUnused = !v.is_used;
+              const hasStarted = v.start_date ? now >= new Date(v.start_date) : true;
+              const hasNotExpired = v.end_date ? now <= new Date(v.end_date) : true;
+              return isUnused && hasStarted && hasNotExpired;
+            });
+            setCustomerVouchers(validVouchers);
           } else {
             setCustomerVouchers([]);
           }
@@ -668,7 +674,9 @@ const TableManager = () => {
                         billData.allOrders.forEach(order => {
                           order.order_details.forEach(detail => {
                             const name = detail.dishes?.name;
-                            const status = order.status;
+                            const status = order.status === 'cancelled' || detail.status === 'cancelled'
+                              ? 'cancelled'
+                              : (detail.status || order.status);
                             const note = detail.note?.trim();
 
                             const existing = groupedDishes.find(

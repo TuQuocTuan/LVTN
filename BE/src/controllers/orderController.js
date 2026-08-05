@@ -354,7 +354,7 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
 
     if (sessionErr) throw sessionErr;
 
-    const { sub_total, discount_amount, vat_rate, vat_amount, tongtien } = financialData;
+    const { sub_total, discount_amount, vat_rate, vat_amount, tongtien, cost_amount } = financialData;
 
     if (payment_method.toUpperCase() === 'VNPAY' && !is_manual) {
         const vnpayUrl = createVnPayUrl(req, session_id, tongtien);
@@ -388,7 +388,8 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             vat_amount,
             total_amount: tongtien,
             payment_method,
-            created_by: sessionData.users?.fullname
+            created_by: sessionData.users?.fullname,
+            cost_amount: cost_amount || 0
         }]);
 
     if (billErr) throw billErr;
@@ -414,7 +415,7 @@ export const getTamtinhBill = async (session_id) => {
 
         const { data: orders, error: fetchErr } = await supabase
             .from('orders')
-            .select('id, sub_total, order_details(dishes(name), quantity, price, status)')
+            .select('id, sub_total, order_details(dish_id, dishes(name), quantity, price, status)')
             .eq('session_id', session_id)
             .eq('status', 'completed');
 
@@ -453,6 +454,33 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
         console.log("=== CHECKOUT REQUEST ===", { session_id, payment_method, is_preview, is_manual });
 
         const { orders, total: sub_total, billDetails } = await getTamtinhBill(session_id);
+
+        const dishIDs = [];
+        orders.forEach(o => {
+            o.order_details?.forEach(d => {
+                if (d.status !== 'cancelled' && d.dish_id) dishIDs.push(Number(d.dish_id));
+            });
+        });
+
+        let cost_amount = 0;
+        if (dishIDs.length > 0) {
+            const { data: recipes } = await supabase
+                .from('recipes')
+                .select('dish_id, amount_required, ingredients(price)')
+                .in('dish_id', [...new Set(dishIDs)]);
+            orders.forEach(o => {
+                o.order_details?.forEach(d => {
+                    if (d.status !== 'cancelled') {
+                        const dishRecipes = recipes?.filter(r => Number(r.dish_id) === Number(d.dish_id)) || [];
+                        dishRecipes.forEach(r => {
+                            const giaIngre = r.ingredients?.price || 0;
+                            cost_amount += (giaIngre / 1000) * Number(r.amount_required) * Number(d.quantity);
+                        });
+                    }
+                });
+            });
+        }
+        cost_amount = Math.round(cost_amount);
 
         console.log("=== ORDERS FOUND ===", orders ? orders.length : 0);
 
@@ -529,7 +557,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 phone_number ? phone_number.trim() : null,
                 null,
                 appliedPromotionId,
-                { sub_total, discount_amount, vat_rate, vat_amount, tongtien },
+                { sub_total, discount_amount, vat_rate, vat_amount, tongtien, cost_amount },
                 is_manual
             );
 
