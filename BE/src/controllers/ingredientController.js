@@ -19,10 +19,9 @@ export const getIngredients = async (req, res) => {
 export const addIngredients = async (req, res) => {
     try {
         const { name, quantity, unit, min_stock, price, category_id } = req.body;
-        if (!name || !quantity || !unit || !min_stock || !price) {
-            return res.status(400).json({ success: false, message: 'Thieu thong tin nguyen lieu!' })
+        if (!name || quantity === undefined || !unit || min_stock === undefined) {
+            return res.status(400).json({ success: false, message: 'Thieu thong tin nguyen lieu!' });
         }
-
 
         const { data: existingIngredient, error: existingError } = await supabase
             .from('ingredients')
@@ -31,26 +30,28 @@ export const addIngredients = async (req, res) => {
             .maybeSingle();
 
         if (existingIngredient) {
-            return res.status(400).json({ success: false, message: 'Nguyên liệu đã tồn tại!' })
+            return res.status(400).json({ success: false, message: 'Nguyên liệu đã tồn tại!' });
         }
+
+        const priceValue = (price !== undefined && price !== null && price !== '') ? Number(price) : 0;
 
         const { data: newIngredient, error: insertError } = await supabase
             .from('ingredients')
             .insert({
-                name,
+                name: name.trim(),
                 quantity: Number(quantity),
-                unit,
+                unit: unit.trim(),
                 min_stock: Number(min_stock),
-                category_id: Number(category_id),
-                price: Number(price)
+                category_id: category_id ? Number(category_id) : null,
+                price: priceValue
             })
             .select()
             .single();
 
         if (insertError) throw insertError;
-        return res.status(201).json({ success: true, message: 'Thêm nguyên liệu thành công', newIngredient })
+        return res.status(201).json({ success: true, message: 'Thêm nguyên liệu thành công', newIngredient });
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message })
+        return res.status(500).json({ success: false, error: error.message });
     }
 }
 
