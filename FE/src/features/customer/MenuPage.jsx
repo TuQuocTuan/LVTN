@@ -19,6 +19,13 @@ const MenuPage = () => {
     }
   }, [categories, activeCategory]);
 
+  // Tự động cuộn về đầu trang mỗi khi chuyển đổi danh mục món ăn
+  useEffect(() => {
+    if (activeCategory) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeCategory]);
+
   // Lọc danh sách món ăn theo danh mục đang xem
   const displayedItems = menuItems.filter(item => item.category === activeCategory);
 

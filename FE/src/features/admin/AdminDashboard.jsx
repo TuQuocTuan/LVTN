@@ -7,7 +7,7 @@ const AdminDashboard = () => {
   /* STREAMING_CHUNK: Quản lý trạng thái mở sidebar trên di động và loading dữ liệu */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Quản lý đóng/mở Sidebar trượt trên điện thoại
   const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState('week'); // Khoảng thời gian lọc: day, week, month, year
+  const [range, setRange] = useState('day'); // Khoảng thời gian lọc: day, week, month, year
   const [liveRevenue, setLiveRevenue] = useState(0); // Tổng doanh thu thật bốc từ API
   const [costRevenue, setCostRevenue] = useState(0); // Tổng tiền vốn bốc từ API
   const [realRevenue, setRealRevenue] = useState(0); // Doanh thu thực tế (Lợi nhuận ròng) bốc từ API
