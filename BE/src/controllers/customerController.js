@@ -140,7 +140,7 @@ export const deleteCustomer = async (req, res) => {
             .eq('id', id)
             .select();
         if (error) throw error;
-        
+
         res.status(200).json({
             success: true,
             message: 'Xóa khách hàng thành công',

@@ -298,7 +298,7 @@ const KitchenDashboard = () => {
               </div>
 
               {/* THÂN BOX: Danh sách các món lẻ của đơn */}
-              <div className="p-5 space-y-3">
+              <div className="p-5 space-y-3 max-h-[380px] overflow-y-auto custom-scrollbar flex-1">
                 {/* Lặp qua danh sách chi tiết các món trong đơn hàng */}
                 {order.order_details?.map((detail, index) => (
                   <div key={index} className="flex justify-between items-center border-b border-neutralCustom/10 pb-2 last:border-0">

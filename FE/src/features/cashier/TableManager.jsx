@@ -611,7 +611,7 @@ const TableManager = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={handleCloseModal}></div>
 
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh] z-[70]">
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden animate-fade-in-up max-h-[85vh] z-[70]">
 
             {/* HEADER MODAL */}
             <div className="p-5 border-b border-neutralCustom/20 flex justify-between items-center bg-culinaryBg shrink-0">
@@ -667,7 +667,7 @@ const TableManager = () => {
                   {loadingBill ? (
                     <div className="text-center py-4 text-xs text-neutralCustom animate-pulse shrink-0">Đang đồng bộ hóa đơn tạm tính...</div>
                   ) : billData && billData.allOrders && billData.allOrders.length > 0 ? (
-                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2 max-h-[360px]">
                       {(() => {
                         // Nhóm các chi tiết món ăn trùng tên và trùng trạng thái để dễ quản lý hiển thị
                         const groupedDishes = [];
@@ -820,9 +820,11 @@ const TableManager = () => {
                           </div>
                         )}
 
-                        <div className="flex justify-between text-gray-900 font-black text-base border-t border-neutralCustom/10 pt-2 mt-2">
-                          <span>Tạm tính (Gồm VAT 10%):</span>
-                          <span className="text-primary text-xl">{billData.grandTotal?.toLocaleString('vi-VN')} đ</span>
+                        <div className="flex justify-between items-center text-gray-900 font-black text-xs sm:text-sm border-t border-neutralCustom/10 pt-2.5 mt-2 gap-2">
+                          <span className="shrink">Tạm tính (Gồm VAT 10%):</span>
+                          <span className="text-primary text-lg font-black whitespace-nowrap shrink-0 text-right">
+                            {Math.round(billData.grandTotal || 0).toLocaleString('vi-VN')} đ
+                          </span>
                         </div>
                       </div>
                     )}
@@ -873,6 +875,9 @@ const TableManager = () => {
                                 const response = await axios.post(`${API_BASE_URL}/orders/checkout`, {
                                   session_id: selectedTable.sessionId,
                                   payment_method: 'VNPAY',
+                                  phone_number: phoneNumber.trim() || null,
+                                  email: email.trim() || null,
+                                  voucher_code: voucherCode.trim() || null,
                                   is_preview: false,
                                   close_user: userId,
                                   is_manual: true
