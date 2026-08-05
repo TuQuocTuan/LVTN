@@ -314,12 +314,23 @@ export const ketCa = async (req, res) => {
             .gte('created_at', startOfDay)
             .lte('created_at', endOfDay);
 
-        const soLuongDon = billsCash ? billsCash.length : 0;
+        const soLuongDon = (billsCash ? billsCash.length : 0) + (billsVnpay ? billsVnpay.length : 0);
         const tongTienBanDuocCASH = billsCash ? billsCash.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
         const tongTienBanDuocVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
+        
+        const tongVatCASH = billsCash ? billsCash.reduce((sum, bill) => sum + Number(bill.vat_amount || 0), 0) : 0;
+        const tongVatVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.vat_amount || 0), 0) : 0;
+        const tongVat = Math.round(tongVatCASH + tongVatVNPAY);
+
+        const tongCostCASH = billsCash ? billsCash.reduce((sum, bill) => sum + Number(bill.cost_amount || 0), 0) : 0;
+        const tongCostVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.cost_amount || 0), 0) : 0;
+        const tongGiaVon = Math.round(tongCostCASH + tongCostVNPAY);
+
         const tiendauca = 1000000;
         const tongTienBanDuoc = tongTienBanDuocCASH + tongTienBanDuocVNPAY;
-        const tongTienTrongKet = tiendauca + tongTienBanDuoc;
+        const tongDoanhThuThuan = tongTienBanDuoc - tongVat;
+        const doanhThuThucTe = tongDoanhThuThuan - tongGiaVon;
+        const tongTienTrongKet = tiendauca + tongTienBanDuocCASH;
 
         if (fetchErr) throw fetchErr;
         if (fetchErr2) throw fetchErr2;
@@ -372,11 +383,28 @@ export const ketCa = async (req, res) => {
                     <td class="text-right">${tongTienBanDuoc.toLocaleString('vi-VN')}đ</td>
                 </tr>
                 <tr>
-                    <td>Tổng doanh thu tiền mặt:</td>
+                    <td>Thuế VAT (10%):</td>
+                    <td class="text-right">-${tongVat.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Doanh thu thuần:</td>
+                    <td class="text-right">${tongDoanhThuThuan.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr>
+                    <td>Vốn nguyên liệu:</td>
+                    <td class="text-right">-${tongGiaVon.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <tr class="bold">
+                    <td>LỢI NHUẬN THỰC TẾ:</td>
+                    <td class="text-right">${doanhThuThucTe.toLocaleString('vi-VN')}đ</td>
+                </tr>
+                <div class="divider"></div>
+                <tr>
+                    <td>Doanh thu tiền mặt:</td>
                     <td class="text-right">${tongTienBanDuocCASH.toLocaleString('vi-VN')}đ</td>
                 </tr>
                 <tr>
-                    <td>Tổng doanh thu VNPAY:</td>
+                    <td>Doanh thu VNPAY:</td>
                     <td class="text-right">${tongTienBanDuocVNPAY.toLocaleString('vi-VN')}đ</td>
                 </tr>
                 <tr class="bold" style="font-size: 14px;">
@@ -396,6 +424,10 @@ export const ketCa = async (req, res) => {
             success: true,
             tien_dau_ca: tiendauca,
             tong_tien_ban_duoc: tongTienBanDuoc,
+            tong_vat: tongVat,
+            tong_doanh_thu_thuan: tongDoanhThuThuan,
+            tong_gia_von: tongGiaVon,
+            doanh_thu_thuc_te: doanhThuThucTe,
             tongTienBanDuoc_CASH: tongTienBanDuocCASH,
             tongTienBanDuoc_VNPAY: tongTienBanDuocVNPAY,
             tong_tien_trong_ket: tongTienTrongKet,

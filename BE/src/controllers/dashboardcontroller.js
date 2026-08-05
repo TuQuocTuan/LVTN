@@ -22,14 +22,16 @@ export const getDoanhThuDashboard = async (req, res) => {
 
         const { data: bills, error: fetchErr } = await supabase
             .from('bills')
-            .select('total_amount, payment_method, cost_amount')
+            .select('total_amount, payment_method, cost_amount, vat_amount')
             .gte('created_at', moctgian.toISOString());
         if (fetchErr) throw fetchErr;
 
         const count = bills.length;
         const tongdoanhthu = bills.reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
+        const tongvat = bills.reduce((tong, bill) => tong + Number(bill.vat_amount || 0), 0);
+        const tongdoanhthuthuan = tongdoanhthu - tongvat;
         const tongcost = bills.reduce((tong, bill) => tong + Number(bill.cost_amount || 0), 0);
-        const doanhthuthucte = tongdoanhthu - tongcost;
+        const doanhthuthucte = tongdoanhthuthuan - tongcost;
 
         const tongtienmat = bills
             .filter(bill => bill.payment_method === 'CASH')
@@ -43,6 +45,8 @@ export const getDoanhThuDashboard = async (req, res) => {
         res.status(200).json({
             success: true,
             tongdoanhthu,
+            tongvat,
+            tongdoanhthuthuan,
             tongcost,
             doanhthuthucte,
             tongtienmat,
@@ -70,7 +74,7 @@ export const tungngaytrongTuan = async (req, res) => {
 
         const { data: bills, error: fetchErr } = await supabase
             .from('bills')
-            .select('total_amount, cost_amount, created_at')
+            .select('total_amount, cost_amount, vat_amount, created_at')
             .gte('created_at', mocthoigian.toISOString());
 
         if (fetchErr) throw fetchErr;
@@ -96,10 +100,11 @@ export const tungngaytrongTuan = async (req, res) => {
 
             if (danhsachTuan[i]) {
                 const total = Number(bill.total_amount || 0);
+                const vat = Number(bill.vat_amount || 0);
                 const cost = Number(bill.cost_amount || 0);
                 danhsachTuan[i].total += total;
                 danhsachTuan[i].cost += cost;
-                danhsachTuan[i].doanhthuthucte += (total - cost);
+                danhsachTuan[i].doanhthuthucte += ((total - vat) - cost);
             }
         });
 
@@ -122,7 +127,7 @@ export const tungngaytrongThang = async (req, res) => {
 
         const { data: bills, error: fetchErr } = await supabase
             .from('bills')
-            .select('total_amount, cost_amount, created_at')
+            .select('total_amount, cost_amount, vat_amount, created_at')
             .gte('created_at', startOfMonth.toISOString());
 
         if (fetchErr) throw fetchErr;
@@ -142,10 +147,11 @@ export const tungngaytrongThang = async (req, res) => {
 
             if (danhsachThang[idx]) {
                 const total = Number(bill.total_amount || 0);
+                const vat = Number(bill.vat_amount || 0);
                 const cost = Number(bill.cost_amount || 0);
                 danhsachThang[idx].total += total;
                 danhsachThang[idx].cost += cost;
-                danhsachThang[idx].doanhthuthucte += (total - cost);
+                danhsachThang[idx].doanhthuthucte += ((total - vat) - cost);
             }
         });
 
@@ -168,7 +174,7 @@ export const tungthangtrongNam = async (req, res) => {
 
         const { data: bills, error: fetchErr } = await supabase
             .from('bills')
-            .select('total_amount, cost_amount, created_at')
+            .select('total_amount, cost_amount, vat_amount, created_at')
             .gte('created_at', startOfYear.toISOString());
 
         if (fetchErr) throw fetchErr;
@@ -187,10 +193,11 @@ export const tungthangtrongNam = async (req, res) => {
 
             if (danhsachNam[monthIdx]) {
                 const total = Number(bill.total_amount || 0);
+                const vat = Number(bill.vat_amount || 0);
                 const cost = Number(bill.cost_amount || 0);
                 danhsachNam[monthIdx].total += total;
                 danhsachNam[monthIdx].cost += cost;
-                danhsachNam[monthIdx].doanhthuthucte += (total - cost);
+                danhsachNam[monthIdx].doanhthuthucte += ((total - vat) - cost);
             }
         });
 
