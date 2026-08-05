@@ -344,6 +344,12 @@ const TableManager = () => {
       return showAlert("Tài khoản của bạn đã bị giới hạn, không có quyền đóng/hủy bàn!", "warning");
     }
 
+    const hasOrders = billData?.allOrders && billData.allOrders.some(order => order.status !== 'cancelled');
+
+    if (hasOrders) {
+      return showAlert("Bàn này đã đặt món ăn, không thể đóng bàn!", "warning");
+    }
+
     showConfirm("Bạn có chắc chắn muốn đóng bàn này mà không tính tiền không?", async () => {
       try {
         const response = await axios.post(`${API_BASE_URL}/sessions/close`, { table_id: tableId });

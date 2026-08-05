@@ -9,7 +9,7 @@ const axiosConfig = { headers: { 'ngrok-skip-browser-warning': 'true' } };
 
 const CustomerReview = () => {
   const [searchParams] = useSearchParams();
-  // 🌟 Đọc trực tiếp mã session_id được sinh ra tự động từ QR trên hóa đơn
+  // Đọc trực tiếp mã session_id được sinh ra tự động từ QR trên hóa đơn
   const urlSessionId = searchParams.get('session_id');
 
   const [tableName, setTableName] = useState('');
@@ -31,7 +31,7 @@ const CustomerReview = () => {
     }
   }, [urlSessionId]);
 
-  // Hàm check xem session_id này đã được gửi đánh giá lên Database của Tuấn chưa
+  // Hàm check xem session_id này đã được gửi đánh giá lên Database chưa
   const checkSessionReviewStatus = async (targetSessionId) => {
     setIsLoading(true);
     setErrorMsg('');
@@ -88,7 +88,7 @@ const CustomerReview = () => {
                 dish_id: detail.dish_id,
                 dish_name: detail.dishes?.name || 'Món ăn',
                 quantity: detail.quantity,
-                rating: 5, // 🌟 Mặc định 5 sao cho tất cả món ăn xuất hiện
+                rating: 5, // Mặc định 5 sao cho tất cả món ăn xuất hiện
                 comment: '',
                 order_id: order.id // Lưu lại order_id để xử lý gửi đánh giá an toàn
               });
@@ -145,7 +145,7 @@ const CustomerReview = () => {
     setErrorMsg('');
 
     try {
-      // 🌟 KHẮC PHỤC LỖI CHỒNG CHÉO SUPABASE: Phân nhóm mảng gửi theo từng order_id riêng biệt
+      // KHẮC PHỤC LỖI CHỒNG CHÉO SUPABASE: Phân nhóm mảng gửi theo từng order_id riêng biệt
       const orderGroups = {};
       dishList.forEach(dish => {
         if (!orderGroups[dish.order_id]) {

@@ -10,10 +10,10 @@ const PromotionManagement = () => {
   const [activeTab, setActiveTab] = useState('Khuyến mãi');
   const [promotionsList, setPromotionsList] = useState([]);
   const [customerVouchersList, setCustomerVouchersList] = useState([]);
-  
+
   // Trạng thái chờ khi đang đồng bộ danh sách khuyến mãi
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Trạng thái chờ khi đang tải danh sách lịch sử tặng voucher
   const [isLoadingCV, setIsLoadingCV] = useState(false);
 
@@ -21,7 +21,7 @@ const PromotionManagement = () => {
   const itemsPerPage = 8;
 
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
-  
+
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
 
   // Giá trị mặc định để khởi tạo dữ liệu cho form khuyến mãi
@@ -37,16 +37,16 @@ const PromotionManagement = () => {
     end_date: '',
     is_active: true
   };
-  
+
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialPromoState);
   const [isSaving, setIsSaving] = useState(false);
 
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
-  
+
   // Dữ liệu tặng voucher gồm số điện thoại nhận, cờ bỏ qua giới hạn và khuyến mãi được chọn
   const [giftData, setGiftData] = useState({ phone_number: '', bypass_limit: true, selectedPromo: null });
-  
+
   // Tìm kiếm & dropdown chọn khách hàng tặng voucher
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
@@ -54,7 +54,7 @@ const PromotionManagement = () => {
 
   // Trạng thái chờ khi đang thực hiện gửi tặng voucher qua API
   const [isSendingGift, setIsSendingGift] = useState(false);
-  
+
   const [customersList, setCustomersList] = useState([]);
 
   useEffect(() => {
@@ -172,6 +172,22 @@ const PromotionManagement = () => {
         ? `${import.meta.env.VITE_API_URL}/promotions/update`
         : `${import.meta.env.VITE_API_URL}/promotions/add`;
 
+      const startday = new Date(formData.start_date);
+      const endday = new Date(formData.end_date);
+      const today = new Date();
+      
+      if (endday < startday) {
+        showAlert("Ngày kết thúc phải lớn hơn ngày bắt đầu!", "error", "Lỗi ngày tháng");
+        setIsSaving(false);
+        return;
+      }
+
+      if (!formData.id && startday < today) {
+        showAlert("Thời gian bắt đầu phải lớn hơn hoặc bằng thời điểm hiện tại!", "error", "Lỗi thời gian");
+        setIsSaving(false);
+        return;
+      }
+
       const payload = { ...formData };
       payload.discount_value = Number(payload.discount_value);
       if (payload.min_bill_value) payload.min_bill_value = Number(payload.min_bill_value);
@@ -258,7 +274,7 @@ const PromotionManagement = () => {
 
   // Tính số lượng trang cho bộ phân trang
   const totalPages = Math.ceil(promotionsList.length / itemsPerPage);
-  
+
   // Trích xuất danh sách khuyến mãi hiển thị cho trang hiện tại
   const currentPromotions = promotionsList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -297,20 +313,18 @@ const PromotionManagement = () => {
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
-            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
-              alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-            }`}>
+            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+              }`}>
               <span className="material-symbols-outlined text-3xl">
                 {alertModal.type === 'success' ? 'check_circle' : 'error'}
               </span>
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{alertModal.message}</p>
-            <button 
-              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'success' })} 
-              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${
-                alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
-              }`}
+            <button
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'success' })}
+              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
+                }`}
             >
               Đồng ý
             </button>
@@ -328,14 +342,14 @@ const PromotionManagement = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{confirmModal.message}</p>
             <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })} 
+              <button
+                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })}
                 className="w-1/2 py-3 border border-neutralCustom/20 rounded-xl font-bold text-sm text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 Hủy bỏ
               </button>
-              <button 
-                onClick={confirmModal.onConfirm} 
+              <button
+                onClick={confirmModal.onConfirm}
                 className="w-1/2 py-3 bg-primary text-white font-bold rounded-xl text-sm hover:bg-secondary transition-all"
               >
                 Xác nhận
@@ -447,11 +461,11 @@ const PromotionManagement = () => {
                                 </button>
                               )}
                               <button onClick={() => handleOpenEditModal(promo)} className="p-1.5 text-neutralCustom hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Chỉnh sửa">
-                                  <span className="material-symbols-outlined text-[18px]">edit</span>
-                                </button>
+                                <span className="material-symbols-outlined text-[18px]">edit</span>
+                              </button>
                               <button onClick={() => handleDeletePromo(promo.id)} className="p-1.5 text-neutralCustom hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
-                                  <span className="material-symbols-outlined text-[18px]">delete</span>
-                                </button>
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -640,14 +654,14 @@ const PromotionManagement = () => {
                       type="text"
                       placeholder="Nhập Tên hoặc Số điện thoại để tìm..."
                       value={
-                        isCustomerDropdownOpen 
-                          ? customerSearchTerm 
-                          : (giftData.phone_number 
-                              ? (() => {
-                                  const found = customersList.find(c => c.phone_number === giftData.phone_number);
-                                  return found ? `${found.name} - ${found.phone_number}` : giftData.phone_number;
-                                })()
-                              : customerSearchTerm)
+                        isCustomerDropdownOpen
+                          ? customerSearchTerm
+                          : (giftData.phone_number
+                            ? (() => {
+                              const found = customersList.find(c => c.phone_number === giftData.phone_number);
+                              return found ? `${found.name} - ${found.phone_number}` : giftData.phone_number;
+                            })()
+                            : customerSearchTerm)
                       }
                       onFocus={() => {
                         setIsCustomerDropdownOpen(true);
@@ -695,14 +709,12 @@ const PromotionManagement = () => {
                                 setCustomerSearchTerm('');
                                 setIsCustomerDropdownOpen(false);
                               }}
-                              className={`p-3 px-4 flex items-center justify-between cursor-pointer transition-colors ${
-                                isSelected ? 'bg-orange-50/80 text-primary font-bold' : 'hover:bg-orange-50/40 text-gray-800'
-                              }`}
+                              className={`p-3 px-4 flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'bg-orange-50/80 text-primary font-bold' : 'hover:bg-orange-50/40 text-gray-800'
+                                }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${
-                                  isSelected ? 'bg-primary text-white' : 'bg-stone-100 text-stone-600'
-                                }`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${isSelected ? 'bg-primary text-white' : 'bg-stone-100 text-stone-600'
+                                  }`}>
                                   {cus.name ? cus.name.charAt(0).toUpperCase() : '?'}
                                 </div>
                                 <div>
@@ -755,9 +767,9 @@ const PromotionManagement = () => {
 
             <div className="p-5 border-t border-neutralCustom/10 bg-gray-50 flex justify-end gap-3 shrink-0 rounded-b-3xl">
               <button onClick={() => setIsGiftModalOpen(false)} className="px-6 py-2.5 rounded-xl font-bold text-sm text-gray-700 border border-neutralCustom/20 hover:bg-white transition-colors">Hủy</button>
-              <button 
-                onClick={handleSendGiftSubmit} 
-                disabled={isSendingGift} 
+              <button
+                onClick={handleSendGiftSubmit}
+                disabled={isSendingGift}
                 className="px-8 py-2.5 rounded-xl font-bold text-sm text-white bg-primary hover:bg-secondary shadow-md disabled:opacity-50 transition-all flex items-center gap-2"
               >
                 {isSendingGift ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">send</span>}

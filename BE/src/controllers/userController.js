@@ -209,7 +209,7 @@ export const quanlythoigianlam1ca = async (req, res) => {
         const { data: cashiers, error: fetchErr } = await supabase
             .from('users')
             .select('id')
-            .eq('role', 'cashier')
+            .in('role', ['cashier', 'admin'])
             .eq('is_active', true);
         if (fetchErr) throw fetchErr;
 
