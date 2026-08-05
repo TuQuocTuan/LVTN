@@ -43,6 +43,11 @@ const IngredientManagement = () => {
     setAlertModal({ show: true, message, title, type });
   };
 
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+  };
+
   /* STREAMING_CHUNK: Tải danh mục nguyên liệu từ Backend */
   const fetchCategories = async () => {
     try {
@@ -62,7 +67,7 @@ const IngredientManagement = () => {
   const fetchIngredients = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${API_URL}/ingredients`);
+      const response = await axios.get(`${API_URL}/ingredients`, getAuthHeader());
       const result = response.data;
 
       if (result.success) {
@@ -116,7 +121,7 @@ const IngredientManagement = () => {
         category_id: Number(addData.category_id)
       };
 
-      const response = await axios.post(`${API_URL}/ingredients/add`, payload);
+      const response = await axios.post(`${API_URL}/ingredients/add`, payload, getAuthHeader());
       const result = response.data;
 
       if (result.success) {
@@ -163,7 +168,7 @@ const IngredientManagement = () => {
         category_id: Number(editData.category_id)
       };
 
-      const response = await axios.put(`${API_URL}/ingredients/update`, payload);
+      const response = await axios.put(`${API_URL}/ingredients/update`, payload, getAuthHeader());
       const result = response.data;
 
       if (result.success) {
@@ -188,7 +193,7 @@ const IngredientManagement = () => {
       message: `Bạn có chắc chắn muốn xóa vĩnh viễn nguyên liệu "${name}" ra khỏi kho quản trị?`,
       onConfirm: async () => {
         try {
-          const response = await axios.delete(`${API_URL}/ingredients/delete/${id}`);
+          const response = await axios.delete(`${API_URL}/ingredients/delete/${id}`, getAuthHeader());
           const result = response.data;
           if (result.success) {
             showAlert("Xóa nguyên liệu thành công!", "success", "Xóa thành công");

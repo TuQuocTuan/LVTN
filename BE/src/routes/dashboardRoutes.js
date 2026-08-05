@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDoanhThuDashboard, layDSmonHomnay, tungngaytrongTuan, tinhtienvon } from '../controllers/dashboardcontroller.js';
+import { getDoanhThuDashboard, layDSmonHomnay, tungngaytrongTuan, tungngaytrongThang, tungthangtrongNam, tinhtienvon } from '../controllers/dashboardcontroller.js';
 import { verifyToken, authorizeRoles } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -8,6 +8,8 @@ const router = express.Router();
 
 router.post('/revenue', getDoanhThuDashboard);
 router.get('/revenue-week', tungngaytrongTuan);
+router.get('/revenue-month', tungngaytrongThang);
+router.get('/revenue-year', tungthangtrongNam);
 router.get('/dish-today', layDSmonHomnay);
 router.get('/cost', tinhtienvon);
 

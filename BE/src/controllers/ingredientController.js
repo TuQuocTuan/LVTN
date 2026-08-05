@@ -8,7 +8,7 @@ export const getIngredients = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('ingredients')
-            .select('id,name,quantity,unit,min_stock,updated_at,category_ingredients(name)')
+            .select('id,name,quantity,unit,min_stock,updated_at,category_ingredients(name),price')
         if (error) throw error;
         res.status(200).json({ success: true, data })
     } catch (error) {
@@ -18,8 +18,8 @@ export const getIngredients = async (req, res) => {
 
 export const addIngredients = async (req, res) => {
     try {
-        const { name, quantity, unit, min_stock, category_id } = req.body;
-        if (!name || !quantity || !unit || !min_stock) {
+        const { name, quantity, unit, min_stock, price, category_id } = req.body;
+        if (!name || !quantity || !unit || !min_stock || !price) {
             return res.status(400).json({ success: false, message: 'Thieu thong tin nguyen lieu!' })
         }
 
@@ -41,7 +41,8 @@ export const addIngredients = async (req, res) => {
                 quantity: Number(quantity),
                 unit,
                 min_stock: Number(min_stock),
-                category_id: Number(category_id)
+                category_id: Number(category_id),
+                price: Number(price)
             })
             .select()
             .single();
@@ -55,7 +56,7 @@ export const addIngredients = async (req, res) => {
 
 export const updateIngredient = async (req, res) => {
     try {
-        const { id, name, quantity, unit, min_stock, category_id } = req.body;
+        const { id, name, quantity, unit, min_stock, price, category_id } = req.body;
         if (!id) {
             return res.status(400).json({ success: false, message: 'Vui lòng nhập ID để cập nhật!' });
         }
@@ -66,6 +67,7 @@ export const updateIngredient = async (req, res) => {
         if (unit !== undefined) updateData.unit = unit.trim();
         if (min_stock !== undefined) updateData.min_stock = Number(min_stock);
         if (category_id !== undefined) updateData.category_id = Number(category_id);
+        if (price !== undefined) updateData.price = Number(price);
 
         const IngredientID = Number(id);
         if (updateData.name) {

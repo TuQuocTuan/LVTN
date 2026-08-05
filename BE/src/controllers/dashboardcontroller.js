@@ -70,20 +70,20 @@ export const tungngaytrongTuan = async (req, res) => {
 
         const { data: bills, error: fetchErr } = await supabase
             .from('bills')
-            .select('total_amount, created_at')
+            .select('total_amount, cost_amount, created_at')
             .gte('created_at', mocthoigian.toISOString());
 
         if (fetchErr) throw fetchErr;
 
         let danhsachTuan = [
-            { day_name: "Thứ Hai", total: 0 },
-            { day_name: "Thứ Ba", total: 0 },
-            { day_name: "Thứ Tư", total: 0 },
-            { day_name: "Thứ Năm", total: 0 },
-            { day_name: "Thứ Sáu", total: 0 },
-            { day_name: "Thứ Bảy", total: 0 },
-            { day_name: "Chủ Nhật", total: 0 }
-        ]
+            { day_name: "Thứ Hai", total: 0, cost: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Ba", total: 0, cost: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Tư", total: 0, cost: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Năm", total: 0, cost: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Sáu", total: 0, cost: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Bảy", total: 0, cost: 0, doanhthuthucte: 0 },
+            { day_name: "Chủ Nhật", total: 0, cost: 0, doanhthuthucte: 0 }
+        ];
 
         bills?.forEach(bill => {
             const billDate = new Date(bill.created_at);
@@ -95,7 +95,11 @@ export const tungngaytrongTuan = async (req, res) => {
             }
 
             if (danhsachTuan[i]) {
-                danhsachTuan[i].total += Number(bill.total_amount || 0);
+                const total = Number(bill.total_amount || 0);
+                const cost = Number(bill.cost_amount || 0);
+                danhsachTuan[i].total += total;
+                danhsachTuan[i].cost += cost;
+                danhsachTuan[i].doanhthuthucte += (total - cost);
             }
         });
 
@@ -106,6 +110,97 @@ export const tungngaytrongTuan = async (req, res) => {
         });
     } catch (error) {
         console.error("Lỗi tính doanh thu tuần:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const tungngaytrongThang = async (req, res) => {
+    try {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+        const { data: bills, error: fetchErr } = await supabase
+            .from('bills')
+            .select('total_amount, cost_amount, created_at')
+            .gte('created_at', startOfMonth.toISOString());
+
+        if (fetchErr) throw fetchErr;
+
+        let danhsachThang = Array.from({ length: daysInMonth }, (_, i) => ({
+            day: i + 1,
+            day_name: `Ngày ${i + 1}`,
+            total: 0,
+            cost: 0,
+            doanhthuthucte: 0
+        }));
+
+        bills?.forEach(bill => {
+            const billDate = new Date(bill.created_at);
+            const dayNum = billDate.getDate();
+            const idx = dayNum - 1;
+
+            if (danhsachThang[idx]) {
+                const total = Number(bill.total_amount || 0);
+                const cost = Number(bill.cost_amount || 0);
+                danhsachThang[idx].total += total;
+                danhsachThang[idx].cost += cost;
+                danhsachThang[idx].doanhthuthucte += (total - cost);
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            month: now.getMonth() + 1,
+            year: now.getFullYear(),
+            data: danhsachThang
+        });
+    } catch (error) {
+        console.error("Lỗi tính doanh thu tháng:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const tungthangtrongNam = async (req, res) => {
+    try {
+        const now = new Date();
+        const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
+
+        const { data: bills, error: fetchErr } = await supabase
+            .from('bills')
+            .select('total_amount, cost_amount, created_at')
+            .gte('created_at', startOfYear.toISOString());
+
+        if (fetchErr) throw fetchErr;
+
+        let danhsachNam = Array.from({ length: 12 }, (_, i) => ({
+            month: i + 1,
+            month_name: `Tháng ${i + 1}`,
+            total: 0,
+            cost: 0,
+            doanhthuthucte: 0
+        }));
+
+        bills?.forEach(bill => {
+            const billDate = new Date(bill.created_at);
+            const monthIdx = billDate.getMonth();
+
+            if (danhsachNam[monthIdx]) {
+                const total = Number(bill.total_amount || 0);
+                const cost = Number(bill.cost_amount || 0);
+                danhsachNam[monthIdx].total += total;
+                danhsachNam[monthIdx].cost += cost;
+                danhsachNam[monthIdx].doanhthuthucte += (total - cost);
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            year: now.getFullYear(),
+            data: danhsachNam
+        });
+    } catch (error) {
+        console.error("Lỗi tính doanh thu năm:", error);
         return res.status(500).json({ success: false, message: error.message });
     }
 }
