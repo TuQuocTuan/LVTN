@@ -251,7 +251,7 @@ export const getTotalBillCustomer = async (req, res) => {
     }
 }
 
-// 🌟 API MỚI: Lấy danh sách lịch sử khách hàng đã nhận Voucher (Cho Tab "Danh sách Voucher đã tặng")
+//API MỚI: Lấy danh sách lịch sử khách hàng đã nhận Voucher (Cho Tab "Danh sách Voucher đã tặng")
 export const getCustomerVouchersHistory = async (req, res) => {
     try {
         const { data, error } = await supabase

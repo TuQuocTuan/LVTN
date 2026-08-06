@@ -167,3 +167,36 @@ export const huyNguyenLieu = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message })
     }
 }
+
+export const huytuychon = async (req, res) => {
+    try {
+        const { id, soluong } = req.body;
+        const { data: ingredients, error: ingredientErr } = await supabase
+            .from('ingredients')
+            .select('id,name,quantity,unit,price,category_id')
+            .eq('id', id);
+        if (ingredientErr) throw ingredientErr;
+
+        const { data: huyNL, error: huyNLErr } = await supabase
+            .from('ingredients')
+            .update({ quantity: ingredients[0].quantity - soluong })
+            .eq('id', ingredients[0].id)
+            .select();
+        if (ingredientErr) throw ingredientErr;
+
+        let tienvon = 0;
+        if (ingredients[0].unit === "g" || ingredients[0].unit === "ml") {
+            tienvon = (Number(ingredients[0].price) * Number(soluong) / 1000);
+        } else {
+            tienvon = (Number(ingredients[0].price) * Number(soluong));
+        }
+
+        const { error: insertErr } = await supabase
+            .from('ingredient_wastes')
+            .insert({ total_cost: Math.round(tienvon) });
+        if (insertErr) throw insertErr;
+        return res.status(200).json({ success: true, huyNL });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+}
