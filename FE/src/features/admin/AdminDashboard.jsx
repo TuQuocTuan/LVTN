@@ -10,6 +10,7 @@ const AdminDashboard = () => {
   const [range, setRange] = useState('day'); // Khoảng thời gian lọc: day, week, month, year
   const [liveRevenue, setLiveRevenue] = useState(0); // Tổng doanh thu thật bốc từ API
   const [costRevenue, setCostRevenue] = useState(0); // Tổng tiền vốn bốc từ API
+  const [wasteRevenue, setWasteRevenue] = useState(0); // Tổng tiền hủy nguyên liệu bốc từ API
   const [realRevenue, setRealRevenue] = useState(0); // Doanh thu thực tế (Lợi nhuận ròng) bốc từ API
   const [cashRevenue, setCashRevenue] = useState(0); // Doanh thu tiền mặt
   const [transferRevenue, setTransferRevenue] = useState(0); // Doanh thu chuyển khoản (VNPAY)
@@ -58,6 +59,7 @@ const AdminDashboard = () => {
       if (response.data && response.data.success) {
         setLiveRevenue(Number(response.data.tongdoanhthu || 0));
         setCostRevenue(Number(response.data.tongcost || 0));
+        setWasteRevenue(Number(response.data.tongtienhuy || 0));
         setRealRevenue(Number(response.data.doanhthuthucte || 0));
         setCashRevenue(Number(response.data.tongtienmat || 0));
         setTransferRevenue(Number(response.data.tongchuyenkhoan || 0));
@@ -67,6 +69,7 @@ const AdminDashboard = () => {
       console.error("Lỗi đồng bộ API Doanh thu thật:", error);
       setLiveRevenue(0);
       setCostRevenue(0);
+      setWasteRevenue(0);
       setRealRevenue(0);
       setCashRevenue(0);
       setTransferRevenue(0);
@@ -94,6 +97,7 @@ const AdminDashboard = () => {
             day: item.day_name,
             revenue: item.total,
             cost: item.cost || 0,
+            waste: item.waste || 0,
             profit: profit,
             revenueHeight: item.total > 0 ? `${Math.max(revPercent, 6)}%` : '4%',
             profitHeight: profit > 0 ? `${Math.max(profPercent, 3)}%` : '2%',
@@ -121,7 +125,7 @@ const AdminDashboard = () => {
     },
     {
       id: 2,
-      title: 'Tiền vốn',
+      title: 'Tiền vốn bán món',
       value: loading ? 'Đang tính...' : `${costRevenue.toLocaleString('vi-VN')}đ`,
       isUp: false,
       icon: 'account_balance_wallet',
@@ -129,40 +133,66 @@ const AdminDashboard = () => {
     },
     {
       id: 3,
+      title: 'Tiền hủy nguyên liệu',
+      value: loading ? 'Đang tính...' : `${wasteRevenue.toLocaleString('vi-VN')}đ`,
+      isUp: false,
+      icon: 'delete_sweep',
+      color: 'orange',
+    },
+    {
+      id: 4,
       title: 'Doanh thu thực tế',
       value: loading ? 'Đang tính...' : `${realRevenue.toLocaleString('vi-VN')}đ`,
       isUp: true,
       icon: 'trending_up',
       color: 'emerald',
     },
-    {
-      id: 4,
-      title: 'Hóa đơn trung bình',
-      value: loading ? 'Đang tính...' : `${liveAverageBill.toLocaleString('vi-VN')}đ`,
-      isUp: true,
-      icon: 'receipt',
-      color: 'tertiary',
-    },
   ];
 
+  // HÀM XUẤT BÁO CÁO EXCEL TÀI CHÍNH CHI TIẾT
   const handleExportExcel = () => {
+    // 1. Tính tổng doanh thu tuần = Tổng tiền bán hàng của 7 ngày trong tuần cộng lại
+    const totalRev = weeklyData.reduce((acc, curr) => acc + curr.revenue, 0);
+
+    // 2. Tính tổng tiền vốn bán món tuần = Tổng giá vốn nguyên liệu tạo nên các món ăn bán ra trong tuần
+    const totalCost = weeklyData.reduce((acc, curr) => acc + curr.cost, 0);
+
+    // 3. Tính tổng tiền hủy nguyên liệu tuần = Tổng chi phí nguyên liệu bị hủy của 7 ngày cộng lại
+    const totalWaste = weeklyData.reduce((acc, curr) => acc + (curr.waste || 0), 0);
+
+    // 4. Tính tổng lợi nhuận thực tế tuần = (Doanh thu thuần - Tiền vốn bán món - Tiền hủy nguyên liệu) của các ngày cộng lại
+    const totalProf = weeklyData.reduce((acc, curr) => acc + curr.profit, 0);
+
+    // 5. Tính Tỷ suất lợi nhuận ròng (%) = (Doanh thu thực tế / Tổng doanh thu) * 100%
+    const overallProfitMargin = liveRevenue > 0 ? ((realRevenue / liveRevenue) * 100).toFixed(1) : '0';
+    
+    // 6. Tính tổng doanh thu nhận qua các kênh thanh toán = Tiền mặt (CASH) + Chuyển khoản (VNPAY)
+    const totalPaymentRev = cashRevenue + transferRevenue;
+
+    // 7. Tính tỷ lệ phần trăm (%) doanh thu Tiền mặt = (Tiền mặt / Tổng doanh thu thanh toán) * 100%
+    const cashPercent = totalPaymentRev > 0 ? ((cashRevenue / totalPaymentRev) * 100).toFixed(1) : '0';
+
+    // 8. Tính tỷ lệ phần trăm (%) doanh thu Chuyển khoản VNPAY = (Chuyển khoản / Tổng doanh thu thanh toán) * 100%
+    const transferPercent = totalPaymentRev > 0 ? ((transferRevenue / totalPaymentRev) * 100).toFixed(1) : '0';
+
     const styles = `
       <style>
-        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
-        td, th { padding: 14px 20px; border: 1px solid #cbd5e1; font-size: 15px; }
-        .title-row { font-size: 22px; font-weight: bold; color: #ff6b00; padding: 18px 0; text-align: left; }
-        .meta-label { background-color: #f8fafc; font-weight: bold; color: #475569; width: 240px; font-size: 15px; }
-        .meta-val { color: #0f172a; font-weight: bold; font-size: 15px; }
-        .header-row { background-color: #ff6b00; color: #ffffff; font-weight: bold; text-align: center; font-size: 15px; }
+        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        td, th { padding: 6px 12px; border: 1px solid #cbd5e1; font-size: 13px; vertical-align: middle; }
+        .title-row { font-size: 18px; font-weight: bold; color: #ea580c; padding: 10px 0; text-align: left; }
+        .section-header { font-size: 14px; font-weight: bold; color: #1e293b; background-color: #f1f5f9; padding: 8px 12px; border-left: 4px solid #ea580c; }
+        .meta-label { background-color: #f8fafc; font-weight: bold; color: #475569; width: 220px; font-size: 13px; text-align: left; }
+        .meta-val { color: #0f172a; font-weight: bold; font-size: 13px; text-align: left; }
+        .header-row { background-color: #ea580c; color: #ffffff; font-weight: bold; text-align: center; font-size: 13px; }
         .row-even { background-color: #ffffff; }
         .row-odd { background-color: #fdfaf6; }
-        .number-cell { text-align: right; font-family: Consolas, monospace; font-size: 15px; }
-        .grand-total { background-color: #ffedd5; font-weight: bold; color: #ea580c; font-size: 16px; }
-        .spacer { border: none; height: 20px; }
+        .number-cell { text-align: right; font-family: Consolas, monospace; font-size: 13px; }
+        .text-center { text-align: center; }
+        .grand-total { background-color: #ffedd5; font-weight: bold; color: #c2410c; font-size: 14px; }
+        .spacer { border: none; height: 8px; }
       </style>
     `;
 
-    // Thiết kế cấu trúc bảng Excel chuyên nghiệp có tổ chức phân vùng rõ rệt
     let html = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
       <head>
@@ -172,75 +202,142 @@ const AdminDashboard = () => {
       <body>
         <table>
           <tr>
-            <td colspan="4" class="title-row">BÁO CÁO DOANH THU VÀ TIỀN VỐN - LÀNG MÌXI BBQ</td>
+            <td colspan="6" class="title-row">BÁO CÁO DOANH THU & CHỈ SỐ TÀI CHÍNH CHI TIẾT - LÀNG MÌXI BBQ</td>
           </tr>
           <tr>
             <td class="meta-label">Thời điểm xuất báo cáo:</td>
-            <td colspan="3" class="meta-val">${new Date().toLocaleString('vi-VN')}</td>
+            <td colspan="5" class="meta-val" style="text-align: left;">${new Date().toLocaleString('vi-VN')}</td>
           </tr>
           <tr>
             <td class="meta-label">Bộ lọc khoảng thời gian:</td>
-            <td colspan="3" class="meta-val">${range === 'day' ? 'Hôm nay' : range === 'week' ? 'Tuần này' : range === 'month' ? 'Tháng này' : 'Năm nay'}</td>
+            <td colspan="5" class="meta-val" style="text-align: left;">${range === 'day' ? 'Hôm nay' : range === 'week' ? 'Tuần này' : range === 'month' ? 'Tháng này' : 'Năm nay'}</td>
+          </tr>
+          
+          <tr class="spacer"><td colspan="6" class="spacer"></td></tr>
+          <tr>
+            <td colspan="6" class="section-header">1. TỔNG QUAN CHỈ SỐ KINH DOANH</td>
           </tr>
           <tr>
-            <td class="meta-label">Tổng doanh thu lũy kế:</td>
-            <td colspan="3" class="meta-val" style="color: #ff6b00;">${liveRevenue.toLocaleString('vi-VN')} đ</td>
+            <td class="meta-label">Tổng doanh thu bán hàng:</td>
+            <td colspan="5" class="meta-val" style="color: #ea580c; text-align: left;">${liveRevenue.toLocaleString('vi-VN')} đ</td>
           </tr>
           <tr>
-            <td class="meta-label">Tiền vốn lũy kế:</td>
-            <td colspan="3" class="meta-val" style="color: #d97706;">${costRevenue.toLocaleString('vi-VN')} đ</td>
+            <td class="meta-label">Tiền vốn bán món:</td>
+            <td colspan="5" class="meta-val" style="color: #d97706; text-align: left;">${costRevenue.toLocaleString('vi-VN')} đ</td>
           </tr>
           <tr>
-            <td class="meta-label">Doanh thu thực tế:</td>
-            <td colspan="3" class="meta-val" style="color: #059669;">${realRevenue.toLocaleString('vi-VN')} đ</td>
+            <td class="meta-label">Tiền hủy nguyên liệu tươi:</td>
+            <td colspan="5" class="meta-val" style="color: #dc2626; text-align: left;">${wasteRevenue.toLocaleString('vi-VN')} đ</td>
           </tr>
-          <tr class="spacer"><td colspan="4" class="spacer"></td></tr>
           <tr>
-            <td colspan="4" style="font-weight: bold; font-size: 15px; color: #1e293b; padding-bottom: 8px;">CHI TIẾT PHÂN TÍCH DOANH SỐ THEO NGÀY TRONG TUẦN</td>
+            <td class="meta-label">Doanh thu thực tế (Lợi nhuận):</td>
+            <td colspan="5" class="meta-val" style="color: #059669; text-align: left;">${realRevenue.toLocaleString('vi-VN')} đ</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Tỷ suất lợi nhuận ròng:</td>
+            <td colspan="5" class="meta-val" style="color: #0284c7; text-align: left;">${overallProfitMargin}%</td>
+          </tr>
+
+          <tr class="spacer"><td colspan="6" class="spacer"></td></tr>
+          <tr>
+            <td colspan="6" class="section-header">2. PHÂN TÍCH PHƯƠNG THỨC THANH TOÁN</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Tiền mặt (CASH):</td>
+            <td colspan="2" class="meta-val" style="color: #059669; text-align: left;">${cashRevenue.toLocaleString('vi-VN')} đ</td>
+            <td colspan="3" class="meta-val" style="text-align: left;">Tỷ lệ: ${cashPercent}%</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Chuyển khoản (VNPAY):</td>
+            <td colspan="2" class="meta-val" style="color: #2563eb; text-align: left;">${transferRevenue.toLocaleString('vi-VN')} đ</td>
+            <td colspan="3" class="meta-val" style="text-align: left;">Tỷ lệ: ${transferPercent}%</td>
+          </tr>
+
+          <tr class="spacer"><td colspan="6" class="spacer"></td></tr>
+          <tr>
+            <td colspan="6" class="section-header">3. BẢNG PHÂN TÍCH DOANH SỐ CHI TIẾT THEO NGÀY TRONG TUẦN</td>
           </tr>
           <tr class="header-row">
             <td>Thứ</td>
             <td>Tổng doanh thu (đ)</td>
-            <td>Tiền vốn (đ)</td>
+            <td>Tiền vốn bán món (đ)</td>
+            <td>Tiền hủy nguyên liệu (đ)</td>
             <td>Doanh thu thực tế (đ)</td>
+            <td>Tỷ suất lợi nhuận (%)</td>
           </tr>
     `;
 
-    // Nạp dữ liệu các hàng trong tuần với màu so le đẹp mắt
+    // 9. Duyệt qua từng ngày trong tuần để tạo dòng bảng dữ liệu chi tiết
     weeklyData.forEach((row, index) => {
       const rowClass = index % 2 === 0 ? 'row-even' : 'row-odd';
+      // Tỷ suất lợi nhuận riêng của từng ngày (%) = (Doanh thu thực tế ngày đó / Tổng doanh thu ngày đó) * 100%
+      const margin = row.revenue > 0 ? ((row.profit / row.revenue) * 100).toFixed(1) : '0';
       html += `
         <tr class="${rowClass}">
           <td style="font-weight: bold; color: #334155;">${row.day}</td>
           <td class="number-cell">${Number(row.revenue).toLocaleString('vi-VN')} đ</td>
           <td class="number-cell">${Number(row.cost).toLocaleString('vi-VN')} đ</td>
-          <td class="number-cell">${Number(row.profit).toLocaleString('vi-VN')} đ</td>
+          <td class="number-cell" style="color: #dc2626;">${Number(row.waste || 0).toLocaleString('vi-VN')} đ</td>
+          <td class="number-cell" style="font-weight: bold; color: #059669;">${Number(row.profit).toLocaleString('vi-VN')} đ</td>
+          <td class="number-cell" style="color: #0284c7;">${margin}%</td>
         </tr>
       `;
     });
 
-    // Tính toán và thêm dòng tổng hợp lũy kế cuối Excel
-    const totalRev = weeklyData.reduce((acc, curr) => acc + curr.revenue, 0);
-    const totalCost = weeklyData.reduce((acc, curr) => acc + curr.cost, 0);
-    const totalProf = weeklyData.reduce((acc, curr) => acc + curr.profit, 0);
+    // 10. Tính tỷ suất lợi nhuận trung bình cả tuần (%) = (Tổng lợi nhuận tuần / Tổng doanh thu tuần) * 100%
+    const weeklyMargin = totalRev > 0 ? ((totalProf / totalRev) * 100).toFixed(1) : '0';
     html += `
           <tr class="grand-total">
             <td>TỔNG CỘNG TUẦN</td>
             <td class="number-cell">${totalRev.toLocaleString('vi-VN')} đ</td>
             <td class="number-cell">${totalCost.toLocaleString('vi-VN')} đ</td>
+            <td class="number-cell" style="color: #dc2626;">${totalWaste.toLocaleString('vi-VN')} đ</td>
             <td class="number-cell">${totalProf.toLocaleString('vi-VN')} đ</td>
+            <td class="number-cell">${weeklyMargin}%</td>
           </tr>
+    `;
+
+    if (shiftReportsList && shiftReportsList.length > 0) {
+      html += `
+        <tr class="spacer"><td colspan="6" class="spacer"></td></tr>
+        <tr>
+          <td colspan="6" class="section-header">4. NHẬT KÝ KẾT CA LÀM VIỆC CỦA THU NGÂN</td>
+        </tr>
+        <tr class="header-row">
+          <td>Thu ngân</td>
+          <td colspan="2">Thời gian kết ca</td>
+          <td>Tiền mặt đầu ca (đ)</td>
+          <td>Doanh thu ca (đ)</td>
+          <td>Tổng trong két (đ)</td>
+        </tr>
+      `;
+
+      shiftReportsList.forEach((report, index) => {
+        const rowClass = index % 2 === 0 ? 'row-even' : 'row-odd';
+        const formattedTime = new Date(report.created_at).toLocaleString('vi-VN');
+        html += `
+          <tr class="${rowClass}">
+            <td style="font-weight: bold;">${report.users?.fullname || 'Ẩn danh'}</td>
+            <td colspan="2" class="text-center">${formattedTime}</td>
+            <td class="number-cell">${Number(report.initial_amount || 0).toLocaleString('vi-VN')} đ</td>
+            <td class="number-cell" style="color: #059669;">${Number(report.revenue_amount || 0).toLocaleString('vi-VN')} đ</td>
+            <td class="number-cell" style="font-weight: bold; color: #ea580c;">${Number(report.total_amount || 0).toLocaleString('vi-VN')} đ</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
         </table>
       </body>
       </html>
     `;
 
-    // Xuất file .xls chuẩn chỉnh mã hóa UTF-8 BOM chống vỡ tiếng Việt
     const blob = new Blob(["\uFEFF" + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `Bao_cao_tai_chinh_${range}_${new Date().toISOString().slice(0, 10)}.xls`);
+    link.setAttribute("download", `Bao_cao_chi_tiet_tai_chinh_${range}_${new Date().toISOString().slice(0, 10)}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -250,6 +347,7 @@ const AdminDashboard = () => {
     switch (colorName) {
       case 'primary': return 'bg-primary/10 text-primary';
       case 'amber': return 'bg-amber-500/10 text-amber-600';
+      case 'orange': return 'bg-orange-500/10 text-orange-600';
       case 'emerald': return 'bg-emerald-500/10 text-emerald-600';
       case 'secondary': return 'bg-secondary/10 text-secondary';
       case 'tertiary': return 'bg-tertiary/10 text-tertiary';

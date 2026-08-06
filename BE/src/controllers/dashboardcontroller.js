@@ -89,13 +89,13 @@ export const tungngaytrongTuan = async (req, res) => {
         if (fetchErr) throw fetchErr;
 
         let danhsachTuan = [
-            { day_name: "Thứ Hai", total: 0, cost: 0, doanhthuthucte: 0 },
-            { day_name: "Thứ Ba", total: 0, cost: 0, doanhthuthucte: 0 },
-            { day_name: "Thứ Tư", total: 0, cost: 0, doanhthuthucte: 0 },
-            { day_name: "Thứ Năm", total: 0, cost: 0, doanhthuthucte: 0 },
-            { day_name: "Thứ Sáu", total: 0, cost: 0, doanhthuthucte: 0 },
-            { day_name: "Thứ Bảy", total: 0, cost: 0, doanhthuthucte: 0 },
-            { day_name: "Chủ Nhật", total: 0, cost: 0, doanhthuthucte: 0 }
+            { day_name: "Thứ Hai", total: 0, cost: 0, waste: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Ba", total: 0, cost: 0, waste: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Tư", total: 0, cost: 0, waste: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Năm", total: 0, cost: 0, waste: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Sáu", total: 0, cost: 0, waste: 0, doanhthuthucte: 0 },
+            { day_name: "Thứ Bảy", total: 0, cost: 0, waste: 0, doanhthuthucte: 0 },
+            { day_name: "Chủ Nhật", total: 0, cost: 0, waste: 0, doanhthuthucte: 0 }
         ];
 
         bills?.forEach(bill => {
@@ -132,7 +132,9 @@ export const tungngaytrongTuan = async (req, res) => {
             }
 
             if (danhsachTuan[i]) {
-                danhsachTuan[i].doanhthuthucte -= Number(waste.total_cost || 0);
+                const costVal = Number(waste.total_cost || 0);
+                danhsachTuan[i].waste += costVal;
+                danhsachTuan[i].doanhthuthucte -= costVal;
             }
         });
 
@@ -165,6 +167,7 @@ export const tungngaytrongThang = async (req, res) => {
             day_name: `Ngày ${i + 1}`,
             total: 0,
             cost: 0,
+            waste: 0,
             doanhthuthucte: 0
         }));
 
@@ -195,7 +198,9 @@ export const tungngaytrongThang = async (req, res) => {
             const idx = dayNum - 1;
 
             if (danhsachThang[idx]) {
-                danhsachThang[idx].doanhthuthucte -= Number(waste.total_cost || 0);
+                const costVal = Number(waste.total_cost || 0);
+                danhsachThang[idx].waste += costVal;
+                danhsachThang[idx].doanhthuthucte -= costVal;
             }
         });
 
@@ -228,6 +233,7 @@ export const tungthangtrongNam = async (req, res) => {
             month_name: `Tháng ${i + 1}`,
             total: 0,
             cost: 0,
+            waste: 0,
             doanhthuthucte: 0
         }));
 
@@ -256,7 +262,9 @@ export const tungthangtrongNam = async (req, res) => {
             const monthIdx = wasteDate.getMonth();
 
             if (danhsachNam[monthIdx]) {
-                danhsachNam[monthIdx].doanhthuthucte -= Number(waste.total_cost || 0);
+                const costVal = Number(waste.total_cost || 0);
+                danhsachNam[monthIdx].waste += costVal;
+                danhsachNam[monthIdx].doanhthuthucte -= costVal;
             }
         });
 

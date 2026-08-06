@@ -212,6 +212,31 @@ const IngredientManagement = () => {
     });
   };
 
+  // HÀM XỬ LÝ: HỦY NGUYÊN LIỆU KẾT THÚC NGÀY
+  const handleHuyNguyenLieu = () => {
+    setConfirmModal({
+      show: true,
+      title: "Hủy nguyên liệu cuối ngày",
+      message: "Hành động này sẽ đưa tồn kho của tất cả nguyên liệu thuộc nhóm Thịt, Rau củ, Sốt về 0 và tính vào chi phí hủy hôm nay. Bạn có chắc chắn muốn thực hiện?",
+      onConfirm: async () => {
+        try {
+          const response = await axios.get(`${API_URL}/ingredients/huy`, getAuthHeader());
+          const result = response.data;
+          if (result.success) {
+            const tongTien = Number(result.tongtienvon || 0).toLocaleString('vi-VN');
+            showAlert(`Hủy nguyên liệu thành công! Tổng chi phí hủy ghi nhận: ${tongTien} đ`, "success", "Thành công");
+            fetchIngredients();
+          } else {
+            showAlert("Lỗi: " + (result.message || result.error || "Không thể hủy nguyên liệu"), "error");
+          }
+        } catch (error) {
+          showAlert(error.response?.data?.message || "Gặp sự cố kết nối máy chủ!", "error");
+        }
+        setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
+      }
+    });
+  };
+
   // RENDER DỮ LIỆU
   const getStockStatus = (quantity, min_stock) => {
     if (min_stock === 0) return { color: 'text-green-600', bg: 'bg-green-500', barWidth: '100%' };
@@ -307,13 +332,23 @@ const IngredientManagement = () => {
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 tracking-tight">Quản lý Nguyên vật liệu</h2>
                 <p className="text-neutralCustom text-xs md:text-sm font-medium">Theo dõi sát sao định lượng tồn kho và cảnh báo nhập hàng cho bếp Làng MÌXI.</p>
               </div>
-              <button
-                onClick={openAddModal}
-                className="flex items-center gap-2 bg-primary text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl font-bold shadow-md hover:bg-secondary transition-all active:scale-95 text-xs md:text-sm cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px] md:text-[20px]">add_box</span>
-                Thêm nguyên liệu mới
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleHuyNguyenLieu}
+                  className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl font-bold shadow-md transition-all active:scale-95 text-xs md:text-sm cursor-pointer"
+                  title="Hủy tất cả nguyên liệu tươi dở dang cuối ngày (Thịt, Rau củ, Sốt)"
+                >
+                  <span className="material-symbols-outlined text-[18px] md:text-[20px]">delete_sweep</span>
+                  Hủy nguyên liệu cuối ngày
+                </button>
+                <button
+                  onClick={openAddModal}
+                  className="flex items-center gap-2 bg-primary text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl font-bold shadow-md hover:bg-secondary transition-all active:scale-95 text-xs md:text-sm cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px] md:text-[20px]">add_box</span>
+                  Thêm nguyên liệu mới
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center">
