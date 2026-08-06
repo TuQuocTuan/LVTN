@@ -182,7 +182,7 @@ export const huytuychon = async (req, res) => {
             .update({ quantity: ingredients[0].quantity - soluong })
             .eq('id', ingredients[0].id)
             .select();
-        if (ingredientErr) throw ingredientErr;
+        if (huyNLErr) throw huyNLErr;
 
         let tienvon = 0;
         if (ingredients[0].unit === "g" || ingredients[0].unit === "ml") {

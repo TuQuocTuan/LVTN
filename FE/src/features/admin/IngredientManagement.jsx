@@ -35,12 +35,64 @@ const IngredientManagement = () => {
     name: '', quantity: '', unit: '', min_stock: '', category_id: '', price: ''
   });
 
+  // STATE: QUẢN LÝ HỦY NGUYÊN LIỆU (SINGLE & BULK WASTE)
+  const [isSingleWasteModalOpen, setIsSingleWasteModalOpen] = useState(false);
+  const [isSubmittingSingleWaste, setIsSubmittingSingleWaste] = useState(false);
+  const [singleWasteData, setSingleWasteData] = useState({ id: '', soluong: '' });
+
   // STATES THAY THẾ ALERT VÀ CONFIRM MẶC ĐỊNH
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
 
   const showAlert = (message, type = 'success', title = 'Thông báo') => {
     setAlertModal({ show: true, message, title, type });
+  };
+
+  const openSingleWasteModal = () => {
+    setSingleWasteData({
+      id: ingredients.length > 0 ? ingredients[0].id : '',
+      soluong: ''
+    });
+    setIsSingleWasteModalOpen(true);
+  };
+
+  const handleSingleWasteSubmit = async (e) => {
+    e.preventDefault();
+    if (!singleWasteData.id) {
+      return showAlert("Vui lòng chọn nguyên liệu cần hủy!", "error");
+    }
+    const qty = Number(singleWasteData.soluong);
+    if (!singleWasteData.soluong || isNaN(qty) || qty <= 0) {
+      return showAlert("Vui lòng nhập số lượng hủy hợp lệ lớn hơn 0!", "error");
+    }
+
+    const selectedItem = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+    if (selectedItem && qty > selectedItem.quantity) {
+      return showAlert(`Số lượng hủy (${qty} ${selectedItem.unit}) lớn hơn số lượng tồn kho hiện tại (${selectedItem.quantity} ${selectedItem.unit})!`, "error");
+    }
+
+    try {
+      setIsSubmittingSingleWaste(true);
+      const payload = {
+        id: Number(singleWasteData.id),
+        soluong: qty
+      };
+
+      const response = await axios.post(`${API_URL}/ingredients/huytuychon`, payload, getAuthHeader());
+      const result = response.data;
+
+      if (result.success) {
+        showAlert("Hủy nguyên liệu thành công!", "success", "Thành công");
+        setIsSingleWasteModalOpen(false);
+        fetchIngredients();
+      } else {
+        showAlert("Lỗi: " + (result.message || result.error || "Không thể hủy nguyên liệu"), "error");
+      }
+    } catch (error) {
+      showAlert(error.response?.data?.message || "Gặp sự cố kết nối máy chủ!", "error");
+    } finally {
+      setIsSubmittingSingleWaste(false);
+    }
   };
 
   const getAuthHeader = () => {
@@ -275,20 +327,18 @@ const IngredientManagement = () => {
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
-            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
-              alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-            }`}>
+            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+              }`}>
               <span className="material-symbols-outlined text-3xl">
                 {alertModal.type === 'success' ? 'check_circle' : 'error'}
               </span>
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{alertModal.message}</p>
-            <button 
-              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'success' })} 
-              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${
-                alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
-              }`}
+            <button
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'success' })}
+              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
+                }`}
             >
               Đồng ý
             </button>
@@ -306,14 +356,14 @@ const IngredientManagement = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{confirmModal.message}</p>
             <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })} 
+              <button
+                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })}
                 className="w-1/2 py-3 border border-neutralCustom/20 rounded-xl font-bold text-sm text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 Hủy bỏ
               </button>
-              <button 
-                onClick={confirmModal.onConfirm} 
+              <button
+                onClick={confirmModal.onConfirm}
                 className="w-1/2 py-3 bg-primary text-white font-bold rounded-xl text-sm hover:bg-secondary transition-all cursor-pointer"
               >
                 Xác nhận
@@ -334,12 +384,12 @@ const IngredientManagement = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleHuyNguyenLieu}
+                  onClick={() => setIsSingleWasteModalOpen(true)}
                   className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl font-bold shadow-md transition-all active:scale-95 text-xs md:text-sm cursor-pointer"
-                  title="Hủy tất cả nguyên liệu tươi dở dang cuối ngày (Thịt, Rau củ, Sốt)"
+                  title="Mở phiếu hủy nguyên liệu (Hủy tùy chọn hoặc Hủy tất cả)"
                 >
                   <span className="material-symbols-outlined text-[18px] md:text-[20px]">delete_sweep</span>
-                  Hủy nguyên liệu cuối ngày
+                  Hủy nguyên liệu
                 </button>
                 <button
                   onClick={openAddModal}
@@ -561,6 +611,151 @@ const IngredientManagement = () => {
               <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-neutralCustom border border-neutralCustom/20 hover:bg-white cursor-pointer bg-white">Hủy</button>
               <button type="submit" form="editIngredientForm" disabled={isEditing} className="px-6 py-2.5 rounded-xl font-black text-sm text-white bg-primary hover:bg-secondary shadow-md flex gap-2 justify-center items-center min-w-[120px] cursor-pointer">
                 {isEditing ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : 'Cập nhật'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HỦY NGUYÊN LIỆU (TÍCH HỢP HỦY ĐƠN LẺ VÀ HỦY TẤT CẢ CUỐI NGÀY) */}
+      {isSingleWasteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsSingleWasteModalOpen(false)}></div>
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-up border border-neutralCustom/10">
+            <div className="p-5 border-b border-neutralCustom/20 flex items-center justify-between bg-stone-50/50">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-red-500">delete_sweep</span>
+                <h3 className="text-lg font-black text-gray-900">Phiếu hủy nguyên liệu</h3>
+              </div>
+              <button onClick={() => setIsSingleWasteModalOpen(false)} className="p-1.5 hover:bg-neutralCustom/10 rounded-full text-neutralCustom cursor-pointer flex items-center justify-center">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* PHẦN 1: HỦY ĐƠN LẺ TỪNG NGUYÊN LIỆU */}
+              <form id="singleWasteForm" onSubmit={handleSingleWasteSubmit} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-gray-900 uppercase tracking-wider">Hủy đơn lẻ tùy chọn</span>
+                  <span className="text-[11px] text-neutralCustom font-semibold">Nhập số lượng thực tế cần hủy</span>
+                </div>
+
+                {/* 1. Chọn Nguyên liệu */}
+                <div>
+                  <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Danh sách Nguyên liệu *</label>
+                  <select
+                    required
+                    value={singleWasteData.id}
+                    onChange={(e) => setSingleWasteData({ ...singleWasteData, id: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-red-500 cursor-pointer font-bold bg-white"
+                  >
+                    <option value="" disabled>-- Chọn nguyên liệu --</option>
+                    {ingredients.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} (Tồn kho: {item.quantity} {item.unit})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Thông tin nguyên liệu đang chọn */}
+                {(() => {
+                  const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                  if (!selected) return null;
+                  return (
+                    <div className="p-3 bg-stone-50 rounded-xl border border-neutralCustom/20 text-xs flex justify-between items-center">
+                      <div>
+                        <span className="text-neutralCustom font-bold block">Tồn kho hiện tại:</span>
+                        <span className="font-extrabold text-gray-900 text-sm">{selected.quantity} {selected.unit}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-neutralCustom font-bold block">Đơn giá vốn:</span>
+                        <span className="font-extrabold text-amber-700 text-sm">{selected.price > 0 ? `${selected.price.toLocaleString('vi-VN')} đ/${selected.unit}` : 'Chưa có giá'}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 2. Nhập số lượng */}
+                <div>
+                  <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Nhập số lượng *</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.001"
+                      required
+                      value={singleWasteData.soluong}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.includes('-')) return;
+                        setSingleWasteData({ ...singleWasteData, soluong: val });
+                      }}
+                      className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-red-500 font-bold text-red-600 pr-16"
+                      placeholder="Nhập số lượng..."
+                    />
+                    {(() => {
+                      const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                      return selected ? (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutralCustom">
+                          {selected.unit}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Giá trị hủy ước tính */}
+                {(() => {
+                  const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                  const qty = Number(singleWasteData.soluong || 0);
+                  if (!selected || qty <= 0) return null;
+                  let cost = 0;
+                  if (selected.unit === 'g' || selected.unit === 'ml') {
+                    cost = (selected.price * qty) / 1000;
+                  } else {
+                    cost = selected.price * qty;
+                  }
+                  return (
+                    <div className="text-right text-xs font-bold text-gray-700">
+                      Giá trị hủy ước tính: <span className="text-red-600 font-black text-sm">{Math.round(cost).toLocaleString('vi-VN')} đ</span>
+                    </div>
+                  );
+                })()}
+              </form>
+
+              {/* PHẦN 2: TÙY CHỌN HỦY TẤT CẢ NGUYÊN LIỆU TƯƠI CUỐI NGÀY */}
+              <div className="pt-4 border-t border-neutralCustom/20">
+                <div className="p-3.5 bg-red-50 rounded-2xl border border-red-200 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-bold text-red-900 text-xs block">Hủy tất cả dở dang cuối ngày?</span>
+                    <span className="text-[11px] text-red-600 font-medium">Reset số lượng (Thịt, Rau củ, Sốt) về 0.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSingleWasteModalOpen(false);
+                      handleHuyNguyenLieu();
+                    }}
+                    className="shrink-0 bg-red-600 hover:bg-red-700 text-white font-black text-xs px-3.5 py-2 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete_forever</span>
+                    Hủy tất cả
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+            <div className="p-5 border-t border-neutralCustom/20 bg-stone-50/50 flex justify-end gap-3">
+              <button type="button" onClick={() => setIsSingleWasteModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-neutralCustom border border-neutralCustom/20 hover:bg-white cursor-pointer bg-white">Hủy bỏ</button>
+              <button type="submit" form="singleWasteForm" disabled={isSubmittingSingleWaste} className="px-6 py-2.5 rounded-xl font-black text-sm text-white bg-red-500 hover:bg-red-600 shadow-md flex gap-2 justify-center items-center min-w-[140px] cursor-pointer">
+                {isSubmittingSingleWaste ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : 'Xác nhận hủy lẻ'}
               </button>
             </div>
           </div>
