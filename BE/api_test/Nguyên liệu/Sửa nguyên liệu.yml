@@ -1,7 +1,7 @@
 info:
   name: Sửa nguyên liệu
   type: http
-  seq: 9
+  seq: 5
 
 http:
   method: PUT

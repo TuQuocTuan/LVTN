@@ -1,7 +1,7 @@
 info:
   name: Thêm nguyên liệu
   type: http
-  seq: 8
+  seq: 3
 
 http:
   method: POST

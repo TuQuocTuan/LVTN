@@ -26,12 +26,20 @@ export const getDoanhThuDashboard = async (req, res) => {
             .gte('created_at', moctgian.toISOString());
         if (fetchErr) throw fetchErr;
 
+        const { data: wastes, error: wasteErr } = await supabase
+            .from('ingredient_wastes')
+            .select('total_cost')
+            .gte('created_at', moctgian.toISOString());
+        if (wasteErr) throw wasteErr;
+
+        const tongTienHuy = wastes ? wastes.reduce((tong, w) => tong + Number(w.total_cost || 0), 0) : 0;
+
         const count = bills.length;
         const tongdoanhthu = bills.reduce((tong, bill) => tong + Number(bill.total_amount || 0), 0);
         const tongvat = bills.reduce((tong, bill) => tong + Number(bill.vat_amount || 0), 0);
         const tongdoanhthuthuan = tongdoanhthu - tongvat;
         const tongcost = bills.reduce((tong, bill) => tong + Number(bill.cost_amount || 0), 0);
-        const doanhthuthucte = tongdoanhthuthuan - tongcost;
+        const doanhthuthucte = tongdoanhthuthuan - tongcost - tongTienHuy;
 
         const tongtienmat = bills
             .filter(bill => bill.payment_method === 'CASH')
@@ -48,6 +56,7 @@ export const getDoanhThuDashboard = async (req, res) => {
             tongvat,
             tongdoanhthuthuan,
             tongcost,
+            tongtienhuy: tongTienHuy,
             doanhthuthucte,
             tongtienmat,
             tongchuyenkhoan,
@@ -108,6 +117,25 @@ export const tungngaytrongTuan = async (req, res) => {
             }
         });
 
+        const { data: wastes, error: wasteErr } = await supabase
+            .from('ingredient_wastes')
+            .select('total_cost, created_at')
+            .gte('created_at', mocthoigian.toISOString());
+        if (wasteErr) throw wasteErr;
+
+        wastes?.forEach(waste => {
+            const wasteDate = new Date(waste.created_at);
+            const dayIndex = wasteDate.getDay();
+            let i = dayIndex - 1;
+            if (dayIndex === 0) {
+                i = 6;
+            }
+
+            if (danhsachTuan[i]) {
+                danhsachTuan[i].doanhthuthucte -= Number(waste.total_cost || 0);
+            }
+        });
+
         return res.status(200).json({
             success: true,
             start_week_date: mocthoigian.toLocaleDateString('vi-VN'),
@@ -155,6 +183,22 @@ export const tungngaytrongThang = async (req, res) => {
             }
         });
 
+        const { data: wastes, error: wasteErr } = await supabase
+            .from('ingredient_wastes')
+            .select('total_cost, created_at')
+            .gte('created_at', startOfMonth.toISOString());
+        if (wasteErr) throw wasteErr;
+
+        wastes?.forEach(waste => {
+            const wasteDate = new Date(waste.created_at);
+            const dayNum = wasteDate.getDate();
+            const idx = dayNum - 1;
+
+            if (danhsachThang[idx]) {
+                danhsachThang[idx].doanhthuthucte -= Number(waste.total_cost || 0);
+            }
+        });
+
         return res.status(200).json({
             success: true,
             month: now.getMonth() + 1,
@@ -198,6 +242,21 @@ export const tungthangtrongNam = async (req, res) => {
                 danhsachNam[monthIdx].total += total;
                 danhsachNam[monthIdx].cost += cost;
                 danhsachNam[monthIdx].doanhthuthucte += ((total - vat) - cost);
+            }
+        });
+
+        const { data: wastes, error: wasteErr } = await supabase
+            .from('ingredient_wastes')
+            .select('total_cost, created_at')
+            .gte('created_at', startOfYear.toISOString());
+        if (wasteErr) throw wasteErr;
+
+        wastes?.forEach(waste => {
+            const wasteDate = new Date(waste.created_at);
+            const monthIdx = wasteDate.getMonth();
+
+            if (danhsachNam[monthIdx]) {
+                danhsachNam[monthIdx].doanhthuthucte -= Number(waste.total_cost || 0);
             }
         });
 
