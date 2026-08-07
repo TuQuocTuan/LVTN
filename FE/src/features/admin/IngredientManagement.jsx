@@ -66,9 +66,19 @@ const IngredientManagement = () => {
       return showAlert("Vui lòng nhập số lượng hủy hợp lệ lớn hơn 0!", "error");
     }
 
+    const FLOAT_UNITS = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
     const selectedItem = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
-    if (selectedItem && qty > selectedItem.quantity) {
-      return showAlert(`Số lượng hủy (${qty} ${selectedItem.unit}) lớn hơn số lượng tồn kho hiện tại (${selectedItem.quantity} ${selectedItem.unit})!`, "error");
+    if (selectedItem) {
+      if (qty > selectedItem.quantity) {
+        return showAlert(`Số lượng hủy (${qty} ${selectedItem.unit}) lớn hơn số lượng tồn kho hiện tại (${selectedItem.quantity} ${selectedItem.unit})!`, "error");
+      }
+
+      const unitLower = (selectedItem.unit || '').trim().toLowerCase();
+      const isFloatUnit = FLOAT_UNITS.includes(unitLower);
+
+      if (!isFloatUnit && (!Number.isInteger(qty) || String(singleWasteData.soluong).includes('.'))) {
+        return showAlert(`Nguyên liệu có đơn vị là "${selectedItem.unit}" chỉ cho phép hủy số nguyên (1, 2, 3...), không thể hủy số lượng thập phân (${singleWasteData.soluong})!`, "error");
+      }
     }
 
     try {
@@ -646,7 +656,7 @@ const IngredientManagement = () => {
                   <select
                     required
                     value={singleWasteData.id}
-                    onChange={(e) => setSingleWasteData({ ...singleWasteData, id: e.target.value })}
+                    onChange={(e) => setSingleWasteData({ id: e.target.value, soluong: '' })}
                     className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-red-500 cursor-pointer font-bold bg-white"
                   >
                     <option value="" disabled>-- Chọn nguyên liệu --</option>
@@ -678,26 +688,83 @@ const IngredientManagement = () => {
 
                 {/* 2. Nhập số lượng */}
                 <div>
-                  <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">Nhập số lượng *</label>
+                  <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5">
+                    Nhập số lượng *
+                    {(() => {
+                      const FLOAT_UNITS = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
+                      const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                      if (!selected) return null;
+                      const isFloat = FLOAT_UNITS.includes((selected.unit || '').trim().toLowerCase());
+                      return (
+                        <span className={`ml-2 font-bold text-[11px] normal-case ${isFloat ? 'text-blue-600' : 'text-amber-700'}`}>
+                          ({isFloat ? 'Cho phép nhập số thập phân' : 'Bắt buộc nhập số nguyên'})
+                        </span>
+                      );
+                    })()}
+                  </label>
                   <div className="relative">
                     <input
                       type="number"
-                      step="any"
-                      min="0.001"
+                      step={(() => {
+                        const FLOAT_UNITS = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
+                        const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                        const isFloat = selected && FLOAT_UNITS.includes((selected.unit || '').trim().toLowerCase());
+                        return isFloat ? "any" : "1";
+                      })()}
+                      min={(() => {
+                        const FLOAT_UNITS = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
+                        const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                        const isFloat = selected && FLOAT_UNITS.includes((selected.unit || '').trim().toLowerCase());
+                        return isFloat ? "0.001" : "1";
+                      })()}
+                      max={(() => {
+                        const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                        return selected ? selected.quantity : undefined;
+                      })()}
                       required
                       value={singleWasteData.soluong}
                       onKeyDown={(e) => {
+                        const FLOAT_UNITS = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
+                        const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                        const isFloat = selected && FLOAT_UNITS.includes((selected.unit || '').trim().toLowerCase());
+
                         if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                        if (!isFloat && (e.key === '.' || e.key === ',')) {
                           e.preventDefault();
                         }
                       }}
                       onChange={(e) => {
-                        const val = e.target.value;
+                        let val = e.target.value;
                         if (val.includes('-')) return;
+
+                        const FLOAT_UNITS = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
+                        const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                        const isFloat = selected && FLOAT_UNITS.includes((selected.unit || '').trim().toLowerCase());
+
+                        // Tự động loại bỏ các số 0 thừa ở đầu (ví dụ: 05 -> 5, 000999 -> 999)
+                        val = val.replace(/^0+(?=\d)/, '');
+
+                        // Với nguyên liệu số nguyên (cái, lon...), không cho nhập số 0 đứng đầu
+                        if (!isFloat && val === '0') {
+                          return;
+                        }
+
+                        if (selected && val !== '' && Number(val) > selected.quantity) {
+                          setSingleWasteData({ ...singleWasteData, soluong: String(selected.quantity) });
+                          return;
+                        }
+
                         setSingleWasteData({ ...singleWasteData, soluong: val });
                       }}
                       className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-red-500 font-bold text-red-600 pr-16"
-                      placeholder="Nhập số lượng..."
+                      placeholder={(() => {
+                        const FLOAT_UNITS = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
+                        const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));
+                        const isFloat = selected && FLOAT_UNITS.includes((selected.unit || '').trim().toLowerCase());
+                        return isFloat ? "Nhập số lượng..." : "Nhập số nguyên (1, 2, 3...)";
+                      })()}
                     />
                     {(() => {
                       const selected = ingredients.find(i => Number(i.id) === Number(singleWasteData.id));

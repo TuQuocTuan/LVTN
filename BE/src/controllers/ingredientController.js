@@ -176,11 +176,26 @@ export const huytuychon = async (req, res) => {
             .select('id,name,quantity,unit,price,category_id')
             .eq('id', id);
         if (ingredientErr) throw ingredientErr;
+        if (!ingredients || ingredients.length === 0) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy nguyên liệu' });
+        }
+
+        const ing = ingredients[0];
+        const unitLower = (ing.unit || '').trim().toLowerCase();
+        const floatUnits = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
+
+        // Kiểm tra nguyên liệu rời (cái, lon, chai, hộp...) chỉ được nhập số nguyên
+        if (!floatUnits.includes(unitLower) && !Number.isInteger(Number(soluong))) {
+            return res.status(400).json({
+                success: false,
+                message: `Nguyên liệu có đơn vị "${ing.unit}" chỉ cho phép hủy số nguyên (1, 2, 3...)!`
+            });
+        }
 
         const { data: huyNL, error: huyNLErr } = await supabase
             .from('ingredients')
-            .update({ quantity: ingredients[0].quantity - soluong })
-            .eq('id', ingredients[0].id)
+            .update({ quantity: ing.quantity - soluong })
+            .eq('id', ing.id)
             .select();
         if (huyNLErr) throw huyNLErr;
 
