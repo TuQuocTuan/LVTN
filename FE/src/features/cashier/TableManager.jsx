@@ -539,10 +539,6 @@ const TableManager = () => {
               <div className="w-4 h-4 rounded-full bg-primary shadow-[0_0_8px_rgba(254,113,5,0.4)]"></div>
               <span className={`text-xs font-bold uppercase tracking-wider ${activeFilter === 'occupied' ? 'text-primary' : 'text-neutralCustom'}`}>Đang Phục Vụ</span>
             </button>
-            <button onClick={() => setActiveFilter('waiting')} className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${activeFilter === 'waiting' ? 'bg-tertiary/10 ring-1 ring-tertiary/30' : 'hover:bg-tertiary/5'}`}>
-              <div className="w-4 h-4 rounded-full bg-tertiary shadow-[0_0_8px_rgba(230,165,5,0.4)]"></div>
-              <span className={`text-xs font-bold uppercase tracking-wider ${activeFilter === 'waiting' ? 'text-tertiary' : 'text-neutralCustom'}`}>Chờ Thanh Toán</span>
-            </button>
             <div className="h-6 w-px bg-neutralCustom/20 mx-1"></div>
             <button onClick={() => setActiveFilter('vip')} className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${activeFilter === 'vip' ? 'bg-secondary/10 ring-1 ring-secondary/30' : 'hover:bg-secondary/5'}`}>
               <span className="material-symbols-outlined text-secondary text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>crown</span>
@@ -1040,6 +1036,7 @@ const TableManager = () => {
                   type="tel"
                   required
                   pattern="[0-9]{10,11}"
+                  maxLength={11}
                   placeholder="Nhập số điện thoại (VD: 0987654321)"
                   value={newCustomerPhone}
                   onChange={(e) => setNewCustomerPhone(e.target.value.replace(/\D/g, ''))}

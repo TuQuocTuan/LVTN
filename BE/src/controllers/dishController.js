@@ -88,10 +88,18 @@ export const addDish = async (req, res) => {
         const file = req.file;
         const { category_id, name, description, price, instructions } = req.body;
 
-        if (!name || !price || !category_id) {
+        if (!name || price === undefined || price === null || !category_id) {
             return res.status(400).json({
                 success: false,
                 message: 'Vui lòng cung cấp đầy đủ tên, giá và danh mục món ăn!'
+            });
+        }
+
+        const numericPrice = Number(price);
+        if (isNaN(numericPrice) || numericPrice < 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Giá bán của món ăn không được là số âm (phải lớn hơn hoặc bằng 0)!'
             });
         }
 
@@ -180,8 +188,15 @@ export const updateDish = async (req, res) => {
         if (!id) {
             return res.status(400).json({ success: false, message: 'Thiếu ID món ăn cần cập nhật!' });
         }
-        if (!category_id || !name || !price) {
+        if (!category_id || !name || price === undefined || price === null) {
             return res.status(400).json({ success: false, message: 'Vui lòng cung cấp tên, giá và danh mục món ăn!' });
+        }
+        const numericPrice = Number(price);
+        if (isNaN(numericPrice) || numericPrice < 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Giá bán của món ăn không được là số âm (phải lớn hơn hoặc bằng 0)!'
+            });
         }
         const formattedName = name.trim();
         const { data: existingDish, error: checkErr } = await supabase

@@ -171,14 +171,17 @@ const IngredientManagement = () => {
   /* STREAMING_CHUNK: Submit thêm nguyên liệu an toàn */
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+    if (!addData.name.trim()) return showAlert("Vui lòng nhập tên nguyên liệu!", "error");
     if (!addData.category_id) return showAlert("Vui lòng chọn danh mục nguyên liệu phù hợp!", "error");
+    if (!addData.unit.trim()) return showAlert("Vui lòng nhập đơn vị tính!", "error");
+    if (!isNaN(addData.unit.trim())) return showAlert("Đơn vị tính không thể là chữ số thuần túy (ví dụ hợp lệ: g, kg, ml, l, cái, lon, chai, hộp...)!", "error");
 
     try {
       setIsAdding(true);
       const payload = {
-        name: addData.name,
+        name: addData.name.trim(),
         quantity: Number(addData.quantity),
-        unit: addData.unit,
+        unit: addData.unit.trim(),
         min_stock: Number(addData.min_stock),
         category_id: Number(addData.category_id),
         price: Number(addData.price || 0)
@@ -219,15 +222,18 @@ const IngredientManagement = () => {
   /* STREAMING_CHUNK: Submit cập nhật nguyên liệu an toàn */
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (!editData.name.trim()) return showAlert("Vui lòng nhập tên nguyên liệu!", "error");
     if (!editData.category_id) return showAlert("Vui lòng lựa chọn danh mục nguyên liệu!", "error");
+    if (!editData.unit.trim()) return showAlert("Vui lòng nhập đơn vị tính!", "error");
+    if (!isNaN(editData.unit.trim())) return showAlert("Đơn vị tính không được là chữ số!", "error");
 
     try {
       setIsEditing(true);
       const payload = {
         id: editingId,
-        name: editData.name,
+        name: editData.name.trim(),
         quantity: Number(editData.quantity),
-        unit: editData.unit,
+        unit: editData.unit.trim(),
         min_stock: Number(editData.min_stock),
         category_id: Number(editData.category_id),
         price: Number(editData.price || 0)

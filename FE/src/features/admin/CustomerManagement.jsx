@@ -374,6 +374,7 @@ const CustomerManagement = () => {
                 </label>
                 <input
                   type="tel"
+                  maxLength={11}
                   required
                   pattern="[0-9]{10,11}"
                   placeholder="Nhập số điện thoại (VD: 0987654321)"

@@ -21,7 +21,11 @@ export const addIngredients = async (req, res) => {
     try {
         const { name, quantity, unit, min_stock, price, category_id } = req.body;
         if (!name || quantity === undefined || !unit || min_stock === undefined) {
-            return res.status(400).json({ success: false, message: 'Thieu thong tin nguyen lieu!' });
+            return res.status(400).json({ success: false, message: 'Thiếu thông tin nguyên liệu!' });
+        }
+
+        if (!isNaN(unit.trim())) {
+            return res.status(400).json({ success: false, message: 'Đơn vị tính không thể là chữ số thuần túy (ví dụ hợp lệ: g, kg, ml, cái, lon, chai...)!' });
         }
 
         const { data: existingIngredient, error: existingError } = await supabase
@@ -61,6 +65,10 @@ export const updateIngredient = async (req, res) => {
         const { id, name, quantity, unit, min_stock, price, category_id } = req.body;
         if (!id) {
             return res.status(400).json({ success: false, message: 'Vui lòng nhập ID để cập nhật!' });
+        }
+
+        if (unit !== undefined && (!unit.trim() || !isNaN(unit.trim()))) {
+            return res.status(400).json({ success: false, message: 'Đơn vị tính không thể là chữ số thuần túy (ví dụ hợp lệ: g, kg, ml, cái, lon, chai...)!' });
         }
 
         const updateData = {};
