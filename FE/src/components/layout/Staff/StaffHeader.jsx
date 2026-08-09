@@ -90,13 +90,21 @@ const StaffHeader = ({
       setIsLoggingOut(true);
       const userStr = localStorage.getItem('user');
       const userObj = userStr ? JSON.parse(userStr) : {};
-      const response = await axios.get(`${API_BASE_URL}/user/ketca`, {
-        params: { user_id: userObj.id }
-      });
+      const savedCash = localStorage.getItem('saved_initial_cash');
+      const params = { user_id: userObj.id };
+      if (savedCash !== null && savedCash !== '') {
+        params.initial_amount = Number(savedCash);
+      }
+      const response = await axios.get(`${API_BASE_URL}/user/ketca`, { params });
       if (response.data && response.data.success) {
         setShiftReportData(response.data);
-        setInitialCashInput(response.data.tien_dau_ca !== undefined ? response.data.tien_dau_ca : 1000000);
-        setIsCashLocked(false);
+        if (savedCash !== null && savedCash !== '') {
+          setInitialCashInput(Number(savedCash));
+          setIsCashLocked(true);
+        } else {
+          setInitialCashInput(response.data.tien_dau_ca !== undefined ? response.data.tien_dau_ca : 1000000);
+          setIsCashLocked(false);
+        }
         // Ghi nhận mốc ngày giờ bấm kết ca hiện tại
         setKetCaTime(new Date().toLocaleString('vi-VN'));
         setShowLogoutConfirm(true);
@@ -347,7 +355,10 @@ const StaffHeader = ({
                           </span>
                           <button
                             type="button"
-                            onClick={() => setIsCashLocked(false)}
+                            onClick={() => {
+                              setIsCashLocked(false);
+                              localStorage.removeItem('saved_initial_cash');
+                            }}
                             className="text-xs text-primary font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-xs">edit</span> Sửa
@@ -375,7 +386,10 @@ const StaffHeader = ({
                           <span className="font-bold text-gray-900 text-xs">đ</span>
                           <button
                             type="button"
-                            onClick={() => setIsCashLocked(true)}
+                            onClick={() => {
+                              setIsCashLocked(true);
+                              localStorage.setItem('saved_initial_cash', initialCashInput);
+                            }}
                             className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-0.5 active:scale-95 transition-all cursor-pointer shrink-0"
                           >
                             <span className="material-symbols-outlined text-xs">check</span>

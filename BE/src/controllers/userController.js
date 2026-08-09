@@ -335,7 +335,15 @@ export const ketCa = async (req, res) => {
         const tongCostVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.cost_amount || 0), 0) : 0;
         const tongGiaVon = Math.round(tongCostCASH + tongCostVNPAY);
 
-        const tiendauca = Math.floor(Math.max(0, Number(req.query?.initial_amount || req.body?.initial_amount || 1000000)));
+        const { data: latestShiftReport } = await supabase
+            .from('shift_reports')
+            .select('initial_amount')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        const defaultInitial = latestShiftReport?.initial_amount ? Number(latestShiftReport.initial_amount) : 1000000;
+        const tiendauca = Math.floor(Math.max(0, Number(req.query?.initial_amount || req.body?.initial_amount || defaultInitial)));
 
         const tongTienBanDuoc = tongTienBanDuocCASH + tongTienBanDuocVNPAY;
         const tongDoanhThuThuan = tongTienBanDuoc - tongVat;
@@ -500,7 +508,15 @@ export const finalizeKetCa = async (req, res) => {
 
         if (fetchErr) throw fetchErr;
 
-        const tiendauca = Math.floor(Math.max(0, Number(req.body?.initial_amount || 1000000)));
+        const { data: latestShiftReport } = await supabase
+            .from('shift_reports')
+            .select('initial_amount')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        const defaultInitial = latestShiftReport?.initial_amount ? Number(latestShiftReport.initial_amount) : 1000000;
+        const tiendauca = Math.floor(Math.max(0, Number(req.body?.initial_amount || defaultInitial)));
 
         const soLuongDon = bills ? bills.length : 0;
         const tongTienBanDuoc = bills ? bills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
