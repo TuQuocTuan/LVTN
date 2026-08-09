@@ -186,7 +186,7 @@ const AboutPage = () => {
   return (
     <div className="bg-stone-50 text-gray-800 font-sans min-h-screen selection:bg-orange-600 selection:text-white">
 
-      {/* BANNER HERO COVER (PHONG CÁCH QUÁN NƯỚNG BBQ CHUYÊN NGHIỆP) */}
+      {/* BANNER HERO COVER */}
       <section className="relative h-[480px] bg-stone-900 flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-40">
           <img
@@ -237,7 +237,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* ĐẶC SẮC THỰC ĐƠN (PHÂN TRANG & TAB DỰA TRÊN API THẬT) */}
+      {/* ĐẶC SẮC THỰC ĐƠN */}
       <section id="menu" className="bg-white py-24 border-y border-stone-200/50">
         <div className="max-w-5xl mx-auto px-4">
           <div className="text-center max-w-xl mx-auto mb-16">
@@ -246,7 +246,7 @@ const AboutPage = () => {
             <p className="text-stone-500 text-xs sm:text-sm mt-3">Khám phá các cực phẩm bò nướng, heo nướng và hải sản tươi rói đẫm xốt được tẩm ướp tinh tế.</p>
           </div>
 
-          {/* TAB CATEGORIES LOAD ĐỘNG TỪ DB */}
+          {/* TAB CATEGORIES */}
           {categories.length > 0 && (
             <div className="flex justify-center flex-wrap gap-2.5 mb-10">
               <button

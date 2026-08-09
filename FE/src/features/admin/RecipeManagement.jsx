@@ -9,8 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const RecipeManagement = () => {
   const navigate = useNavigate();
-  // Lấy ID món ăn từ đường dẫn URL (ví dụ: /admin/recipe-management/5 -> dishId = 5)
-
+  // Lấy ID món ăn từ đường dẫn URL 
   const { dishId } = useParams();
 
   // KHAI BÁO CÁC STATE QUẢN LÝ DỮ LIỆU HIỂN THỊ CHÍNH

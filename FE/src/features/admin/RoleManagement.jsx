@@ -162,7 +162,7 @@ const RoleManagement = () => {
     }));
   };
 
-  // Tự động gán tập hợp quyền mặc định tương ứng khi thay đổi vai trò (Role)
+  // Tự động gán tập hợp quyền mặc định tương ứng khi thay đổi vai trò
   const handleRoleChange = (newRole) => {
     let newPerms = { ...editData.permissions };
 

@@ -146,7 +146,7 @@ const CustomerReview = () => {
     setErrorMsg('');
 
     try {
-      // KHẮC PHỤC LỖI CHỒNG CHÉO SUPABASE: Phân nhóm mảng gửi theo từng order_id riêng biệt
+      // Phân nhóm mảng gửi theo từng order_id riêng biệt
       const orderGroups = {};
       dishList.forEach(dish => {
         if (!orderGroups[dish.order_id]) {

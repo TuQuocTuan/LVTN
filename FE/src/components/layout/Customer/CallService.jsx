@@ -51,7 +51,7 @@ const CallService = () => {
 
   return (
     <>
-      {/* 1. NÚT CHUÔNG TRÊN HEADER */}
+      {/* NÚT CHUÔNG TRÊN HEADER */}
       <button
         onClick={() => setShowModal(true)}
         className="relative p-2 text-primary hover:bg-orange-50 rounded-full transition-colors flex items-center justify-center"
@@ -61,14 +61,14 @@ const CallService = () => {
         </span>
       </button>
 
-      {/* 2. THÔNG BÁO NHẸ NHÀNG */}
+      {/* THÔNG BÁO NHẸ NHÀNG */}
       {called && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-full shadow-md text-xs font-medium w-max animate-fade-in">
           {t('staffComingAlert')}
         </div>
       )}
 
-      {/* 3. POPUP XÁC NHẬN CƠ BẢN */}
+      {/* POPUP XÁC NHẬN CƠ BẢN */}
       {showModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
           <div 

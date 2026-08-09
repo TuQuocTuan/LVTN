@@ -195,7 +195,7 @@ const DishManagement = () => {
       <AdminSidebar currentTab="dish" />
       <AdminHeader />
 
-      {/* 🌟 HỆ THỐNG CUSTOM ALERT MODAL AN TOÀN */}
+      {/* HỆ THỐNG CUSTOM ALERT MODAL AN TOÀN */}
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
@@ -220,7 +220,7 @@ const DishManagement = () => {
         </div>
       )}
 
-      {/* 🌟 HỆ THỐNG CUSTOM CONFIRM MODAL */}
+      {/* HỆ THỐNG CUSTOM CONFIRM MODAL */}
       {confirmModal.show && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
@@ -282,7 +282,7 @@ const DishManagement = () => {
             </div>
           </div>
 
-          {/* Bảng danh sách - Thích ứng bề ngang rộng rãi của Laptop/PC */}
+          {/* Bảng danh sách món ăn */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm mb-6">
 

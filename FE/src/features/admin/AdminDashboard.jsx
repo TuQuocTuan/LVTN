@@ -151,28 +151,28 @@ const AdminDashboard = () => {
 
   // HÀM XUẤT BÁO CÁO EXCEL TÀI CHÍNH CHI TIẾT
   const handleExportExcel = () => {
-    // 1. Tính tổng doanh thu tuần = Tổng tiền bán hàng của 7 ngày trong tuần cộng lại
+    // Tính tổng doanh thu tuần = Tổng tiền bán hàng của 7 ngày trong tuần cộng lại
     const totalRev = weeklyData.reduce((acc, curr) => acc + curr.revenue, 0);
 
-    // 2. Tính tổng tiền vốn bán món tuần = Tổng giá vốn nguyên liệu tạo nên các món ăn bán ra trong tuần
+    // Tính tổng tiền vốn bán món tuần = Tổng giá vốn nguyên liệu tạo nên các món ăn bán ra trong tuần
     const totalCost = weeklyData.reduce((acc, curr) => acc + curr.cost, 0);
 
-    // 3. Tính tổng tiền hủy nguyên liệu tuần = Tổng chi phí nguyên liệu bị hủy của 7 ngày cộng lại
+    // Tính tổng tiền hủy nguyên liệu tuần = Tổng chi phí nguyên liệu bị hủy của 7 ngày cộng lại
     const totalWaste = weeklyData.reduce((acc, curr) => acc + (curr.waste || 0), 0);
 
-    // 4. Tính tổng lợi nhuận thực tế tuần = (Doanh thu thuần - Tiền vốn bán món - Tiền hủy nguyên liệu) của các ngày cộng lại
+    // Tính tổng lợi nhuận thực tế tuần = (Doanh thu thuần - Tiền vốn bán món - Tiền hủy nguyên liệu) của các ngày cộng lại
     const totalProf = weeklyData.reduce((acc, curr) => acc + curr.profit, 0);
 
-    // 5. Tính Tỷ suất lợi nhuận ròng (%) = (Doanh thu thực tế / Tổng doanh thu) * 100%
+    // Tính Tỷ suất lợi nhuận ròng (%) = (Doanh thu thực tế / Tổng doanh thu) * 100%
     const overallProfitMargin = liveRevenue > 0 ? ((realRevenue / liveRevenue) * 100).toFixed(1) : '0';
     
-    // 6. Tính tổng doanh thu nhận qua các kênh thanh toán = Tiền mặt (CASH) + Chuyển khoản (VNPAY)
+    // Tính tổng doanh thu nhận qua các kênh thanh toán = Tiền mặt (CASH) + Chuyển khoản (VNPAY)
     const totalPaymentRev = cashRevenue + transferRevenue;
 
-    // 7. Tính tỷ lệ phần trăm (%) doanh thu Tiền mặt = (Tiền mặt / Tổng doanh thu thanh toán) * 100%
+    // Tính tỷ lệ phần trăm (%) doanh thu Tiền mặt = (Tiền mặt / Tổng doanh thu thanh toán) * 100%
     const cashPercent = totalPaymentRev > 0 ? ((cashRevenue / totalPaymentRev) * 100).toFixed(1) : '0';
 
-    // 8. Tính tỷ lệ phần trăm (%) doanh thu Chuyển khoản VNPAY = (Chuyển khoản / Tổng doanh thu thanh toán) * 100%
+    // Tính tỷ lệ phần trăm (%) doanh thu Chuyển khoản VNPAY = (Chuyển khoản / Tổng doanh thu thanh toán) * 100%
     const transferPercent = totalPaymentRev > 0 ? ((transferRevenue / totalPaymentRev) * 100).toFixed(1) : '0';
 
     const styles = `
@@ -267,7 +267,7 @@ const AdminDashboard = () => {
           </tr>
     `;
 
-    // 9. Duyệt qua từng ngày trong tuần để tạo dòng bảng dữ liệu chi tiết
+    // Duyệt qua từng ngày trong tuần để tạo dòng bảng dữ liệu chi tiết
     weeklyData.forEach((row, index) => {
       const rowClass = index % 2 === 0 ? 'row-even' : 'row-odd';
       // Tỷ suất lợi nhuận riêng của từng ngày (%) = (Doanh thu thực tế ngày đó / Tổng doanh thu ngày đó) * 100%
@@ -284,7 +284,7 @@ const AdminDashboard = () => {
       `;
     });
 
-    // 10. Tính tỷ suất lợi nhuận trung bình cả tuần (%) = (Tổng lợi nhuận tuần / Tổng doanh thu tuần) * 100%
+    // Tính tỷ suất lợi nhuận trung bình cả tuần (%) = (Tổng lợi nhuận tuần / Tổng doanh thu tuần) * 100%
     const weeklyMargin = totalRev > 0 ? ((totalProf / totalRev) * 100).toFixed(1) : '0';
     html += `
           <tr class="grand-total">
@@ -378,7 +378,7 @@ const AdminDashboard = () => {
         ></div>
       )}
 
-      {/* 3. KHU VỰC NỘI DUNG CHÍNH (MAIN) */}
+      {/* KHU VỰC NỘI DUNG CHÍNH (MAIN) */}
       <main className="ml-64 max-lg:ml-0 pt-20 p-6 max-lg:p-5 lg:w-[calc(100%-16rem)] w-full transition-all duration-300 flex flex-col gap-6">
 
         {/* Header Section */}
@@ -396,7 +396,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Cặp nút select và Xuất Excel thẳng hàng h-[42px] */}
+          {/* Cặp nút select và Xuất Excel */}
           <div className="flex items-center gap-2.5 w-full sm:w-auto self-stretch sm:self-auto shrink-0 justify-end flex-nowrap">
             <select
               value={range}
@@ -409,7 +409,7 @@ const AdminDashboard = () => {
               <option value="year">Năm nay</option>
             </select>
 
-            {/* NÚT XUẤT FILE EXCEL: MÀU XANH LÁ SOLID, HOVER ĐẬM, KHÔNG TRONG SUỐT */}
+            {/* NÚT XUẤT FILE EXCEL */}
             <button
               onClick={handleExportExcel}
               className="flex items-center justify-center gap-2 px-5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 text-xs sm:text-sm h-[42px] whitespace-nowrap"
@@ -439,7 +439,7 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* BIỂU ĐỒ XU HƯỚNG DOANH THU: ĐÃ THAY ĐỔI THÀNH BIỂU ĐỒ CỘT KÉP (REVENUE & PROFIT) SIÊU ĐẸP */}
+        {/* BIỂU ĐỒ XU HƯỚNG DOANH THU */}
         <div className="bg-white p-6 rounded-2xl border border-neutralCustom/15 shadow-sm flex flex-col justify-between relative">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -452,7 +452,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Biểu đồ cột kép 3D-like thích ứng bề ngang */}
+          {/* Biểu đồ cột kép 3D-like */}
           <div className="relative h-64 w-full flex items-end justify-between px-2 sm:px-6 mt-4">
             {/* Đường lưới mỏng */}
             <div className="absolute inset-0 border-b border-neutralCustom/10 pointer-events-none"></div>
@@ -517,7 +517,7 @@ const AdminDashboard = () => {
             )}
           </div>
 
-          {/* ĐỒNG BỘ TOÁN HỌC TRỤC X: Phân chia chiều rộng và padding giống hệt biểu đồ cột để thẳng hàng tăm tắp */}
+          {/* ĐỒNG BỘ TOÁN HỌC TRỤC X */}
           <div className="flex w-full mt-5 text-neutralCustom text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 sm:px-6">
             {weeklyData.map((d, idx) => (
               <span
