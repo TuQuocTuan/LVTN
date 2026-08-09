@@ -135,9 +135,15 @@ const DishManagement = () => {
 
   /* STREAMING_CHUNK: Thực hiện lưu thông tin món ăn lên API thông qua FormData */
   const handleSaveDish = async () => {
-    if (!formData.name || !formData.price || !formData.category_id) {
+    if (!formData.name || formData.price === undefined || formData.price === null || formData.price === '' || !formData.category_id) {
       return showAlert("Vui lòng nhập đủ tên, giá và danh mục món ăn!", "error", "Thiếu thông tin");
     }
+
+    const numericPrice = Number(formData.price);
+    if (isNaN(numericPrice) || numericPrice < 0) {
+      return showAlert("Giá bán món ăn không được là số âm!", "error", "Giá bán không hợp lệ");
+    }
+
     if (!selectedDish && !imageFile) {
       return showAlert("Món ăn mới bắt buộc phải tải lên hình ảnh minh họa!", "error", "Thiếu hình ảnh");
     }
@@ -470,8 +476,18 @@ const DishManagement = () => {
                     <label className="block text-xs font-bold text-neutralCustom uppercase mb-1.5 tracking-wide">Giá bán (VNĐ)</label>
                     <input
                       type="number"
+                      min="0"
                       value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.includes('-')) return;
+                        setFormData({ ...formData, price: val });
+                      }}
                       className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all font-bold text-primary"
                       placeholder="0"
                     />

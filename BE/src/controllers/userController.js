@@ -284,7 +284,7 @@ export const ketCa = async (req, res) => {
                     return session.tables.name;
                 })
                 .filter(Boolean);
-            
+
             const message = tableNames.length > 0
                 ? `Không thể kết ca vì vẫn còn các bàn đang phục vụ: ${tableNames.join(', ')}`
                 : "Không thể kết ca vì vẫn còn bàn đang phục vụ!";
@@ -326,7 +326,7 @@ export const ketCa = async (req, res) => {
         const soLuongDon = (billsCash ? billsCash.length : 0) + (billsVnpay ? billsVnpay.length : 0);
         const tongTienBanDuocCASH = billsCash ? billsCash.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
         const tongTienBanDuocVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
-        
+
         const tongVatCASH = billsCash ? billsCash.reduce((sum, bill) => sum + Number(bill.vat_amount || 0), 0) : 0;
         const tongVatVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.vat_amount || 0), 0) : 0;
         const tongVat = Math.round(tongVatCASH + tongVatVNPAY);
@@ -478,7 +478,7 @@ export const finalizeKetCa = async (req, res) => {
                     return session.tables.name;
                 })
                 .filter(Boolean);
-            
+
             const message = tableNames.length > 0
                 ? `Không thể kết ca vì vẫn còn các bàn đang phục vụ: ${tableNames.join(', ')}`
                 : "Không thể kết ca vì vẫn còn bàn đang phục vụ!";

@@ -31,17 +31,35 @@ const RecipeManagement = () => {
   const [isEditStepModalOpen, setIsEditStepModalOpen] = useState(false);
   const [editIngredients, setEditIngredients] = useState([]);
   const [editInstructions, setEditInstructions] = useState([]);
-  
+
   // Chạy tuần tự khi vào trang để đảm bảo allIngredients có dữ liệu trước khi mapping chi tiết công thức
   useEffect(() => {
     const init = async () => {
       if (dishId) {
+        await fetchDishInfo(dishId);
         const loadedIngs = await fetchAllIngredients();
         await fetchRecipeVersions(dishId, loadedIngs);
       }
     };
     init();
   }, [dishId]);
+
+  // Hàm lấy thông tin món ăn (Tên món)
+  const fetchDishInfo = async (id) => {
+    try {
+      const res = await axios.get(`${API_URL}/dishes`);
+      if (res.data.success) {
+        const found = res.data.data.find(d => Number(d.id) === Number(id));
+        if (found) {
+          setDishName(found.name);
+          return found.name;
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi lấy thông tin món ăn:", error);
+    }
+    return null;
+  };
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -56,8 +74,8 @@ const RecipeManagement = () => {
         setAllIngredients(res.data.data);
         return res.data.data;
       }
-    } catch (error) { 
-      console.error("Lỗi lấy kho nguyên liệu:", error); 
+    } catch (error) {
+      console.error("Lỗi lấy kho nguyên liệu:", error);
     }
     return [];
   };
@@ -67,14 +85,13 @@ const RecipeManagement = () => {
     try {
       setIsLoading(true);
       const res = await axios.get(`${API_URL}/recipes/version?dish_id=${id}`);
-      
+
       if (res.data.success && res.data.data.length > 0) {
         const verList = res.data.data;
         setVersions(verList);
         setSelectedVersion(verList[0]); // Tự động chọn version mới nhất
         fetchRecipeDetailByVersion(id, verList[0], currentAllIngredients); // Gọi tiếp hàm lấy chi tiết của version đó
       } else {
-        setDishName("Món ăn chưa có công thức");
         setVersions([]);
         setIngredients([]);
         setInstructions([]);
@@ -91,11 +108,11 @@ const RecipeManagement = () => {
     try {
       setIsLoading(true);
       const res = await axios.get(`${API_URL}/recipes/by-version?dish_id=${id}&version=${version}`);
-      
+
       if (res.data.success && res.data.data.length > 0) {
         const data = res.data.data;
         setDishName(data[0]?.dishes?.name || 'Chưa cập nhật tên');
-        
+
         // GIẢI PHÁP ĐỐI CHIẾU MÃ ID: Nếu API không trả về ingredient_id, tra cứu ngược từ tên trong danh mục tổng
         const formattedIngredients = data.map(item => {
           let ingId = item.ingredient_id;
@@ -111,7 +128,7 @@ const RecipeManagement = () => {
           }
           return {
             id: item.id,
-            ingredient_id: ingId, 
+            ingredient_id: ingId,
             name: item.ingredients?.name,
             amount: item.amount_required,
             unit: item.ingredients?.unit
@@ -202,17 +219,25 @@ const RecipeManagement = () => {
 
   // Lưu Nguyên Liệu (Đồng bộ đồng thời cả quy trình chế biến)
   const handleSaveIngredients = async () => {
-    // Lọc bỏ các dòng trống để tránh ném NaN lên Database
-    const payloadIngredients = editIngredients
-      .filter(i => i.ingredient_id && i.amount_required)
-      .map(i => ({
-        ingredient_id: Number(i.ingredient_id),
-        amount_required: Number(i.amount_required)
-      }));
-
-    if (payloadIngredients.length === 0) {
-      return showToast("Vui lòng chọn đầy đủ tên nguyên liệu và định lượng!", "error");
+    if (editIngredients.length === 0) {
+      return showToast("Vui lòng chọn ít nhất 1 nguyên liệu định lượng!", "error");
     }
+
+    // Kiểm tra từng dòng nguyên liệu
+    for (const item of editIngredients) {
+      if (!item.ingredient_id) {
+        return showToast("Vui lòng chọn tên nguyên liệu cho tất cả các dòng!", "error");
+      }
+      const qty = Number(item.amount_required);
+      if (!item.amount_required || isNaN(qty) || qty <= 0 || !Number.isInteger(qty) || String(item.amount_required).includes('.')) {
+        return showToast("Định lượng nguyên liệu bắt buộc phải là số nguyên lớn hơn 0!", "error");
+      }
+    }
+
+    const payloadIngredients = editIngredients.map(i => ({
+      ingredient_id: Number(i.ingredient_id),
+      amount_required: Number(i.amount_required)
+    }));
 
     setIsSaving(true);
     try {
@@ -222,7 +247,7 @@ const RecipeManagement = () => {
         steps: JSON.stringify(instructions) // Đồng bộ gửi kèm các bước hiện tại tránh bị rỗng cột Postgres
       };
       const res = await axios.put(`${API_URL}/recipes/update`, payload);
-      
+
       if (res.data.success) {
         showToast("Cập nhật nguyên liệu định lượng thành công!", "success");
         setIsEditIngModalOpen(false);
@@ -263,7 +288,7 @@ const RecipeManagement = () => {
       };
 
       const res = await axios.put(`${API_URL}/recipes/update`, payload);
-      
+
       if (res.data.success) {
         showToast("Cập nhật quy trình chế biến thành công!", "success");
         setIsEditStepModalOpen(false); // Đóng Modal
@@ -381,9 +406,8 @@ const RecipeManagement = () => {
 
       {/* Floating custom Toast Alert thay thế alert() của trình duyệt */}
       {toast.show && (
-        <div className={`fixed bottom-6 right-6 z-[120] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl animate-fade-in text-white font-bold text-sm ${
-          toast.type === 'success' ? 'bg-green-600 border border-green-500' : 'bg-red-600 border border-red-500'
-        }`}>
+        <div className={`fixed bottom-6 right-6 z-[120] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl animate-fade-in text-white font-bold text-sm ${toast.type === 'success' ? 'bg-green-600 border border-green-500' : 'bg-red-600 border border-red-500'
+          }`}>
           <span className="material-symbols-outlined">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
           <span>{toast.message}</span>
         </div>
@@ -400,10 +424,27 @@ const RecipeManagement = () => {
 
             <div className="flex justify-between items-end border-b border-neutralCustom/20 pb-3">
               <div>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900">{dishName}</h2>
-                <p className="text-xs text-neutralCustom mt-0.5 font-medium no-print">Lưu trữ {versions.length} phiên bản công thức trong kho</p>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900">{dishName}</h2>
+                  {versions.length === 0 ? (
+                    <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-300">
+                      Chưa có công thức
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded-full border border-green-300">
+                      Version {selectedVersion}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-neutralCustom mt-1 font-medium no-print">
+                  {versions.length > 0
+                    ? `Lưu trữ ${versions.length} phiên bản công thức trong kho`
+                    : 'Món ăn này chưa được thiết lập công thức trong kho'}
+                </p>
                 {/* Phiên bản hiển thị tĩnh dành riêng cho tờ giấy A4 khi in */}
-                <p className="hidden print:block text-xs text-neutralCustom font-bold mt-0.5">Phiên bản áp dụng: Version {selectedVersion} (Mới nhất)</p>
+                {versions.length > 0 && (
+                  <p className="hidden print:block text-xs text-neutralCustom font-bold mt-0.5">Phiên bản áp dụng: Version {selectedVersion} (Mới nhất)</p>
+                )}
               </div>
 
               <div className="flex items-center gap-2.5 no-print">
@@ -427,7 +468,7 @@ const RecipeManagement = () => {
                   </div>
                 )}
 
-                <button 
+                <button
                   onClick={handleExportWord}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all shadow-md text-xs cursor-pointer"
                 >
@@ -440,7 +481,7 @@ const RecipeManagement = () => {
 
           {/* === NỘI DUNG HIỂN THỊ CHÍNH (READ-ONLY) === */}
           <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 overflow-hidden pb-6">
-            
+
             {/* CỘT 1: BẢNG NGUYÊN LIỆU */}
             <div className="w-full lg:w-1/3 h-full flex flex-col min-h-0">
               <div className="bg-white rounded-2xl border border-neutralCustom/20 overflow-hidden flex flex-col h-full shadow-sm">
@@ -514,7 +555,7 @@ const RecipeManagement = () => {
       {isEditIngModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
-            
+
             <div className="p-5 border-b border-neutralCustom/20 flex items-center justify-between bg-culinaryBg">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Định lượng Nguyên liệu</h3>
@@ -531,7 +572,7 @@ const RecipeManagement = () => {
                   + Thêm nguyên liệu
                 </button>
               </div>
-              
+
               <div className="space-y-3">
                 {editIngredients.map((ing, idx) => (
                   <div key={idx} className="flex items-center gap-3 group bg-white p-2 rounded-xl border border-neutralCustom/10 shadow-sm">
@@ -544,15 +585,27 @@ const RecipeManagement = () => {
                       <option value="" disabled>Chọn nguyên liệu...</option>
                       {allIngredients.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
-                    
+
                     {/* Ô nhập số lượng */}
                     <input
-                      type="number" step="any" min="0" placeholder="Số lượng..."
+                      type="number"
+                      step="1"
+                      min="1"
+                      placeholder="Số lượng..."
                       value={ing.amount_required}
-                      onChange={(e) => handleChangeIng(idx, 'amount_required', e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '.' || e.key === ',') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (val.includes('-') || val.includes('.') || val.includes(',')) return;
+                        handleChangeIng(idx, 'amount_required', val);
+                      }}
                       className="w-28 px-4 py-2.5 border border-neutralCustom/30 rounded-lg text-sm outline-none focus:border-primary text-center font-bold text-primary"
                     />
-                    
+
                     {/* Ô đơn vị tính (Tự động điền theo nguyên liệu) */}
                     <div className="w-16 text-sm font-bold text-neutralCustom text-center bg-gray-50 py-2.5 rounded-lg border border-neutralCustom/10">
                       {ing.unit || '-'}
@@ -580,7 +633,7 @@ const RecipeManagement = () => {
       {isEditStepModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
-            
+
             <div className="p-5 border-b border-neutralCustom/20 flex items-center justify-between bg-culinaryBg">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Các Bước Chế Biến</h3>
@@ -609,7 +662,7 @@ const RecipeManagement = () => {
                     <button onClick={() => handleRemoveStep(idx)} className="absolute top-3 right-3 text-neutralCustom/30 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50">
                       <span className="material-symbols-outlined text-[20px]">delete</span>
                     </button>
-                    
+
                     {/* Các ô nhập liệu cho một Bước */}
                     <div className="pr-8">
                       <input

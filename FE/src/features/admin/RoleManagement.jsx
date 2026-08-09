@@ -6,19 +6,19 @@ import axios from 'axios';
 const RoleManagement = () => {
   // Danh sách toàn bộ tài khoản nhân viên lấy từ hệ thống
   const [users, setUsers] = useState([]);
-  
+
   // ID của tài khoản nhân viên đang được click chọn
   const [activeUserId, setActiveUserId] = useState(null);
-  
+
   // Trạng thái chờ tải dữ liệu danh sách tài khoản
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Trạng thái chờ khi đang thực hiện lưu dữ liệu qua API
   const [isSaving, setIsSaving] = useState(false);
 
   // Trạng thái hiển thị modal thêm nhân viên mới
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  
+
   // Dữ liệu nhập trên form khi thêm nhân viên mới
   const [newUser, setNewUser] = useState({
     username: '', password: '', fullname: '', role: 'cashier', email: '', phone_number: '', is_active: true
@@ -26,7 +26,7 @@ const RoleManagement = () => {
 
   // Trạng thái hiển thị modal chỉnh sửa thông tin cá nhân nhân viên
   const [isEditInfoModalOpen, setIsEditInfoModalOpen] = useState(false);
-  
+
   // Dữ liệu nhập trên form khi chỉnh sửa thông tin cá nhân nhân viên
   const [editInfoForm, setEditInfoForm] = useState({
     id: '', fullname: '', username: '', email: '', phone_number: ''
@@ -40,7 +40,7 @@ const RoleManagement = () => {
 
   // Trạng thái hiển thị Custom Alert thay thế alert mặc định
   const [alertModal, setAlertModal] = useState({ show: false, message: '', title: 'Thông báo', type: 'success' });
-  
+
   // Trạng thái hiển thị Custom Confirm thay thế confirm mặc định
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
 
@@ -221,6 +221,22 @@ const RoleManagement = () => {
   const handleUpdateInfoSubmit = async (e) => {
     e.preventDefault();
 
+    if (!editInfoForm.fullname || !editInfoForm.fullname.trim()) {
+      return showAlert("Vui lòng nhập Họ và Tên!", "error", "Thiếu thông tin");
+    }
+    if (!editInfoForm.email || !editInfoForm.email.trim()) {
+      return showAlert("Vui lòng nhập địa chỉ Email!", "error", "Thiếu thông tin");
+    }
+    if (!editInfoForm.phone_number || !editInfoForm.phone_number.trim()) {
+      return showAlert("Vui lòng nhập Số điện thoại!", "error", "Thiếu thông tin");
+    }
+    if (!/^\d+$/.test(editInfoForm.phone_number.trim())) {
+      return showAlert("Số điện thoại chỉ được phép chứa các chữ số (0-9)!", "error", "Số điện thoại không hợp lệ");
+    }
+    if (editInfoForm.phone_number.trim().length < 9 || editInfoForm.phone_number.trim().length > 11) {
+      return showAlert("Số điện thoại không hợp lệ! Vui lòng nhập từ 10 đến 11 chữ số.", "error", "Số điện thoại không hợp lệ");
+    }
+
     const hasPassword = editInfoForm.password && editInfoForm.password.trim() !== '';
     if (hasPassword && editInfoForm.password.length < 6) {
       return showAlert("Mật khẩu phải chứa ít nhất 6 ký tự!", "error", "Mật khẩu không hợp lệ");
@@ -267,6 +283,29 @@ const RoleManagement = () => {
   // Gửi thông tin đăng ký nhân viên mới lên Backend (tự động tạo và gửi email thông báo tài khoản)
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+
+    if (!newUser.fullname || !newUser.fullname.trim()) {
+      return showAlert("Vui lòng nhập Họ và Tên nhân viên!", "error", "Thiếu thông tin");
+    }
+    if (!newUser.username || !newUser.username.trim()) {
+      return showAlert("Vui lòng nhập Tên đăng nhập!", "error", "Thiếu thông tin");
+    }
+    if (!newUser.password || !newUser.password.trim()) {
+      return showAlert("Vui lòng nhập Mật khẩu cấp phát!", "error", "Thiếu thông tin");
+    }
+    if (!newUser.email || !newUser.email.trim()) {
+      return showAlert("Vui lòng nhập địa chỉ Email!", "error", "Thiếu thông tin");
+    }
+    if (!newUser.phone_number || !newUser.phone_number.trim()) {
+      return showAlert("Vui lòng nhập Số điện thoại!", "error", "Thiếu thông tin");
+    }
+    if (!/^\d+$/.test(newUser.phone_number.trim())) {
+      return showAlert("Số điện thoại chỉ được phép chứa các chữ số (0-9)!", "error", "Số điện thoại không hợp lệ");
+    }
+    if (newUser.phone_number.trim().length < 9 || newUser.phone_number.trim().length > 11) {
+      return showAlert("Số điện thoại không hợp lệ! Vui lòng nhập từ 10 đến 11 chữ số.", "error", "Số điện thoại không hợp lệ");
+    }
+
     setIsSaving(true);
     try {
       let defaultPerms = {};
@@ -443,7 +482,7 @@ const RoleManagement = () => {
                         <p className="text-xs text-neutralCustom mt-0.5">Tick chọn để bật/tắt quyền truy cập từng tính năng.</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <select
                         value={editData.role}
@@ -581,7 +620,7 @@ const RoleManagement = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Số điện thoại <span className="text-red-500">*</span></label>
-                  <input required type="tel" value={newUser.phone_number} onChange={(e) => setNewUser({ ...newUser, phone_number: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                  <input required type="tel" maxLength={11} value={newUser.phone_number} onChange={(e) => setNewUser({ ...newUser, phone_number: e.target.value.replace(/\D/g, '') })} placeholder="Ví dụ: 0911212314" className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Vai trò cơ sở (Title) <span className="text-red-500">*</span></label>
@@ -627,21 +666,21 @@ const RoleManagement = () => {
                   <input required type="text" value={editInfoForm.fullname} onChange={(e) => setEditInfoForm({ ...editInfoForm, fullname: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Email</label>
-                  <input type="email" value={editInfoForm.email} onChange={(e) => setEditInfoForm({ ...editInfoForm, email: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Email <span className="text-red-500">*</span></label>
+                  <input required type="email" value={editInfoForm.email} onChange={(e) => setEditInfoForm({ ...editInfoForm, email: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Số điện thoại</label>
-                  <input type="tel" value={editInfoForm.phone_number} onChange={(e) => setEditInfoForm({ ...editInfoForm, phone_number: e.target.value })} className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Số điện thoại <span className="text-red-500">*</span></label>
+                  <input required type="tel" maxLength={11} value={editInfoForm.phone_number} onChange={(e) => setEditInfoForm({ ...editInfoForm, phone_number: e.target.value.replace(/\D/g, '') })} placeholder="Ví dụ: 0911212314" className="w-full px-4 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Mật khẩu mới (Để trống nếu không muốn thay đổi)</label>
                   <div className="relative">
-                    <input 
-                      type={showPassword ? "text" : "password"} 
-                      value={editInfoForm.password || ''} 
-                      onChange={(e) => setEditInfoForm({ ...editInfoForm, password: e.target.value })} 
-                      className="w-full pl-4 pr-12 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" 
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={editInfoForm.password || ''}
+                      onChange={(e) => setEditInfoForm({ ...editInfoForm, password: e.target.value })}
+                      className="w-full pl-4 pr-12 py-2.5 border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                       placeholder="Nhập mật khẩu mới nếu cần đổi"
                     />
                     <button
@@ -674,20 +713,18 @@ const RoleManagement = () => {
       {alertModal.show && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
-            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
-              alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-            }`}>
+            <div className={`w-16 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${alertModal.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+              }`}>
               <span className="material-symbols-outlined text-3xl">
                 {alertModal.type === 'success' ? 'check_circle' : 'error'}
               </span>
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{alertModal.message}</p>
-            <button 
-              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'success' })} 
-              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${
-                alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
-              }`}
+            <button
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'success' })}
+              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md ${alertModal.type === 'success' ? 'bg-primary hover:bg-secondary' : 'bg-red-500 hover:bg-red-600'
+                }`}
             >
               Đồng ý
             </button>
@@ -705,14 +742,14 @@ const RoleManagement = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{confirmModal.message}</p>
             <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })} 
+              <button
+                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })}
                 className="w-1/2 py-3 border border-neutralCustom/20 rounded-xl font-bold text-sm text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 Hủy bỏ
               </button>
-              <button 
-                onClick={confirmModal.onConfirm} 
+              <button
+                onClick={confirmModal.onConfirm}
                 className="w-1/2 py-3 bg-primary text-white font-bold rounded-xl text-sm hover:bg-secondary transition-all"
               >
                 Xác nhận

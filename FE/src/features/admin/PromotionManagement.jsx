@@ -166,23 +166,45 @@ const PromotionManagement = () => {
       return showAlert("Vui lòng điền đầy đủ các thông tin bắt buộc (*)", "error", "Thiếu thông tin");
     }
 
+    const discountVal = Number(formData.discount_value);
+    if (isNaN(discountVal) || discountVal <= 0) {
+      return showAlert("Mức giảm giá phải là số dương lớn hơn 0!", "error", "Giá trị không hợp lệ");
+    }
+    if (formData.discount_type === 'PERCENTAGE' && discountVal > 100) {
+      return showAlert("Mức giảm theo phần trăm không được vượt quá 100%!", "error", "Giá trị không hợp lệ");
+    }
+
+    if (formData.min_bill_value !== '' && formData.min_bill_value !== null && formData.min_bill_value !== undefined) {
+      const minBillVal = Number(formData.min_bill_value);
+      if (isNaN(minBillVal) || minBillVal < 0) {
+        return showAlert("Hóa đơn tối thiểu phải là số lớn hơn hoặc bằng 0!", "error", "Giá trị không hợp lệ");
+      }
+    }
+
     setIsSaving(true);
     try {
       const url = formData.id
         ? `${import.meta.env.VITE_API_URL}/promotions/update`
         : `${import.meta.env.VITE_API_URL}/promotions/add`;
 
+      const now = new Date();
       const startday = new Date(formData.start_date);
       const endday = new Date(formData.end_date);
 
       if (isNaN(startday.getTime()) || isNaN(endday.getTime())) {
-        showAlert("Vui lòng chọn thời gian bắt đầu và kết thúc hợp lệ!", "error", "Lỗi ngày tháng");
+        showAlert("Vui lòng chọn đầy đủ thời gian bắt đầu và kết thúc hợp lệ!", "error", "Lỗi ngày tháng");
         setIsSaving(false);
         return;
       }
 
       if (endday <= startday) {
         showAlert("Thời gian kết thúc phải lớn hơn thời gian bắt đầu!", "error", "Lỗi ngày tháng");
+        setIsSaving(false);
+        return;
+      }
+
+      if (endday <= now) {
+        showAlert("Thời gian kết thúc không được nằm ở thời điểm quá khứ!", "error", "Lỗi thời gian");
         setIsSaving(false);
         return;
       }
@@ -605,24 +627,68 @@ const PromotionManagement = () => {
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Mức Giảm <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <input type="number" min="0" placeholder="Nhập giá trị..." value={formData.discount_value} onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })} className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-bold text-primary pr-10" />
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Nhập giá trị..."
+                      value={formData.discount_value}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.includes('-')) return;
+                        setFormData({ ...formData, discount_value: val });
+                      }}
+                      className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-bold text-primary pr-10"
+                    />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutralCustom font-bold text-sm">{formData.discount_type === 'PERCENTAGE' ? '%' : 'đ'}</span>
                   </div>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Hóa đơn tối thiểu (Tùy chọn)</label>
                   <div className="relative">
-                    <input type="number" min="0" placeholder="VD: 500000" value={formData.min_bill_value} onChange={(e) => setFormData({ ...formData, min_bill_value: e.target.value })} className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900 pr-10" />
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="VD: 500000"
+                      value={formData.min_bill_value}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.includes('-')) return;
+                        setFormData({ ...formData, min_bill_value: val });
+                      }}
+                      className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900 pr-10"
+                    />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutralCustom font-bold text-sm">đ</span>
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Ngày bắt đầu <span className="text-red-500">*</span></label>
-                  <input type="datetime-local" value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })} className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900" />
+                  <input
+                    type="datetime-local"
+                    min={!formData.id ? formatForInput(new Date()) : undefined}
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Ngày kết thúc <span className="text-red-500">*</span></label>
-                  <input type="datetime-local" value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })} className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900" />
+                  <input
+                    type="datetime-local"
+                    min={formData.start_date || formatForInput(new Date())}
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-neutralCustom/30 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-medium text-gray-900"
+                  />
                 </div>
                 <div className="col-span-2 flex items-center gap-3 bg-white p-3 rounded-xl border border-neutralCustom/20">
                   <input type="checkbox" id="is_active" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} className="w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer" />
