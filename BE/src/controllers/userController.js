@@ -335,7 +335,8 @@ export const ketCa = async (req, res) => {
         const tongCostVNPAY = billsVnpay ? billsVnpay.reduce((sum, bill) => sum + Number(bill.cost_amount || 0), 0) : 0;
         const tongGiaVon = Math.round(tongCostCASH + tongCostVNPAY);
 
-        const tiendauca = 1000000;
+        const tiendauca = Math.floor(Math.max(0, Number(req.query?.initial_amount || req.body?.initial_amount || 1000000)));
+
         const tongTienBanDuoc = tongTienBanDuocCASH + tongTienBanDuocVNPAY;
         const tongDoanhThuThuan = tongTienBanDuoc - tongVat;
         const doanhThuThucTe = tongDoanhThuThuan - tongGiaVon - tongTienHuy;
@@ -499,10 +500,13 @@ export const finalizeKetCa = async (req, res) => {
 
         if (fetchErr) throw fetchErr;
 
+        const tiendauca = Math.floor(Math.max(0, Number(req.body?.initial_amount || 1000000)));
+
         const soLuongDon = bills ? bills.length : 0;
         const tongTienBanDuoc = bills ? bills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0) : 0;
-        const tiendauca = 1000000;
-        const tongTienTrongKet = tiendauca + tongTienBanDuoc;
+        const billsCash = bills ? bills.filter(b => b.payment_method === 'CASH') : [];
+        const tongTienBanDuocCASH = billsCash.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0);
+        const tongTienTrongKet = tiendauca + tongTienBanDuocCASH;
 
         const { error: insertErr } = await supabase
             .from('shift_reports')

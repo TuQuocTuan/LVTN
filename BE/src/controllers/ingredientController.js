@@ -184,7 +184,6 @@ export const huytuychon = async (req, res) => {
         const unitLower = (ing.unit || '').trim().toLowerCase();
         const floatUnits = ['g', 'ml', 'kg', 'l', 'lit', 'lít'];
 
-        // Kiểm tra nguyên liệu rời (cái, lon, chai, hộp...) chỉ được nhập số nguyên
         if (!floatUnits.includes(unitLower) && !Number.isInteger(Number(soluong))) {
             return res.status(400).json({
                 success: false,

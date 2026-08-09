@@ -4,8 +4,15 @@ info:
   seq: 8
 
 http:
-  method: GET
-  url: ""
+  method: POST
+  url: http://localhost:5000/api/ingredients/huytuychon
+  body:
+    type: json
+    data: |-
+      {
+        "id":7,
+        "soluong": 1000
+      }
   auth: inherit
 
 settings:

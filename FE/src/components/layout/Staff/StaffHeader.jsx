@@ -22,6 +22,8 @@ const StaffHeader = ({
 
   // States để lưu dữ liệu kết ca từ API
   const [shiftReportData, setShiftReportData] = useState(null);
+  const [initialCashInput, setInitialCashInput] = useState(1000000);
+  const [isCashLocked, setIsCashLocked] = useState(false);
   const [ketCaTime, setKetCaTime] = useState('');
   const [alertModal, setAlertModal] = useState({ show: false, title: 'Thông báo', message: '', type: 'error' });
 
@@ -93,6 +95,8 @@ const StaffHeader = ({
       });
       if (response.data && response.data.success) {
         setShiftReportData(response.data);
+        setInitialCashInput(response.data.tien_dau_ca !== undefined ? response.data.tien_dau_ca : 1000000);
+        setIsCashLocked(false);
         // Ghi nhận mốc ngày giờ bấm kết ca hiện tại
         setKetCaTime(new Date().toLocaleString('vi-VN'));
         setShowLogoutConfirm(true);
@@ -133,13 +137,19 @@ const StaffHeader = ({
 
       // Nếu là thu ngân/quản lý và có dữ liệu kết ca, thực hiện gửi yêu cầu chốt ca chính thức (lưu DB)
       if (['cashier', 'admin', 'super_admin'].includes(userRole) && shiftReportData) {
+        const initialAmount = Number(initialCashInput) || 0;
+
         await axios.post(`${API_BASE_URL}/user/ketca`, {
-          user_id: userObj.id || userObj._id
+          user_id: userObj.id || userObj._id,
+          initial_amount: initialAmount
         });
 
-        // Lệnh in bill kết ca tự động
         if (shiftReportData.html_bill) {
-          openSilentPrint(shiftReportData.html_bill);
+          const totalInKet = initialAmount + Number(shiftReportData.tongTienBanDuoc_CASH || 0);
+          const updatedBillHtml = shiftReportData.html_bill
+            .replace(/(<td>Tiền đầu ca:<\/td>\s*<td class="text-right">).*?(<\/td>)/, `$1${initialAmount.toLocaleString('vi-VN')}đ$2`)
+            .replace(/(<td>TỔNG TRONG KÉT:<\/td>\s*<td class="text-right">).*?(<\/td>)/, `$1${totalInKet.toLocaleString('vi-VN')}đ$2`);
+          openSilentPrint(updatedBillHtml);
         }
       }
 
@@ -328,7 +338,54 @@ const StaffHeader = ({
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-700">Tiền mặt đầu ca:</span>
-                    <span className="font-bold text-gray-900">{Number(shiftReportData?.tien_dau_ca || 0).toLocaleString('vi-VN')} đ</span>
+                    {['admin', 'super_admin'].includes(userRole) ? (
+                      isCashLocked ? (
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 text-xs flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                            {Number(initialCashInput).toLocaleString('vi-VN')} đ
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsCashLocked(false)}
+                            className="text-xs text-primary font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-xs">edit</span> Sửa
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={initialCashInput}
+                            onKeyDown={(e) => {
+                              if (['.', ',', '-', 'e', 'E'].includes(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value)));
+                              setInitialCashInput(val);
+                            }}
+                            className="w-24 px-2 py-1 text-right font-bold text-gray-900 border border-primary/50 rounded-lg text-sm bg-white outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Số tiền..."
+                          />
+                          <span className="font-bold text-gray-900 text-xs">đ</span>
+                          <button
+                            type="button"
+                            onClick={() => setIsCashLocked(true)}
+                            className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-0.5 active:scale-95 transition-all cursor-pointer shrink-0"
+                          >
+                            <span className="material-symbols-outlined text-xs">check</span>
+                            Chốt tiền
+                          </button>
+                        </div>
+                      )
+                    ) : (
+                      <span className="font-bold text-gray-900">{Number(initialCashInput || 1000000).toLocaleString('vi-VN')} đ</span>
+                    )}
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-700">Tổng doanh thu tiền mặt:</span>
@@ -340,7 +397,9 @@ const StaffHeader = ({
                   </div>
                   <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between items-center mt-2">
                     <span className="font-black text-gray-900 text-base uppercase">Tổng tiền trong két:</span>
-                    <span className="font-black text-primary text-xl">{Number(shiftReportData?.tong_tien_trong_ket || 0).toLocaleString('vi-VN')} đ</span>
+                    <span className="font-black text-primary text-xl">
+                      {((Number(initialCashInput) || 0) + Number(shiftReportData?.tongTienBanDuoc_CASH || 0)).toLocaleString('vi-VN')} đ
+                    </span>
                   </div>
                 </div>
 
