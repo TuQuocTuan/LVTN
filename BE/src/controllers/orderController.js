@@ -346,13 +346,17 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             .eq('status', 'pending');
     }
 
-    const { data: sessionData, error: sessionErr } = await supabase
-        .from('dining_sessions')
-        .select('*, users (fullname)')
-        .eq('id', session_id)
-        .single();
-
-    if (sessionErr) throw sessionErr;
+    let closedByFullname = 'Thu ngân';
+    if (close_user) {
+        const { data: closerUser } = await supabase
+            .from('users')
+            .select('fullname')
+            .eq('id', close_user)
+            .maybeSingle();
+        if (closerUser?.fullname) {
+            closedByFullname = closerUser.fullname;
+        }
+    }
 
     const { sub_total, discount_amount, vat_rate, vat_amount, tongtien, cost_amount } = financialData;
 
@@ -388,7 +392,7 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
             vat_amount,
             total_amount: tongtien,
             payment_method,
-            created_by: sessionData.users?.fullname,
+            created_by: closedByFullname,
             cost_amount: cost_amount || 0
         }]);
 
@@ -403,7 +407,7 @@ const handleFinalPayment = async (req, session_id, close_user, payment_method, c
 
     return {
         payment_type: 'OFFLINE',
-        closed_by: sessionData.users?.fullname
+        closed_by: closedByFullname
     };
 };
 
@@ -550,7 +554,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Vui lòng chọn phương thức thanh toán!' });
             }
 
-            console.log("👉 Chuẩn bị nhảy vào handleFinalPayment...");
+            console.log("Chuẩn bị nhảy vào handleFinalPayment...");
 
             closedByName = await handleFinalPayment(
                 req,
