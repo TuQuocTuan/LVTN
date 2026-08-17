@@ -470,7 +470,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
         if (dishIDs.length > 0) {
             const { data: recipes } = await supabase
                 .from('recipes')
-                .select('dish_id, amount_required, ingredients(price)')
+                .select('dish_id, amount_required, ingredients(price, unit)')
                 .in('dish_id', [...new Set(dishIDs)]);
             orders.forEach(o => {
                 o.order_details?.forEach(d => {
@@ -478,7 +478,8 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
                         const dishRecipes = recipes?.filter(r => Number(r.dish_id) === Number(d.dish_id)) || [];
                         dishRecipes.forEach(r => {
                             const giaIngre = r.ingredients?.price || 0;
-                            if (r.ingredients.unit === "g" || r.ingredients.unit === "ml") {
+                            const unitIngre = r.ingredients?.unit;
+                            if (unitIngre === "g" || unitIngre === "ml") {
                                 cost_amount += (giaIngre / 1000) * Number(r.amount_required) * Number(d.quantity);
                             } else {
                                 cost_amount += giaIngre * Number(r.amount_required) * Number(d.quantity);

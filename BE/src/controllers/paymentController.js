@@ -142,14 +142,20 @@ export const vnpayIPN = async (req, res) => {
                     if (dishIDs.length > 0) {
                         const { data: recipes } = await supabase
                             .from('recipes')
-                            .select('dish_id, amount_required, ingredients(price)')
+                            .select('dish_id, amount_required, ingredients(price, unit)')
                             .in('dish_id', [...new Set(dishIDs)]);
                         vnpOrders.forEach(o => {
                             o.order_details?.forEach(d => {
                                 if (d.status !== 'cancelled') {
                                     const dishRecipes = recipes?.filter(r => Number(r.dish_id) === Number(d.dish_id)) || [];
                                     dishRecipes.forEach(r => {
-                                        costAmount += (Number(r.ingredients?.price || 0) / 1000) * Number(r.amount_required) * Number(d.quantity);
+                                        const giaIngre = Number(r.ingredients?.price || 0);
+                                        const unitIngre = r.ingredients?.unit;
+                                        if (unitIngre === "g" || unitIngre === "ml") {
+                                            costAmount += (giaIngre / 1000) * Number(r.amount_required) * Number(d.quantity);
+                                        } else {
+                                            costAmount += giaIngre * Number(r.amount_required) * Number(d.quantity);
+                                        }
                                     });
                                 }
                             });
