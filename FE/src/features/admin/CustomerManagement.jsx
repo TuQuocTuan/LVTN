@@ -10,7 +10,7 @@ const CustomerManagement = () => {
   const [customersList, setCustomersList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Phân trang (8 khách hàng mỗi trang)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -96,26 +96,7 @@ const CustomerManagement = () => {
     }
   };
 
-  const handleDeleteClick = (cus) => {
-    showConfirm(
-      "Xác nhận xóa khách hàng",
-      `Bạn có chắc chắn muốn xóa khách hàng "${cus.name}" khỏi hệ thống không? Hành động này không thể hoàn tác.`,
-      async () => {
-        try {
-          const response = await axios.delete(`${API_URL}/customers/${cus.id}`, axiosConfig);
-          if (response.data && response.data.success) {
-            showAlert("Xóa thông tin khách hàng thành công!", "success", "Thành công");
-            fetchCustomers();
-          } else {
-            showAlert(response.data?.message || "Không thể xóa khách hàng này.", "error");
-          }
-        } catch (error) {
-          console.error("Lỗi xóa khách hàng:", error);
-          showAlert(error.response?.data?.message || "Lỗi kết nối máy chủ khi thực hiện xóa.", "error");
-        }
-      }
-    );
-  };
+
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa rõ';
@@ -129,8 +110,8 @@ const CustomerManagement = () => {
     const phone = cus.phone_number || '';
     const email = cus.email || '';
     return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           email.toLowerCase().includes(searchTerm.toLowerCase());
+      phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   // Tính toán phân trang
@@ -148,20 +129,18 @@ const CustomerManagement = () => {
       {alertModal.show && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-neutralCustom/10 text-center animate-scale-up">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-              alertModal.type === 'success' ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-600'
-            }`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${alertModal.type === 'success' ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-600'
+              }`}>
               <span className="material-symbols-outlined text-3xl">
                 {alertModal.type === 'success' ? 'check_circle' : 'error'}
               </span>
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">{alertModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed whitespace-pre-line">{alertModal.message}</p>
-            <button 
-              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'error' })} 
-              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer ${
-                alertModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/10' : 'bg-red-500 hover:bg-red-600 shadow-red-500/10'
-              }`}
+            <button
+              onClick={() => setAlertModal({ show: false, message: '', title: 'Thông báo', type: 'error' })}
+              className={`w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer ${alertModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 shadow-green-500/10' : 'bg-red-500 hover:bg-red-600 shadow-red-500/10'
+                }`}
             >
               Đồng ý
             </button>
@@ -179,17 +158,17 @@ const CustomerManagement = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
             <p className="text-sm text-neutralCustom mb-6 leading-relaxed">{confirmModal.message}</p>
             <div className="flex gap-3">
-              <button 
-                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })} 
+              <button
+                onClick={() => setConfirmModal({ show: false, title: '', message: '', onConfirm: null })}
                 className="w-1/2 py-3 border border-neutralCustom/20 text-neutralCustom bg-white font-bold text-sm rounded-xl hover:bg-stone-50 transition-all cursor-pointer"
               >
                 Hủy bỏ
               </button>
-              <button 
+              <button
                 onClick={() => {
                   if (confirmModal.onConfirm) confirmModal.onConfirm();
                   setConfirmModal({ show: false, title: '', message: '', onConfirm: null });
-                }} 
+                }}
                 className="w-1/2 py-3 bg-red-500 hover:bg-red-600 text-white font-black text-sm rounded-xl transition-all cursor-pointer shadow-md shadow-red-500/15"
               >
                 Xác nhận
@@ -201,7 +180,7 @@ const CustomerManagement = () => {
 
       {/* CHÍNH */}
       <main className="ml-64 pt-20 p-6 w-[calc(100%-16rem)] flex flex-col min-h-screen transition-all duration-300">
-        
+
         {/* Header */}
         <div className="mb-4 flex justify-between items-center shrink-0">
           <div>
@@ -214,12 +193,12 @@ const CustomerManagement = () => {
         <div className="bg-white p-4 rounded-2xl border border-neutralCustom/20 shadow-sm mb-4 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
           <div className="relative w-full md:max-w-md">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutralCustom text-xl">search</span>
-            <input 
-              type="text" 
-              placeholder="Tìm khách hàng theo Tên, Số điện thoại, Email..." 
+            <input
+              type="text"
+              placeholder="Tìm khách hàng theo Tên, Số điện thoại, Email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-50 border border-neutralCustom/20 text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-primary focus:bg-white transition-all font-semibold text-gray-950" 
+              className="w-full bg-gray-50 border border-neutralCustom/20 text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-primary focus:bg-white transition-all font-semibold text-gray-950"
             />
           </div>
           <div className="text-xs font-bold text-neutralCustom bg-stone-50 px-4 py-2 rounded-xl border border-stone-200/50 shrink-0">
@@ -276,13 +255,7 @@ const CustomerManagement = () => {
                           >
                             <span className="material-symbols-outlined text-[16px]">edit</span>
                           </button>
-                          <button
-                            onClick={() => handleDeleteClick(cus)}
-                            className="p-2 bg-red-50 hover:bg-red-100 text-red-650 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
-                            title="Xóa khách hàng"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
-                          </button>
+
                         </div>
                       </td>
                     </tr>
@@ -300,7 +273,7 @@ const CustomerManagement = () => {
           {!isLoading && totalPages > 1 && (
             <div className="p-4 border-t border-gray-150 flex justify-center items-center shrink-0">
               <div className="flex gap-1.5">
-                <button 
+                <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                   className="p-1.5 border border-neutralCustom/20 rounded-xl hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-9 h-9"
@@ -308,19 +281,18 @@ const CustomerManagement = () => {
                   <span className="material-symbols-outlined text-sm">chevron_left</span>
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button 
+                  <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                      currentPage === page 
-                        ? 'bg-primary text-white font-bold' 
+                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all shadow-sm ${currentPage === page
+                        ? 'bg-primary text-white font-bold'
                         : 'hover:bg-stone-50 text-neutralCustom border border-neutralCustom/15 bg-white'
-                    }`}
+                      }`}
                   >
                     {page}
                   </button>
                 ))}
-                <button 
+                <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="p-1.5 border border-neutralCustom/20 rounded-xl hover:bg-stone-50 text-neutralCustom disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center bg-white shadow-sm w-9 h-9"
@@ -344,7 +316,7 @@ const CustomerManagement = () => {
                 </span>
                 Cập nhật thông tin Khách hàng
               </h3>
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition-colors cursor-pointer"
