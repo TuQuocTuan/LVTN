@@ -64,7 +64,7 @@ export const getDishes = async (req, res) => {
         await kiemtraMinStock();
         const { data, error } = await supabase
             .from('dishes')
-            .select('id, name, price, description, image_url, status, categories(name)');
+            .select('id, name, price, description, image_url, status, score, categories(name)');
         if (error) throw error;
         res.status(200).json({ success: true, data });
     }
@@ -171,7 +171,7 @@ export const searchDishesByName = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('dishes')
-            .select('id, name, price, image_url, status, categories(name)')
+            .select('id, name, price, image_url, status, score, categories(name)')
             .ilike('name', `%${name}%`)
         if (error) throw error;
         res.status(200).json({ success: true, data });

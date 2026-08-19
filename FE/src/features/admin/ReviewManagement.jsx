@@ -246,6 +246,7 @@ const ReviewManagement = () => {
     dishesList.forEach(dish => {
       analytics[dish.id] = {
         name: dish.name,
+        score: dish.score !== undefined && dish.score !== null ? Number(dish.score) : null,
         totalReviews: 0,
         sumStars: 0,
         negativeCount: 0
@@ -255,8 +256,10 @@ const ReviewManagement = () => {
     reviewsList.forEach(r => {
       const id = r.dish_id;
       if (!analytics[id]) {
+        const dish = dishesList.find(d => d.id === Number(id));
         analytics[id] = {
-          name: getDishNameById(id),
+          name: dish ? dish.name : `Món ăn #${id}`,
+          score: dish && dish.score !== undefined && dish.score !== null ? Number(dish.score) : null,
           totalReviews: 0,
           sumStars: 0,
           negativeCount: 0
@@ -270,8 +273,8 @@ const ReviewManagement = () => {
     });
 
     return Object.values(analytics).sort((a, b) => {
-      const scoreA = a.totalReviews > 0 ? (a.sumStars / a.totalReviews) : 0;
-      const scoreB = b.totalReviews > 0 ? (b.sumStars / b.totalReviews) : 0;
+      const scoreA = a.score !== null && a.score !== undefined ? Number(a.score) : 0;
+      const scoreB = b.score !== null && b.score !== undefined ? Number(b.score) : 0;
       if (scoreB !== scoreA) {
         return scoreB - scoreA;
       }
@@ -723,10 +726,10 @@ const ReviewManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   {currentDishesAnalytics.length > 0 ? (
                     currentDishesAnalytics.map((dish, index) => {
-                      const hasReviews = dish.totalReviews > 0;
-                      const avgScore = hasReviews ? (dish.sumStars / dish.totalReviews).toFixed(1) : '0.0';
-                      const isLowQuality = hasReviews ? (Number(avgScore) <= 3.8) : false;
-                      const percentage = hasReviews ? Math.min(100, Math.max(0, (Number(avgScore) / 5) * 100)) : 0;
+                      const hasScore = dish.score !== null && dish.score !== undefined;
+                      const dishScore = hasScore ? Number(dish.score) : null;
+                      const isLowQuality = hasScore ? (dishScore < 76) : false;
+                      const percentage = hasScore ? Math.min(100, Math.max(0, dishScore)) : 0;
 
                       return (
                         <div key={index} className="p-3 bg-stone-50/50 border border-stone-200/60 rounded-xl flex flex-col gap-2.5 transition-all hover:bg-stone-100/50">
@@ -744,20 +747,20 @@ const ReviewManagement = () => {
                             </div>
 
                             <div className="text-right shrink-0 flex flex-col items-end">
-                              <span className={`text-sm font-black px-2 py-0.5 rounded-lg ${!hasReviews
+                              <span className={`text-sm font-black px-2 py-0.5 rounded-lg ${!hasScore
                                   ? 'bg-gray-550 text-gray-400 border border-gray-200 bg-gray-50'
                                   : isLowQuality
-                                    ? 'bg-red-50 text-red-600 border border-red-100'
+                                    ? 'bg-red-50 text-red-650 border border-red-100'
                                     : 'bg-green-50 text-green-600 border border-green-150'
                                 }`}>
-                                {hasReviews ? `${avgScore} ★` : '— ★'}
+                                {hasScore ? `${dishScore} điểm` : '—'}
                               </span>
                             </div>
                           </div>
 
                           <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${!hasReviews
+                              className={`h-full rounded-full transition-all duration-500 ${!hasScore
                                   ? 'bg-gray-300'
                                   : isLowQuality
                                     ? 'bg-red-500'
