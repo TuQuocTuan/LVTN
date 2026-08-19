@@ -24,7 +24,7 @@ const CallService = () => {
 
     // Lấy mã số bàn động thực tế đang lưu trong bộ nhớ máy
     const tableId = localStorage.getItem('tableId') || '...';
-    const displayTableName = `${t('table')} ${tableId}`;
+    const displayTableName = localStorage.getItem('table_name') || (tableId !== '...' ? `${t('table')} ${String(tableId).padStart(2, '0')}` : `${t('table')} ${tableId}`);
 
     if (channel) {
       channel.send({

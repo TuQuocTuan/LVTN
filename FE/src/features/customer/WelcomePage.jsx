@@ -40,11 +40,21 @@ const WelcomePage = () => {
             setTableId(response.data.table_id);
             localStorage.setItem('tableId', response.data.table_id);
             localStorage.setItem('sessionId', response.data.session_id);
+            if (response.data.table_name) {
+              localStorage.setItem('table_name', response.data.table_name);
+            }
           }
         } catch (err) {
           console.error("Lỗi tự động kiểm tra bàn:", err);
-          if (err.response && err.response.data && err.response.data.message) {
-            setError(err.response.data.message);
+          if (err.response && err.response.data) {
+            if (err.response.data.table_name) {
+              localStorage.setItem('table_name', err.response.data.table_name);
+            }
+            if (err.response.data.message) {
+              setError(err.response.data.message);
+            } else {
+              setError('Không thể kết nối đến máy chủ nhà bếp!');
+            }
           } else {
             setError('Không thể kết nối đến máy chủ nhà bếp!');
           }

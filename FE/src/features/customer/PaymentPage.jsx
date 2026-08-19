@@ -9,14 +9,14 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const PaymentPage = () => {
-  // Lấy thông tin bàn và phiên ăn hiện tại từ localStorage
-  const sessionId = localStorage.getItem('sessionId');
-  const tableName = localStorage.getItem('table_name') || 'Bàn của bạn';
-  const { t } = useLanguage();
-
   // State lưu dữ liệu hóa đơn thật từ API
   const [billData, setBillData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const sessionId = localStorage.getItem('sessionId');
+  const tableId = localStorage.getItem('tableId');
+  const tableName = billData?.table_name || localStorage.getItem('table_name') || (tableId ? `Bàn ${String(tableId).padStart(2, '0')}` : 'Bàn của bạn');
+  const { t } = useLanguage();
 
   // State UI
   const [isCallingPayment, setIsCallingPayment] = useState(false);
@@ -79,6 +79,12 @@ const PaymentPage = () => {
   // HÀM XỬ LÝ KHI KHÁCH BẤM YÊU CẦU THANH TOÁN
   const handleCallPayment = async () => {
     setIsCallingPayment(true);
+    console.log("=== TRACE: PAYMENT PAGE SENDING ===", {
+      evaluatedTableName: tableName,
+      billData_tableName: billData?.table_name,
+      localStorage_table_name: localStorage.getItem('table_name'),
+      localStorage_tableId: tableId
+    });
     try {
       if (channel) {
         channel.send({

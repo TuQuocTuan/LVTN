@@ -13,7 +13,7 @@ const TableManager = () => {
   const [activeFilter, setActiveFilter] = useState('all');
 
   const [notifications, setNotifications] = useState([]);
-  
+
   // dialog: Trạng thái hiển thị Custom Dialog thông báo/xác nhận hành động
   const [dialog, setDialog] = useState({
     isOpen: false,
@@ -56,19 +56,19 @@ const TableManager = () => {
 
 
   const [tables, setTables] = useState([]);
-  
+
   const [isLoading, setIsLoading] = useState(true);
 
   const [billData, setBillData] = useState(null);
-  
+
   const [loadingBill, setLoadingBill] = useState(false);
-  
+
   const [phoneNumber, setPhoneNumber] = useState('');
-  
+
   const [email, setEmail] = useState('');
-  
+
   const [voucherCode, setVoucherCode] = useState('');
-  
+
   const [customerVouchers, setCustomerVouchers] = useState([]);
 
   // TRẠNG THÁI MODAL ĐĂNG KÝ THÀNH VIÊN MỚI
@@ -80,7 +80,7 @@ const TableManager = () => {
 
   // showPrintVnpayBtn: Hiển thị nút "Xác nhận đã chuyển khoản và in bill" khi khách thanh toán qua VNPAY
   const [showPrintVnpayBtn, setShowPrintVnpayBtn] = useState(false);
-  
+
   // vnpayHtmlBill: Lưu mẫu hóa đơn HTML chính thức nhận được khi chọn VNPAY
   const [vnpayHtmlBill, setVnpayHtmlBill] = useState('');
 
@@ -193,6 +193,7 @@ const TableManager = () => {
 
     const channel = listenBroadcast('restaurant-notifications', 'call_staff', (payload) => {
       const data = payload.payload;
+      console.log("=== TRACE: CASHIER RECEIVED NOTIFICATION ===", data);
       setNotifications((prev) => [data, ...prev]);
 
       audio.play().catch(err => console.log(err));
@@ -580,7 +581,7 @@ const TableManager = () => {
                       <span className="material-symbols-outlined text-neutralCustom/40 mt-2 block group-hover:text-primary transition-colors">add_circle</span>
                     )}
                   </div>
-                  
+
                   {/* Nhãn hiển thị trạng thái của bàn (nếu không trống) */}
                   {table.status !== 'empty' && (
                     <div className={`w-full rounded-lg py-1.5 px-1 text-center 
@@ -652,7 +653,7 @@ const TableManager = () => {
             {/* GIAO DIỆN KHI BÀN CÓ KHÁCH (ĐANG PHỤC VỤ HOẶC CHỜ THANH TOÁN) */}
             {(selectedTable?.status === 'occupied' || selectedTable?.status === 'waiting') && (
               <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-                
+
                 {/* CỘT TRÁI: HIỂN THỊ DANH SÁCH MÓN ĂN ĐÃ GỌI */}
                 <div className="flex-1 p-6 bg-white flex flex-col min-h-0 border-b md:border-b-0 md:border-r border-neutralCustom/10">
                   <div className="flex items-center gap-2 text-primary font-bold text-sm border-b pb-2 mb-4 shrink-0">
@@ -738,6 +739,7 @@ const TableManager = () => {
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                           maxLength={10}
+                          minLength={10}
                           className="flex-1 px-3 py-2 text-sm bg-white border border-neutralCustom/30 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-semibold"
                         />
                         {/* Nút đăng ký thành viên mới */}
@@ -993,18 +995,18 @@ const TableManager = () => {
       {/* MODAL ĐĂNG KÝ THÔNG TIN KHÁCH HÀNG MỚI */}
       {isCustomerModalOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" 
+          <div
+            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
             onClick={() => setIsCustomerModalOpen(false)}
           ></div>
-          
+
           <div className="relative bg-white rounded-3xl p-6 shadow-2xl max-w-md w-full border border-neutralCustom/10 animate-scale-up z-[130]">
             <div className="flex justify-between items-center pb-4 border-b border-gray-100 mb-4">
               <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-2xl">person_add</span>
                 Đăng ký Khách hàng mới
               </h3>
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsCustomerModalOpen(false)}
                 className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-250 text-stone-500 flex items-center justify-center transition-colors cursor-pointer"

@@ -497,6 +497,14 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn cho phiên ăn này!' });
         }
 
+        const { data: sessionInfo } = await supabase
+            .from('dining_sessions')
+            .select('tables(name)')
+            .eq('id', session_id)
+            .maybeSingle();
+        const tableName = sessionInfo?.tables?.name || 'Bàn của bạn';
+        console.log("=== TRACE: BACKEND RESOLVED TABLE NAME ===", tableName);
+
         let customerId = null;
         let isNewCustomerOrMissingEmail = false;
 
@@ -700,6 +708,7 @@ export const getCheckoutBillandCloseSession = async (req, res) => {
             is_missing_email: isNewCustomerOrMissingEmail,
             created_at: thoigianthanhtoan,
             session_id,
+            table_name: tableName,
             closed_by: is_preview ? 'Khách xem tạm tính' : closedByName.closed_by,
             payment_url: is_preview ? null : (closedByName.payment_url || null),
             payment_method: is_preview ? null : payment_method,

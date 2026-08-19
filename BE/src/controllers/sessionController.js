@@ -56,7 +56,7 @@ export const openMenuCustomer = async (req, res) => {
 
         const { data: table, error: tableErr } = await supabase
             .from('tables')
-            .select('id')
+            .select('id, name')
             .eq('table_key', table_key)
             .single();
 
@@ -77,6 +77,7 @@ export const openMenuCustomer = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 table_id: table.id,
+                table_name: table.name,
                 message: 'Bàn chưa được mở!!!!!'
             });
         }
@@ -94,6 +95,7 @@ export const openMenuCustomer = async (req, res) => {
             message: 'Vao ban xem thuc don thanh cong!',
             session_id: session.id,
             table_id: table.id,
+            table_name: table.name,
         });
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });
